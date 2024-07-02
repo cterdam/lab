@@ -36,12 +36,20 @@ def scaffold(config: LabConfig):
     config.general.out_dir = config.general.out_dir.resolve()
     msgs.append(f"Out dir set to {config.general.out_dir}")
 
+    # ONLY STEPS CONCERNING LOGGER ABOVE THIS LINE ------------------------------------
+
     # Set up logger
     msgs.append("")
     msgs.extend(update_logger(logger, config))
 
     # Logger is set up, release all msgs so far
     logger.trace("\n".join(msgs))
+
+    # ANY OTHER STEP & CAN LOG BELOW THIS LINE ----------------------------------------
+
+    # Snapshot environment
+    #   - log down python ver, libraries ver, and git hash
+    #   - warn about saving source code if there is any uncommitted edit
 
     # Set up random state
     get_random_state_setter(config, logger)()

@@ -4,8 +4,6 @@ import random
 
 logger.info(f"Random number {random.randint(1, 100)} generated.")
 
-
-# wandb handle incremental log entries
-
-# For wandb tables see:
-# https://github.com/wandb/wandb/issues/2981#issuecomment-1686868189
+# wandb: handle incremental log entries by:
+#   - add option to toggle WANDB_CONSOLE (capture_stdout)
+#   - keep a table in logger consisting of logs and repeatedly upload (tabulate_logs)

@@ -22,7 +22,9 @@ def scaffold(config: LabConfig):
     if config.general.run_identifier:
         config.general.run_name += "-" + get_unique_id()
         msgs.append("Appending unique identifier to run name.")
-    msgs.append(f"Run name set to {config.general.run_name}")
+    else:
+        msgs.append("NOT appending unique identifier to run name.")
+    msgs.append(f"Run name set to {repr(config.general.run_name)}")
 
     # Set up out dir
     if config.general.out_dir is None:

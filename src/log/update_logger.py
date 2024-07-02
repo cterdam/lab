@@ -49,20 +49,24 @@ def update_logger(logger, config: LabConfig) -> List[str]:
     # Collect logging msgs to return
     msgs = []
 
-    # Add stdout handler
+    # Setup stdout
     if config.log.to_stdout:
         logger.add(sys.stdout, format=log_format, level=log_level)
 
         msgs.append("Logging to stdout.")
+    else:
+        msgs.append("NOT logging to stdout.")
 
-    # Add local file handler
+    # Setup local log file
     if config.log.to_file:
         file_path = config.general.out_dir / "log.txt"
         logger.add(file_path, format=log_format, level=log_level)
 
         msgs.append(f"Logging to file at {file_path}")
+    else:
+        msgs.append("NOT logging to local file.")
 
-    # Add W&B handler
+    # Set up W&B
     if config.log.to_wandb:
 
         # Must use shell env var to login to W&B
@@ -74,6 +78,8 @@ def update_logger(logger, config: LabConfig) -> List[str]:
 
         # Suppress W&B logs
         os.environ["WANDB_SILENT"] = "true"
+
+        msgs.append(f"Suppressing wandb output.")
 
         # Create W&B run
         wandb.init(
@@ -123,6 +129,11 @@ def update_logger(logger, config: LabConfig) -> List[str]:
                     is_url=True,
                 )
             )
+        else:
+            msgs.append("\nNOT saving source code on wandb.")
+
+    else:
+        msgs.append("NOT logging to wandb.")
 
     # Return logging msgs for caller to log
     if not config.log.to_stdout:

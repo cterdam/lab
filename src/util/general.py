@@ -109,17 +109,25 @@ def get_random_state_setter(config, logger) -> Callable[[], None]:
 
     def random_state_setter():
 
+        logger.trace("Setting up random state.")
+
         if config.random.python_seed is not None:
             random.seed(config.random.python_seed)
             logger.trace(f"Python random seed set to {config.random.python_seed}.")
+        else:
+            logger.trace("NOT setting Python random seed.")
 
         if config.random.numpy_seed is not None:
             np.random.seed(config.random.numpy_seed)
             logger.trace(f"Numpy random seed set to {config.random.numpy_seed}.")
+        else:
+            logger.trace("NOT setting Numpy random seed.")
 
         if config.random.torch_seed is not None:
             torch.manual_seed(config.random.torch_seed)
             logger.trace(f"Torch manual seed set to {config.random.torch_seed}.")
+        else:
+            logger.trace("NOT setting torch manual seed.")
 
         if config.random.torch_backends_cudnn_benchmark is not None:
             torch.backends.cudnn.benchmark = (
@@ -133,6 +141,8 @@ def get_random_state_setter(config, logger) -> Callable[[], None]:
                     """
                 )
             )
+        else:
+            logger.trace("NOT setting torch backends cudnn benchmark.")
 
         if config.random.torch_use_deterministic_algorithms is not None:
             torch.use_deterministic_algorithms(
@@ -146,6 +156,8 @@ def get_random_state_setter(config, logger) -> Callable[[], None]:
                     """
                 )
             )
+        else:
+            logger.trace("NOT setting torch use deterministic algorithms.")
 
         if config.random.cublas_workspace_config is not None:
             os.environ["CUBLAS_WORKSPACE_CONFIG"] = (
@@ -159,6 +171,8 @@ def get_random_state_setter(config, logger) -> Callable[[], None]:
                     """
                 )
             )
+        else:
+            logger.trace("NOT setting cublas workspace config.")
 
     return random_state_setter
 

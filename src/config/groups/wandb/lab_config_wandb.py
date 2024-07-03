@@ -14,7 +14,7 @@ __all__ = [
 class LabConfigWandb(LabConfigBase):
     """Config about W&B."""
 
-    entity: str | None = Field(
+    login_entity: str | None = Field(
         default=None,
         description=multiline(
             """
@@ -29,17 +29,27 @@ class LabConfigWandb(LabConfigBase):
         description="If true, saves all `.py` source code files in repo on wandb.",
     )
 
-    group: str | None = Field(
+    run_group: str | None = Field(
         default=None,
         description="Optional group name for the run on wandb.",
     )
 
-    tags: List[str] = Field(
+    run_tags: List[str] = Field(
         default=[],
         description="Optional tags for the run on wandb.",
     )
 
-    notes: str | None = Field(
+    run_notes: str | None = Field(
         default=None,
         description="Optional notes for the run on wandb.",
+    )
+
+    capture_console: bool = Field(
+        default=True,
+        description="If true, captures stdout and stderr output to wandb logs.",
+    )
+
+    tabulate_logs: bool = Field(
+        default=True,
+        description="If true, uses a wandb Table to store log msgs.",
     )

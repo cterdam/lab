@@ -98,19 +98,42 @@ And that's it!
   - Stdout
   - Local log file `log.txt` in out dir
   - Wandb
+- All log entry timestamps are in UTC.
+
+### Best logging practices
+
+- There should not be any print statements. Always use the logger instead.
 
 - To log msgs, simply `from src.log import logger` and use `logger` as in `loguru`.
 
-### Wandb logging
+- Use logging levels this way:
+  - `trace` - trivial msgs which are predictable given other logs; e.g. config setup.
+  - `debug` - debug msgs about latent variables; e.g. system snapshots.
+  - `info` - normal default logs; e.g. the overall config table.
+  - `success` - a costly or uncertain action succeedes; e.g. downloading an artifact, or
+    detecting some shell env var.
+  - `warning` - errors that don't damage the program's functionalities; e.g. detecting a
+    strange config setup.
+  - `error` - errors that force the program to prune functionalities but can still
+    continue.
+  - `critical` - errors that force the program to abort. e.g. not enough disk space.
+
+- The timing of logging:
+  - For quick actions, log *after* it's completed, rather than *before*.
+    - For example, if a piece of code creates a file system directory, log `"Directory
+      created"` rather than `"About to create directory"`. Log msgs should give
+      unambiguous interpretations as much as they can.
+  - For slow actions, log both *before* and *after*, and optionally log progress
+    halfway.
+
+### Logging on wandb
 
 - To use wandb logging, the `WANDB_API_KEY` shell variable must be set with a valid API
   key.
-
 - Logs will appear under the given run name and project name in the wandb entity chosen
   with the API key.
-
+- The run ID on wandb will also be the same as the run name.
 - The job type of the wandb run will be the same as the task in the config.
-
 - By default, all `.py` files in the repo at this time of the run will also be saved in
   the wandb run as an artifact.
 

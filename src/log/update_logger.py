@@ -46,7 +46,7 @@ def update_logger(logger, config: LabConfig) -> List[str]:
 
     ###################################################################################
 
-    # Collect logging msgs to return
+    # Collect logging msgs to emit once logger is fully set up
     msgs = []
 
     # Setup stdout
@@ -69,30 +69,41 @@ def update_logger(logger, config: LabConfig) -> List[str]:
     # Set up W&B
     if config.log.to_wandb:
 
+        msgs.append("")
+        msgs.append("Setting up wandb.")
+
         # Must use shell env var to login to W&B
         assert "WANDB_API_KEY" in os.environ
+        msgs.append("Wandb API key detected in shell environment.")
         import wandb
 
         # Use the latest version of W&B backend. See https://wandb.me/wandb-core
         wandb.require("core")
 
-        # Suppress W&B logs
+        # Suppress W&B outputs; they are so annoying
         os.environ["WANDB_SILENT"] = "true"
+        msgs.append("Wandb direct output suppressed.")
 
-        msgs.append(f"Suppressing wandb output.")
+        # Capture console output to W&B logs
+        if config.wandb.capture_console:
+            os.environ["WANDB_CONSOLE"] = "auto"
+            msgs.append("Capturing console output to wandb logs.")
+        else:
+            os.environ["WANDB_CONSOLE"] = "off"
+            msgs.append("NOT capturing console output to wandb logs.")
 
         # Create W&B run
         wandb.init(
-            entity=config.wandb.entity,
+            entity=config.wandb.login_entity,
             project=config.general.project_name,
             name=config.general.run_name,
             id=config.general.run_name,
             dir=config.general.out_dir,
             config=config.to_config_dict(),
             job_type=config.general.task,
-            group=config.wandb.group,
-            tags=config.wandb.tags,
-            notes=config.wandb.notes,
+            group=config.wandb.run_group,
+            tags=config.wandb.run_tags,
+            notes=config.wandb.run_notes,
         )
 
         msgs.append(
@@ -111,26 +122,31 @@ def update_logger(logger, config: LabConfig) -> List[str]:
 
         # Save all source code to W&B
         if config.wandb.save_code:
+
+            asset_name = f"CODE_{config.general.run_name}"
+
             wandb.run.log_code(
                 root=files("src"),
-                name=f"CODE_{config.general.run_name}",
+                name=asset_name,
             )
 
             msgs.append(
-                "\nSource code on wandb at "
+                "Source code on wandb at "
                 + multiline(
                     f"""
                     https://wandb.ai
                     /{wandb.run.entity}
                     /{wandb.run.project}
                     /artifacts/code
-                    /CODE_{config.general.run_name}/v0
+                    /{asset_name}/v0
                     """,
                     is_url=True,
                 )
             )
         else:
-            msgs.append("\nNOT saving source code on wandb.")
+            msgs.append("NOT saving source code on wandb.")
+
+        msgs.append("Finished setting up wandb.")
 
     else:
         msgs.append("NOT logging to wandb.")

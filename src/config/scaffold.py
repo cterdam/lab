@@ -15,13 +15,13 @@ __all__ = [
 def scaffold(config: LabConfig):
     """Process config options that require setup."""
 
-    # Collect msgs to be logged while logger is not set up
+    # Collect logging msgs to emit once logger is set up
     msgs = ["Beginning run.", ""]
 
     # Set up run name
     if config.general.run_identifier:
         config.general.run_name += "-" + get_unique_id()
-        msgs.append("Appending unique identifier to run name.")
+        msgs.append("Unique identifier appended to run name.")
     else:
         msgs.append("NOT appending unique identifier to run name.")
     msgs.append(f"Run name set to {repr(config.general.run_name)}")
@@ -44,14 +44,15 @@ def scaffold(config: LabConfig):
     msgs.append("")
     msgs.extend(update_logger(logger, config))
 
-    # Logger is set up, release all msgs so far
+    # Logger is set up, emit all msgs so far
     logger.trace("\n".join(msgs))
 
-    # ANY OTHER STEP & CAN LOG BELOW THIS LINE ----------------------------------------
+    # ANY OTHER STEP & CAN USE LOGGER BELOW THIS LINE ---------------------------------
 
     # Snapshot environment
-    #   - log down python ver, libraries ver, and git hash
-    #   - warn about saving source code if there is any uncommitted edit
+    #   - python ver, libraries ver, git hash and any uncommitted edits, username, host
+    #     , torch devices
+    #   - ram, disk space
 
     # Set up random state
     get_random_state_setter(config, logger)()

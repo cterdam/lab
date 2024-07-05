@@ -1,5 +1,7 @@
-from .get_logger import get_logger
-from .update_logger import update_logger
+from .lab_logger import LabLogger
 
+__all__ = [
+    "logger",
+]
 
-logger = get_logger()
+logger = LabLogger()

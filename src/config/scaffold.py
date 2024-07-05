@@ -2,7 +2,7 @@
 
 from importlib.resources import files
 
-from src.log import logger, update_logger
+from src.log import logger
 from src.util import get_random_state_setter, get_unique_id
 
 from .lab_config import LabConfig
@@ -42,7 +42,8 @@ def scaffold(config: LabConfig):
 
     # Set up logger
     msgs.append("")
-    msgs.extend(update_logger(logger, config))
+    logger_setup_msgs = logger.setup(config)
+    msgs.extend(logger_setup_msgs)
 
     # Logger is set up, emit all msgs so far
     logger.trace("\n".join(msgs))

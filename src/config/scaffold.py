@@ -3,7 +3,8 @@
 from importlib.resources import files
 
 from src.log import logger
-from src.util import get_random_state_setter, get_unique_id
+from src.util import get_unique_id
+from src.util.setting_up import get_random_state_setter
 
 from .lab_config import LabConfig
 
@@ -38,7 +39,7 @@ def scaffold(config: LabConfig):
     config.general.out_dir = config.general.out_dir.resolve()
     msgs.append(f"Out dir set to {config.general.out_dir}")
 
-    # ONLY STEPS CONCERNING LOGGER ABOVE THIS LINE ------------------------------------
+    # ONLY PREREQUISITES FOR LOGGING ABOVE THIS LINE ----------------------------------
 
     # Set up logger
     msgs.append("")
@@ -50,13 +51,8 @@ def scaffold(config: LabConfig):
 
     # ANY OTHER STEP & CAN USE LOGGER BELOW THIS LINE ---------------------------------
 
-    # Snapshot environment
-    #   - python ver, libraries ver, git hash and any uncommitted edits, username, host
-    #     , torch devices
-    #   - ram, disk space
-
     # Set up random state
-    get_random_state_setter(config, logger)()
+    get_random_state_setter(config)()
 
     # Log setup msgs and resultant configs
     logger.info("Finished setting up all configs.\n" + str(config))

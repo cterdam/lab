@@ -1,10 +1,8 @@
 from datetime import datetime, timezone
 import getpass
-import os
-import random
 import textwrap
 from types import NoneType, UnionType
-from typing import Any, Callable, Literal, Type, Union, _UnionGenericAlias, get_args
+from typing import Any, Literal, Type, Union, _UnionGenericAlias, get_args
 
 import ulid
 from yaml import safe_load
@@ -17,7 +15,6 @@ __all__ = [
     "load_yaml_var",
     "get_type_name",
     "denonify",
-    "get_random_state_setter",
     "get_non_special_regex",
 ]
 
@@ -82,103 +79,6 @@ def denonify(ut: UnionType) -> NoneType | Type | UnionType:
             return t
         case _:
             return Union[tuple(non_none_types)]
-
-
-def get_random_state_setter(config, logger) -> Callable[[], None]:
-    """Given the lab config, return a function that sets the random state.
-
-    Arguments:
-        config (LabConfig)
-
-    Returns (Callable[[], None]):
-        A function that sets the various random state according to the config.
-    """
-
-    ###################################################################################
-    # Lazy import on time-consuming imports
-    torch_args = (
-        config.random.torch_seed,
-        config.random.torch_backends_cudnn_benchmark,
-        config.random.torch_use_deterministic_algorithms,
-    )
-    if any([optval is not None for optval in torch_args]):
-        import torch
-    if config.random.numpy_seed is not None:
-        import numpy as np
-    ###################################################################################
-
-    def random_state_setter():
-
-        # Logging msgs for setting random state
-        msgs = ["Setting up random state."]
-
-        if config.random.python_seed is not None:
-            random.seed(config.random.python_seed)
-            msgs.append(f"Python random seed set to {config.random.python_seed}.")
-        else:
-            msgs.append("NOT setting Python random seed.")
-
-        if config.random.numpy_seed is not None:
-            np.random.seed(config.random.numpy_seed)
-            msgs.append(f"Numpy random seed set to {config.random.numpy_seed}.")
-        else:
-            msgs.append("NOT setting Numpy random seed.")
-
-        if config.random.torch_seed is not None:
-            torch.manual_seed(config.random.torch_seed)
-            msgs.append(f"Torch manual seed set to {config.random.torch_seed}.")
-        else:
-            msgs.append("NOT setting torch manual seed.")
-
-        if config.random.torch_backends_cudnn_benchmark is not None:
-            torch.backends.cudnn.benchmark = (
-                config.random.torch_backends_cudnn_benchmark
-            )
-            msgs.append(
-                multiline(
-                    f"""
-                    Torch backends cudnn benchmark set to
-                    {config.random.torch_backends_cudnn_benchmark}.
-                    """
-                )
-            )
-        else:
-            msgs.append("NOT setting torch backends cudnn benchmark.")
-
-        if config.random.torch_use_deterministic_algorithms is not None:
-            torch.use_deterministic_algorithms(
-                config.random.torch_use_deterministic_algorithms
-            )
-            msgs.append(
-                multiline(
-                    f"""
-                    Torch deterministic algorithms use set to
-                    {config.random.torch_use_deterministic_algorithms}.
-                    """
-                )
-            )
-        else:
-            msgs.append("NOT setting torch use deterministic algorithms.")
-
-        if config.random.cublas_workspace_config is not None:
-            os.environ["CUBLAS_WORKSPACE_CONFIG"] = (
-                config.random.cublas_workspace_config
-            )
-            msgs.append(
-                multiline(
-                    f"""
-                    Cublas workspace config set to
-                    {config.random.cublas_workspace_config}
-                    """
-                )
-            )
-        else:
-            msgs.append("NOT setting cublas workspace config.")
-
-        msgs.append("Finished setting up random state.")
-        logger.trace("\n".join(msgs))
-
-    return random_state_setter
 
 
 def get_non_special_regex() -> str:

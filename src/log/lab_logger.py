@@ -25,13 +25,13 @@ class LabLogger:
     def __init__(self):
         """Initialize the logger and prepare for per-config setup."""
 
-        # Use loguru logger as logger
+        # Use loguru logger as internal logger
         self._core = logger
 
         # Remove default stderr handler
         self._core.remove()
 
-        # Make default info level not bold
+        # Make info level not bold
         self._core.level("INFO", color=logger.level("INFO").color.replace("<bold>", ""))
 
         # Define common log format for log msgs
@@ -58,11 +58,28 @@ class LabLogger:
         # If logging to wandb and saving code, will be assigned in setup
         self.wandb_code_artifact = None
 
+        # If logging to wandb and tabulating logs, will be assigned/used in setup
+        self.wandb_table_cols = [
+            "file",
+            "line",
+            "function",
+            "level",
+            "date",
+            "time",
+            "message",
+        ]
+        self.wandb_table_data = []
+
     def __getattr__(self, name):
         """Default any method calls not overridden in this class to loguru logger."""
         return getattr(self._core, name)
 
     def metric(self, metrics: Dict):
+        """Log metrics of a single step to appropriate formats and sinks.
+
+        By default, this formats the metrics and logs them to all sinks on level info.
+        If using wandb, metrics are also directly logged as dict to wandb.
+        """
         pass
 
     def setup(self, config: LabConfig) -> List[str]:
@@ -97,25 +114,25 @@ class LabLogger:
         else:
             msgs.append("NOT logging to local file.")
 
-        # Set up W&B
+        # Set up wandb
         if config.log.to_wandb:
 
             msgs.append("")
             msgs.append("Setting up wandb.")
 
-            # Must use shell env var to login to W&B
+            # Must use shell env var to login to wandb
             assert "WANDB_API_KEY" in os.environ
             msgs.append("Wandb API key detected in shell environment.")
             import wandb
 
-            # Use the latest version of W&B backend. See https://wandb.me/wandb-core
+            # Use the latest version of wandb backend. See https://wandb.me/wandb-core
             wandb.require("core")
 
-            # Suppress W&B outputs; they are so annoying
+            # Suppress wandb outputs; they are so annoying
             os.environ["WANDB_SILENT"] = "true"
             msgs.append("Wandb direct output suppressed.")
 
-            # Capture console output to W&B logs
+            # Capture console output to wandb logs
             if config.wandb.capture_console:
                 os.environ["WANDB_CONSOLE"] = "auto"
                 msgs.append("Capturing console output to wandb logs.")
@@ -123,7 +140,7 @@ class LabLogger:
                 os.environ["WANDB_CONSOLE"] = "off"
                 msgs.append("NOT capturing console output to wandb logs.")
 
-            # Create W&B run
+            # Create wandb run
             self.wandb_run = wandb.init(
                 entity=config.wandb.login_entity,
                 project=config.general.project_name,
@@ -151,7 +168,7 @@ class LabLogger:
                 )
             )
 
-            # Code saving
+            # Saving source code on wandb
             if config.wandb.save_code:
 
                 artifact_name = f"CODE_{config.general.run_name}"
@@ -176,6 +193,19 @@ class LabLogger:
                 )
             else:
                 msgs.append("NOT saving source code on wandb.")
+
+            # Using a table to store logs on wandb
+            if config.wandb.tabulate_logs:
+                # self.wandb_table = wandb.Table(columns=self.wandb_table_cols)
+                from .to_wandb_table import get_wandb_table_logger
+
+                to_wandb_table = get_wandb_table_logger(self)
+
+                self._core.add(to_wandb_table, level=self.log_level)
+
+                msgs.append(f"Tabulating logs in a wandb table.")
+            else:
+                msgs.append("NOT tabulating logs in a wandb table.")
 
             msgs.append("Finished setting up wandb.")
 

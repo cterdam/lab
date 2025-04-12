@@ -1,0 +1,9 @@
+# Data
+pydantic==2.10.6
+
+# Devtools
+black
+ipython
+isort
+pre-commit
+pytest

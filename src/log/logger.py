@@ -1,4 +1,5 @@
 import os
+import pathlib
 import sys
 
 from loguru import logger
@@ -56,3 +57,6 @@ class Logger:
     def __getattr__(self, name):
         """Default any attrs not overridden in this class to loguru logger."""
         return getattr(self._core, name)
+
+    def add_file_sink(self, filepath: pathlib.Path):
+        self._core.add(filepath, format=self._msg_format, level=self._log_level)

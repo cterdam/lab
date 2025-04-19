@@ -1,7 +1,8 @@
 import subprocess
-from test.util import PYTHON_FILES_ABSOLUTE, PYTHON_FILES_RELATIVE
 
 import pytest
+
+from src.util.constants import PYTHON_FILES_ABSOLUTE, PYTHON_FILES_RELATIVE
 
 
 @pytest.mark.style

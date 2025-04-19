@@ -1,5 +1,5 @@
-# Data
-pydantic==2.10.6
+# Log
+loguru==0.7.3
 
 # Devtools
 black

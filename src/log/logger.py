@@ -1,0 +1,58 @@
+import os
+import sys
+
+from loguru import logger
+
+from src.util.constants import PROJECT_ROOT
+
+
+class Logger:
+    """Overall logger class. Can write logs to stdout, local file, and more.
+
+    Use the logger in the same way as loguru's logger.
+        E.g. `logger.info(msg)`.
+    """
+
+    def __init__(self):
+
+        # Use loguru logger as internal logger
+        self._core = logger
+
+        # Use relative file path in logs
+        self._core = self._core.patch(
+            lambda record: record["extra"].update(
+                relpath=os.path.relpath(record["file"].path, PROJECT_ROOT)
+            )
+        )
+
+        # Make info level not bold
+        self._core.level("INFO", color=logger.level("INFO").color.replace("<bold>", ""))
+
+        # Define common log format for log msgs
+        self._msg_format = "\n".join(
+            [
+                "<dim>" + "=" * 88,
+                "{extra[relpath]}:{line} <{function}>",
+                "<level>[{level}]</> {time:YYYY-MM-DD HH:mm:ss!UTC}",
+                "-" * 88 + "</>",
+                "<level>{message}</>",
+                "",
+            ]
+        )
+
+        # Allow all logs for downstream sinks
+        self._log_level = 0
+
+        # Remove default stderr sink
+        self._core.remove()
+
+        # Add stdout sink
+        self._core.add(
+            sys.stdout,
+            format=self._msg_format,
+            level=self._log_level,
+        )
+
+    def __getattr__(self, name):
+        """Default any attrs not overridden in this class to loguru logger."""
+        return getattr(self._core, name)

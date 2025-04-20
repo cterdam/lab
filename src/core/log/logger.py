@@ -4,7 +4,7 @@ import sys
 
 from loguru import logger
 
-from src.util.constants import PROJECT_ROOT
+from src.core.util.constants import PROJECT_ROOT
 
 
 class Logger:

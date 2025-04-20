@@ -12,8 +12,8 @@ def get_project_root() -> pathlib.Path:
     _module_spec = importlib.util.find_spec("src")
     if _module_spec is None or _module_spec.origin is None:
         raise ModuleNotFoundError("Could not locate src module.")
-    _src_path: pathlib.Path = pathlib.Path(_module_spec.origin).parent
-    _project_root: pathlib.Path = _src_path.parent
+    _src_path = pathlib.Path(_module_spec.origin).parent
+    _project_root = _src_path.parent
     return _project_root
 
 

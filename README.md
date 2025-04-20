@@ -1,6 +1,6 @@
-# Python Best Practices
+# GenAI Best Practices
 
-Template Python repo.
+Template Python repo for GenAI projects.
 
 ## Setup
 
@@ -12,10 +12,20 @@ Template Python repo.
 - Install precommit:
   - `pre-commit install`
 
+## Run
+
+- Run main program
+  `make run`
+
 ## Test
 
 - Run test
   - `make test`
+
+## Cleanup
+
+- Run cleanup script
+  - `make clean`
 
 ## Contribute
 

@@ -5,6 +5,7 @@ import sys
 from loguru import logger
 
 from src.core.util.constants import PROJECT_ROOT
+from src.core.util.general import multiline
 
 
 class Logger:
@@ -26,18 +27,17 @@ class Logger:
             )
         )
 
-        # Make info level not bold
-        self._core.level("INFO", color=logger.level("INFO").color.replace("<bold>", ""))
-
         # Define common log format for log msgs
         self._msg_format = "\n".join(
             [
-                "<dim>" + "=" * 88,
-                "{extra[relpath]}:{line} <{function}>",
-                "<level>[{level}]</> {time:YYYY-MM-DD HH:mm:ss!UTC}",
-                "-" * 88 + "</>",
-                "<level>{message}</>",
-                "",
+                "<dim>" + "─" * 88,
+                multiline(
+                    """
+                    </><level>[{level}]</><dim> {time:YYYY-MM-DD HH:mm:ss!UTC}
+                    {extra[relpath]}:{line} <{function}></>
+                    """
+                ),
+                "{message}",
             ]
         )
 

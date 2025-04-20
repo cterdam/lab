@@ -13,7 +13,7 @@ def main():
     logger.add_file_sink(log_file_path)
     # Setup complete
 
-    logger.info("Setup complete.")
+    logger.success("Setup complete.")
     logger.info(f"Output in {output_dir.relative_to(PROJECT_ROOT)}")
 
 

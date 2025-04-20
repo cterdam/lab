@@ -1,0 +1,7 @@
+[tool.pytest.ini_options]
+markers = [
+    "style: test code style",
+]
+
+[tool.isort]
+profile = "black"

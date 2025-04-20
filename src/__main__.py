@@ -16,7 +16,7 @@ def main():
     # Setup complete
 
     logger.info("Setup complete.")
-    logger.info(f"Output in {output_dir}")
+    logger.info(f"Output in {output_dir.relative_to(PROJECT_ROOT)}")
 
 
 if __name__ == "__main__":

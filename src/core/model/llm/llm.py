@@ -1,0 +1,10 @@
+from src.core.model.llm.openai_llm import OpenAILLM
+
+
+def LLM(model_name: str):
+
+    match model_name.split("/")[0]:
+        case "openai":
+            return OpenAILLM(model_name)
+        case _:
+            raise ValueError

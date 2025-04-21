@@ -1,4 +1,5 @@
 from src.core.log import logger
+from src.core.model.llm import LLM
 from src.core.util.constants import PROJECT_ROOT
 from src.core.util.general import get_unique_id
 
@@ -15,6 +16,10 @@ def main():
 
     logger.success("Setup complete.")
     logger.info(f"Output in {output_dir.relative_to(PROJECT_ROOT)}")
+
+    llm = LLM("openai/gpt-4.1")
+    result = llm.generate("Hi!")
+    logger.info(f"Test LLM generate: {result}")
 
 
 if __name__ == "__main__":

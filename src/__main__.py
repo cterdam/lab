@@ -1,25 +1,36 @@
-from src.core.log import logger
+from src.core.ctx import ctx
+from src.core.log import log
 from src.core.model.llm import LLM
 from src.core.util.constants import PROJECT_ROOT
-from src.core.util.general import get_unique_id
+from src.core.util.general import get_unique_id, multiline
+
+
+def setup():
+    run_id: str = get_unique_id()
+    outdir = PROJECT_ROOT / "out" / run_id
+    outdir.mkdir(parents=True, exist_ok=True)
+    ctx.outdir = outdir
+    log_file_path = outdir / f"{run_id}.log"
+    log.add_file_sink(log_file_path)
 
 
 def main():
 
-    # Setup starts
-    run_id: str = get_unique_id()
-    output_dir = PROJECT_ROOT / "out" / run_id
-    output_dir.mkdir(parents=True, exist_ok=True)
-    log_file_path = output_dir / f"{run_id}.log"
-    logger.add_file_sink(log_file_path)
-    # Setup complete
+    setup()
 
-    logger.success("Setup complete.")
-    logger.info(f"Output in {output_dir.relative_to(PROJECT_ROOT)}")
+    log.success(
+        multiline(
+            f"""
+            Setup complete.
+            Output in {ctx.outdir.relative_to(PROJECT_ROOT)}
+            """,
+            keep_newline=True,
+        )
+    )
 
     llm = LLM("deepseek/deepseek-chat")
     result = llm.generate("Hi!")
-    logger.info(f"Test LLM generate: {result}")
+    log.info(f"Test LLM generate: {result}")
 
 
 if __name__ == "__main__":

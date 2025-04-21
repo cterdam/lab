@@ -1,6 +1,6 @@
 import abc
 
-from src.core.log import logger
+from src.core.log import log
 from src.core.util.general import multiline
 
 
@@ -8,7 +8,7 @@ class LLMBase(abc.ABC):
     """Base class for model providers."""
 
     def __init__(self, model_name: str):
-        logger.info(
+        log.info(
             multiline(
                 f"""
                 Starting LLM init.
@@ -19,7 +19,7 @@ class LLMBase(abc.ABC):
         )
         self._sub_init(model_name)
         self._model_name = model_name
-        logger.success(
+        log.success(
             multiline(
                 f"""
                 Finished LLM init.
@@ -34,7 +34,7 @@ class LLMBase(abc.ABC):
         pass
 
     def generate(self, prompt: str) -> str:
-        logger.info(
+        log.info(
             multiline(
                 f"""
                 Starting LLM generate.
@@ -46,7 +46,7 @@ class LLMBase(abc.ABC):
             )
         )
         result = self._sub_generate(prompt)
-        logger.success(
+        log.success(
             multiline(
                 f"""
                 Finished LLM generate.

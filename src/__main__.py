@@ -17,7 +17,7 @@ def main():
     logger.success("Setup complete.")
     logger.info(f"Output in {output_dir.relative_to(PROJECT_ROOT)}")
 
-    llm = LLM("openai/gpt-4.1")
+    llm = LLM("deepseek/deepseek-chat")
     result = llm.generate("Hi!")
     logger.info(f"Test LLM generate: {result}")
 

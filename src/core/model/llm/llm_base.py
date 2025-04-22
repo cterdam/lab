@@ -8,26 +8,10 @@ class LLMBase(abc.ABC):
     """Base class for model providers."""
 
     def __init__(self, model_name: str):
-        log.info(
-            multiline(
-                f"""
-                Starting LLM init.
-                Model name: {model_name}
-                """,
-                keep_newline=True,
-            )
-        )
+        log.info(f"Starting LLM init: {model_name}")
         self._sub_init(model_name)
         self._model_name = model_name
-        log.success(
-            multiline(
-                f"""
-                Finished LLM init.
-                Model name: {model_name}
-                """,
-                keep_newline=True,
-            )
-        )
+        log.success(f"Finished LLM init: {model_name}")
 
     @abc.abstractmethod
     def _sub_init(self, model_name: str):
@@ -37,8 +21,7 @@ class LLMBase(abc.ABC):
         log.info(
             multiline(
                 f"""
-                Starting LLM generate.
-                Model name: {self._model_name}
+                Starting LLM generate: {self._model_name}
                 Prompt:
                 {prompt}
                 """,
@@ -49,8 +32,7 @@ class LLMBase(abc.ABC):
         log.success(
             multiline(
                 f"""
-                Finished LLM generate.
-                Model name: {self._model_name}
+                Finished LLM generate: {self._model_name}
                 Prompt:
                 {prompt}
                 Result:

@@ -2,9 +2,22 @@ import getpass
 import importlib.util
 import pathlib
 import textwrap
+import typing
 from datetime import datetime, timezone
 
 import ulid
+
+
+def get_type_name(t) -> str:
+    """Given a type, infer the class name in str."""
+    if typing.get_origin(t) is typing.Literal:
+        # Literal type
+        return "Literal[" + ", ".join(str(arg) for arg in typing.get_args(t)) + "]"
+    elif hasattr(t, "__name__"):
+        # Primitive type
+        return t.__name__
+    else:
+        return str(t)
 
 
 def get_project_root() -> pathlib.Path:

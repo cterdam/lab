@@ -10,4 +10,4 @@ def LLM(model_name: str):
         case "deepseek":
             return DeepSeekLLM(model_name)
         case _:
-            raise ValueError
+            raise ValueError(f"Unknown model name: {model_name}")

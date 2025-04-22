@@ -1,6 +1,6 @@
 import abc
 
-from src.core.log import log
+from src.core import log
 from src.core.util.general import multiline
 
 

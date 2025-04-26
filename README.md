@@ -15,7 +15,10 @@ Template Python repo for GenAI projects.
 ## Run
 
 - Run main program
-  `make run`
+  - `make run`
+
+- See all runnable tasks
+  - `python -m src -h`
 
 ## Test
 
@@ -26,6 +29,14 @@ Template Python repo for GenAI projects.
 
 - Run cleanup script
   - `make clean`
+
+## Extend
+
+- Steps to add a new task:
+  - Create dir with `cp -r src/tasks/dry_run src/tasks/<new_task_name>`
+  - Implement task in `main()` in `src/tasks/<new_task_name>/main.py`
+  - Add an option in the `task` Literal in `src/core/config.py`
+  - Add routing logic in `run_task()` in `src/__main__.py`
 
 ## Contribute
 

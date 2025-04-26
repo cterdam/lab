@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import Field
 
 from src.core.strict_data import StrictData
@@ -6,6 +8,14 @@ from src.core.util import multiline
 
 class Config(StrictData):
     """User-supplied static run config."""
+
+    task: Literal[
+        "dry_run",
+        "content_gen",
+    ] = Field(
+        default="dry_run",
+        description="Task to perform.",
+    )
 
     run_name: str | None = Field(
         default=None,

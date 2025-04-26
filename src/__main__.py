@@ -2,11 +2,14 @@ import argparse
 
 from src.core import cfg, ctx, log
 from src.core.constants import PROJECT_ROOT
-from src.core.model.llm import LLM
 from src.core.util import get_type_name, get_unique_id
 
 
-def parse_args_into_cfg():
+def parse_args():
+    """Parse and store args into cfg.
+
+    Do not log inside this func as the logger is not configured yet.
+    """
 
     # Define parser
     parser = argparse.ArgumentParser(
@@ -31,28 +34,30 @@ def parse_args_into_cfg():
             setattr(cfg, arg_name, arg_val)
 
 
-def setup():
-    """Parse args and prepare context."""
-
-    parse_args_into_cfg()
+def prepare_runtime():
+    """Prepare runtime context."""
 
     run_name = cfg.run_name or get_unique_id()
-
     ctx.out_dir = PROJECT_ROOT / "out" / run_name
     ctx.out_dir.mkdir(parents=True, exist_ok=True)
     log.add_file_sink(ctx.out_dir / "log.txt")
 
-    log.success("Setup complete.")
-    log.info(cfg.format_str())
+    log.success("Setup complete. Config opts:\n" + cfg.format_str())
     log.info(f"Output in {ctx.out_dir}")
 
 
-def main():
-    setup()
+def run_task():
+    match cfg.task:
+        case "dry_run":
+            from src.tasks.dry_run import main
 
-    llm = LLM("deepseek/deepseek-chat")
-    result = llm.generate("Hi!")
-    log.info(f"Test LLM generate: {result}")
+            main()
+
+
+def main():
+    parse_args()
+    prepare_runtime()
+    run_task()
 
 
 if __name__ == "__main__":

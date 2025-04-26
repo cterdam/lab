@@ -34,7 +34,7 @@ class Logger:
                 multiline(
                     """
                     </><level>[{level}]</><dim> {time:YYYY-MM-DD HH:mm:ss!UTC}
-                    {extra[relpath]}:{line} <{function}></>
+                    {extra[relpath]}:{line}</>
                     """
                 ),
                 "{message}",

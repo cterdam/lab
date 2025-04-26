@@ -1,4 +1,4 @@
-from src.core.util.general import get_project_root
+from src.core.util import get_project_root
 
 PROJECT_ROOT = get_project_root()
 PYTHON_FILES_ABSOLUTE = list(PROJECT_ROOT.rglob("*.py"))

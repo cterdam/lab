@@ -4,8 +4,8 @@ import sys
 
 from loguru import logger
 
-from src.core.util.constants import PROJECT_ROOT
-from src.core.util.general import multiline
+from src.core.constants import PROJECT_ROOT
+from src.core.util import multiline
 
 
 class Logger:

@@ -1,7 +1,7 @@
 import abc
 
 from src.core import log
-from src.core.util.general import multiline
+from src.core.util import multiline
 
 
 class LLMBase(abc.ABC):

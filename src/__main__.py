@@ -1,10 +1,9 @@
 import argparse
 
 from src.core import cfg, ctx, log
+from src.core.constants import PROJECT_ROOT
 from src.core.model.llm import LLM
-from src.core.util.constants import PROJECT_ROOT
-from src.core.util.data import ppformat
-from src.core.util.general import get_type_name, get_unique_id
+from src.core.util import get_type_name, get_unique_id
 
 
 def parse_args_into_cfg():
@@ -37,14 +36,15 @@ def setup():
 
     parse_args_into_cfg()
 
-    cfg.run_name = cfg.run_name or get_unique_id()
+    run_name = cfg.run_name or get_unique_id()
 
-    ctx.out_dir = PROJECT_ROOT / "out" / cfg.run_name
+    ctx.out_dir = PROJECT_ROOT / "out" / run_name
     ctx.out_dir.mkdir(parents=True, exist_ok=True)
     log.add_file_sink(ctx.out_dir / "log.txt")
 
     log.success("Setup complete.")
-    log.info(ppformat(cfg))
+    log.info(cfg.format_str())
+    log.info(f"Output in {ctx.out_dir}")
 
 
 def main():

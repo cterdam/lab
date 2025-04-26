@@ -1,18 +1,13 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
 
-from src.core.util.general import multiline
+from src.core.strict_data import StrictData
+from src.core.util import multiline
 
 
-class Config(BaseModel):
+class Config(StrictData):
     """User-supplied static run config."""
 
-    model_config = ConfigDict(
-        validate_default=False,
-        validate_assignment=True,
-        extra="forbid",
-    )
-
-    run_name: str = Field(  # pyright:ignore
+    run_name: str | None = Field(
         default=None,
         description=multiline(
             """

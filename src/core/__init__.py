@@ -1,3 +1,7 @@
-from src.core.config import config as cfg
-from src.core.context import context as ctx
-from src.core.log import logger as log
+from src.core.config import Config
+from src.core.context import Context
+from src.core.logger import Logger
+
+cfg = Config()
+ctx = Context()
+log = Logger()

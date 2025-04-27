@@ -1,6 +1,6 @@
-# GenAI Best Practices
+# GPT
 
-Template Python repo for GenAI projects.
+**G**eneral Ra**p**id Proto**t**yping.
 
 ## Setup
 
@@ -14,10 +14,10 @@ Template Python repo for GenAI projects.
 
 ## Run
 
-- Run main program
-  - `make run`
+- Run task
+  - `python -m src --task=<task_name>`
 
-- See all runnable tasks
+- See all options
   - `python -m src -h`
 
 ## Test
@@ -27,20 +27,25 @@ Template Python repo for GenAI projects.
 
 ## Cleanup
 
-- Run cleanup script
+- Clean pycache and run outputs
   - `make clean`
 
 ## Extend
 
-- Steps to add a new task:
+- To add a new config option:
+  - Add a field in `src/core/config.py`
+  - A CLI arg with the same name will be added automatically.
+    The parsed value will be in `cfg`.
+
+- To add a new task:
   - Create dir with `cp -r src/tasks/dry_run src/tasks/<new_task_name>`
   - Implement task in `main()` in `src/tasks/<new_task_name>/main.py`
-  - Add an option in the `task` Literal in `src/core/config.py`
-  - Add routing logic in `run_task()` in `src/__main__.py`
+  - Add an option in the `task` Literal field in `src/core/config.py`
+  - Add a branching case in `run_task()` in `src/__main__.py`
 
 ## Contribute
 
-- The pre-commit hooks ensure code is formatted with
-  [black](https://github.com/psf/black) before submitting.  This helps by
-  producing the smallest possible diff.
+- Use [black](https://github.com/psf/black) and
+  [isort](https://github.com/PyCQA/isort) for Python files. This is enforced
+  with precommit hooks.
 - Commit messages should start with tags. E.g. `[model] add Anthropic provider`

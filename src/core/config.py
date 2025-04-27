@@ -14,7 +14,11 @@ class Config(StrictData):
         "content_gen",
     ] = Field(
         default="dry_run",
-        description="Task to perform.",
+        description=multiline(
+            """
+            Task to perform. All tasks are implemented under src/tasks.
+            """,
+        ),
     )
 
     run_name: str | None = Field(

@@ -1,10 +1,11 @@
 from openai import OpenAI
 
-from src.core.model.llm.llm_base import LLMBase
+from src.lib.model.txt import LmBase
 
 
-class OpenAILLM(LLMBase):
-    """OpenAI LLM.
+class OpenaiLm(LmBase):
+    """OpenAI LM.
+
 
     Models: https://platform.openai.com/docs/models
     Pricing: https://platform.openai.com/docs/pricing

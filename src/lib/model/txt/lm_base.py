@@ -4,8 +4,8 @@ from src.core import log
 from src.core.util import multiline
 
 
-class LLMBase(abc.ABC):
-    """Base class for model providers."""
+class LmBase(abc.ABC):
+    """Base class for language models."""
 
     def __init__(self, model_name: str):
         log.info(f"Starting LLM init: {model_name}")

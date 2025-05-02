@@ -49,7 +49,7 @@ def prepare_runtime():
 def run_task():
     match cfg.task:
         case "dry_run":
-            from src.tasks.dry_run import main
+            from src.task.dry_run import main
 
             main()
 

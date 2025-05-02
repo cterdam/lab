@@ -38,8 +38,8 @@
     The parsed value will be in `cfg`.
 
 - To add a new task:
-  - Create dir with `cp -r src/tasks/dry_run src/tasks/<new_task_name>`
-  - Implement task in `main()` in `src/tasks/<new_task_name>/main.py`
+  - Create dir with `cp -r src/task/dry_run src/task/<new_task_name>`
+  - Implement task in `main()` in `src/task/<new_task_name>/main.py`
   - Add an option in the `task` Literal field in `src/core/config.py`
   - Add a branching case in `run_task()` in `src/__main__.py`
 

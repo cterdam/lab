@@ -8,3 +8,6 @@ class Context(StrictData):
 
     # Directory to hold all output of the current run
     out_dir: pathlib.Path | None = None
+
+    # Directory to hold all logs of the current run
+    log_dir: pathlib.Path | None = None

@@ -1,6 +1,7 @@
 import os
 import pathlib
 import sys
+import typing
 
 from loguru import logger
 
@@ -28,7 +29,7 @@ class Logger:
         )
 
         # Define common log format for log msgs
-        self._msg_format = "\n".join(
+        self._log_format = "\n".join(
             [
                 "<dim>" + "─" * 88,
                 multiline(
@@ -48,15 +49,28 @@ class Logger:
         self._core.remove()
 
         # Add stdout sink
-        self._core.add(
-            sys.stdout,
-            format=self._msg_format,
-            level=self._log_level,
-        )
+        self.add_sink(sys.stdout)
 
     def __getattr__(self, name):
         """Default any attrs not overridden in this class to loguru logger."""
         return getattr(self._core, name)
 
-    def add_file_sink(self, filepath: pathlib.Path):
-        self._core.add(filepath, format=self._msg_format, level=self._log_level)
+    def add_sink(
+        self,
+        sink: pathlib.Path | typing.TextIO,
+        level: int | None = None,
+        log_format: str | None = None,
+        log_filter: typing.Callable | None = None,
+        serialize=False,
+    ):
+        if level is None:
+            level = self._log_level
+        if log_format is None:
+            log_format = self._log_format
+        self._core.add(
+            sink=sink,
+            level=level,
+            format=log_format,
+            filter=log_filter,
+            serialize=serialize,
+        )

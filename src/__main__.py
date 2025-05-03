@@ -37,11 +37,20 @@ def parse_args():
 def prepare_runtime():
     """Prepare runtime context."""
 
+    # Determine run name
     run_name = cfg.run_name or get_unique_id()
+
+    # Make output directory
     ctx.out_dir = PROJECT_ROOT / "out" / run_name
     ctx.out_dir.mkdir(parents=True, exist_ok=True)
-    log.add_file_sink(ctx.out_dir / "log.txt")
 
+    # Make logs
+    ctx.log_dir = ctx.out_dir / "log"
+    ctx.log_dir.mkdir(parents=True, exist_ok=True)
+    log.add_sink(ctx.log_dir / "all.txt")
+    log.add_sink(ctx.log_dir / "all.jsonl", serialize=True)
+
+    # Setup complete, logger ready
     log.success("Setup complete. Config opts:\n" + cfg.format_str())
     log.info(f"Output in {ctx.out_dir}")
 

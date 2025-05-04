@@ -7,7 +7,7 @@ class StrictData(BaseModel):
     """Dataclass with strict guarantees."""
 
     model_config = ConfigDict(
-        validate_default=True,
+        validate_default=False,
         validate_assignment=True,
         extra="forbid",
     )

@@ -16,7 +16,7 @@ class Config(StrictData):
         default="dry_run",
         description=multiline(
             """
-            Task to perform. All tasks are implemented under src/tasks.
+            Task to perform. All tasks are implemented under src/task.
             """,
         ),
     )

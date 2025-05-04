@@ -1,7 +1,10 @@
 import argparse
+import importlib
+import sys
 
-from src.core import cfg, ctx, log
+from src import cfg, ctx
 from src.core.constants import PROJECT_ROOT
+from src.core.logger import Logger
 from src.core.util import get_type_name, get_unique_id
 
 
@@ -40,15 +43,19 @@ def prepare_runtime():
     # Determine run name
     run_name = cfg.run_name or get_unique_id()
 
-    # Make output directory
+    # Make out dir
     ctx.out_dir = PROJECT_ROOT / "out" / run_name
     ctx.out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Make logs
-    ctx.log_dir = ctx.out_dir / "log"
-    ctx.log_dir.mkdir(parents=True, exist_ok=True)
-    log.add_sink(ctx.log_dir / "all.txt")
-    log.add_sink(ctx.log_dir / "all.jsonl", serialize=True)
+    # Configure root logger
+    log = Logger(name="root")
+    log.remove(0)
+    log.add_sink(sys.stdout)
+    log.add_sink(ctx.out_dir / Logger.namespace_part / "all.txt")
+    log.add_sink(ctx.out_dir / Logger.namespace_part / "all.jsonl", serialize=True)
+
+    # Inject logger to src
+    importlib.import_module("src").log = log  # pyright:ignore
 
     # Setup complete, logger ready
     log.success("Setup complete. Config opts:\n" + cfg.format_str())

@@ -1,59 +1,90 @@
 import os
 import pathlib
-import sys
 import typing
 
-from loguru import logger
+import loguru
 
 from src.core.constants import PROJECT_ROOT
 from src.core.util import multiline
 
 
 class Logger:
-    """Overall logger class. Can write logs to stdout, local file, and more.
+    """Overall base class for anything that keeps its own log file.
 
-    Use the logger in the same way as loguru's logger.
-        E.g. `logger.info(msg)`.
+    Can write logs to stdout, local file, and more via the `log` attribute.
+        E.g. `player.log.info(msg)`.
     """
 
-    def __init__(self):
+    # Since this base class is the highest in MRO, this will be the log dir name
+    # Each descendant class overriding this value will create a dir layer inside
+    namespace_part = "log"
 
-        # Use loguru logger as internal logger
-        self._core = logger
+    # Reject duplicate logger IDs
+    registered_logger_ids = set()
 
-        # Use relative file path in logs
-        self._core = self._core.patch(
-            lambda record: record["extra"].update(
-                relpath=os.path.relpath(record["file"].path, PROJECT_ROOT)
-            )
+    # Use loguru logger with relative path
+    _logger = loguru.logger.patch(
+        lambda record: record["extra"].update(
+            relpath=os.path.relpath(record["file"].path, PROJECT_ROOT)
+        )
+    )
+
+    # Allow all logs for downstream sinks
+    log_level = 0
+
+    # Define common log format for log msgs
+    log_format = "\n".join(
+        [
+            "<dim>" + "─" * 88,
+            multiline(
+                """
+                </><level>[{level:.4}]</><dim> {time:YYYY-MM-DD HH:mm:ss!UTC}
+                <{extra[logger_id]}> {extra[relpath]}:{line} </>
+                """
+            ),
+            "{message}",
+        ]
+    )
+
+    def __init__(self, name: str | None = None, *args, **kwargs):
+
+        # Lazy import to avoid circular import problem
+        from src import ctx
+
+        # Build up namespace from class hierarchy
+        _namespace = [
+            cls.namespace_part
+            for cls in reversed(self.__class__.__mro__)
+            if getattr(cls, "namespace_part", None)
+        ]
+
+        # Make dir to hold self log
+        _namespace_dir = ctx.out_dir.joinpath(*_namespace)
+        _namespace_dir.mkdir(parents=True, exist_ok=True)
+
+        # Bind unique ID for this logger
+        self._logger_id = f"{'.'.join(_namespace)}:{name}"
+        if self._logger_id in self.registered_logger_ids:
+            raise ValueError(f"Duplicate logger ID: {self._logger_id}")
+        self.registered_logger_ids.add(self._logger_id)
+        self.log = self._logger.bind(logger_id=self._logger_id)
+
+        # Add file sinks
+        self.add_sink(
+            _namespace_dir / f"{name}.txt",
+            log_filter=lambda record: record["extra"]["logger_id"] == self._logger_id,
+        )
+        self.add_sink(
+            _namespace_dir / f"{name}.jsonl",
+            log_filter=lambda record: record["extra"]["logger_id"] == self._logger_id,
+            serialize=True,
         )
 
-        # Define common log format for log msgs
-        self._log_format = "\n".join(
-            [
-                "<dim>" + "─" * 88,
-                multiline(
-                    """
-                    </><level>[{level}]</><dim> {time:YYYY-MM-DD HH:mm:ss!UTC}
-                    {extra[relpath]}:{line}</>
-                    """
-                ),
-                "{message}",
-            ]
-        )
-
-        # Allow all logs for downstream sinks
-        self._log_level = 0
-
-        # Remove default stderr sink
-        self._core.remove()
-
-        # Add stdout sink
-        self.add_sink(sys.stdout)
+        super().__init__(*args, **kwargs)
 
     def __getattr__(self, name):
-        """Default any attrs not overridden in this class to loguru logger."""
-        return getattr(self._core, name)
+        """default any attrs not overridden in this class to loguru logger."""
+        return getattr(self.log, name)
 
     def add_sink(
         self,
@@ -62,15 +93,11 @@ class Logger:
         log_format: str | None = None,
         log_filter: typing.Callable | None = None,
         serialize=False,
-    ):
-        if level is None:
-            level = self._log_level
-        if log_format is None:
-            log_format = self._log_format
-        self._core.add(
+    ) -> int:
+        return self.log.add(
             sink=sink,
-            level=level,
-            format=log_format,
+            level=level or self.log_level,
+            format=log_format or self.log_format,
             filter=log_filter,
             serialize=serialize,
         )

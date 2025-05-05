@@ -3,8 +3,8 @@ import importlib
 import sys
 
 from src import cfg, ctx
+from src.core import Logger
 from src.core.constants import PROJECT_ROOT
-from src.core.logger import Logger
 from src.core.util import get_type_name, get_unique_id
 
 

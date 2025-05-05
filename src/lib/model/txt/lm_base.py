@@ -1,6 +1,5 @@
 import abc
 
-from src import log
 from src.core.util import multiline
 from src.lib.model import ModelBase
 
@@ -11,7 +10,7 @@ class LmBase(ModelBase):
     namespace_part = "txt"
 
     def gen(self, prompt: str) -> str:
-        log.info(
+        self.log.info(
             multiline(
                 f"""
                 Starting LM generate: {self._model_name}
@@ -22,7 +21,7 @@ class LmBase(ModelBase):
             )
         )
         result = self._sub_gen(prompt)
-        log.success(
+        self.log.success(
             multiline(
                 f"""
                 Finished LM generate: {self._model_name}

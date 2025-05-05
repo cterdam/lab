@@ -1,9 +1,9 @@
-from src.core.config import Config
-from src.core.context import Context
 from src.core.logger import Logger
+from src.core.run_config import RunConfig
+from src.core.run_context import RunContext
 
-cfg = Config()
-ctx = Context()
+cfg = RunConfig()
+ctx = RunContext()
 log: Logger = None  # pyright:ignore
 
-del Config, Context, Logger
+del RunConfig, RunContext, Logger

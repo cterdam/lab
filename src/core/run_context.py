@@ -1,9 +1,9 @@
 import pathlib
 
-from src.core.strict_data import StrictData
+from src.core.config import Config
 
 
-class Context(StrictData):
+class RunContext(Config):
     """Run-level dynamic context info."""
 
     # Dir to hold all outputs of the current run

@@ -1,32 +1,17 @@
-from typing import Literal
+from pprint import pformat
 
-from pydantic import Field
-
-from src.core.strict_data import StrictData
-from src.core.util import multiline
+from pydantic import BaseModel, ConfigDict
 
 
-class Config(StrictData):
-    """User-supplied static run config."""
+class Config(BaseModel):
+    """Base dataclass with strict guarantees."""
 
-    task: Literal[
-        "dry_run",
-        "content_gen",
-    ] = Field(
-        default="dry_run",
-        description=multiline(
-            """
-            Task to perform. All tasks are implemented under src/task.
-            """,
-        ),
+    model_config = ConfigDict(
+        validate_default=False,
+        validate_assignment=True,
+        extra="forbid",
     )
 
-    run_name: str | None = Field(
-        default=None,
-        description=multiline(
-            """
-            Name of the current run which will also used as output dir under
-            `out/`. If empty, a unique run name will be generated in its place.
-            """
-        ),
-    )
+    def format_str(self) -> str:
+        """Format contents as pretty string."""
+        return pformat(self.model_dump())

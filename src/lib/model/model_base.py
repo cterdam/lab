@@ -1,6 +1,5 @@
 import abc
 
-from src import log
 from src.core import Logger
 from src.core.util import as_filename
 
@@ -22,10 +21,10 @@ class ModelBase(abc.ABC, Logger):
             log_name=log_name or as_filename(model_name),
             **kwargs,
         )
-        log.info(f"Starting model init: {model_name}")
+        self.log.info(f"Starting model init: {model_name}")
         self._sub_init(model_name)
         self._model_name = model_name
-        log.success(f"Finished model init: {model_name}")
+        self.log.success(f"Finished model init: {model_name}")
 
     @abc.abstractmethod
     def _sub_init(self, model_name: str):

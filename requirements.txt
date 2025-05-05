@@ -1,5 +1,9 @@
 # Data
 pydantic==2.10.6
+ulid-py==1.1.0
+
+# Model
+openai==1.77.0
 
 # Log
 loguru==0.7.3

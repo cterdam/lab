@@ -20,7 +20,7 @@ class LmBase(ModelBase):
                 - Params:
                 {params}
                 """,
-                keep_newline=True,
+                oneline=False,
             ),
             model_name=self._model_name,
             params=params.format_str(indent=INDENT),
@@ -35,7 +35,7 @@ class LmBase(ModelBase):
                 - Result:
                 {result}
                 """,
-                keep_newline=True,
+                oneline=False,
             ),
             model_name=self._model_name,
             params=params.format_str(indent=INDENT),

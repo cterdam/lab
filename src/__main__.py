@@ -65,7 +65,7 @@ def prepare_runtime():
             - Config opts:
             {cfg}
             """,
-            keep_newline=True,
+            oneline=False,
         ),
         cfg=cfg.format_str(indent=INDENT),
     )

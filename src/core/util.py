@@ -40,12 +40,12 @@ def get_unique_id() -> str:
     return _unique_id
 
 
-def multiline(s: str, keep_newline: bool = False, is_url: bool = False) -> str:
+def multiline(s: str, oneline: bool = True, is_url: bool = False) -> str:
     """Correctly connect a multiline string.
 
     Args:
         s (str): A string, usually formed with three double quotes.
-        keep_newline (bool): Whether to keep newline characters in the string.
+        oneline (bool): Whether to remove all line breaks in the result.
         is_url (bool): Whether to delete spaces formed at line connections.
 
     Returns:
@@ -53,7 +53,7 @@ def multiline(s: str, keep_newline: bool = False, is_url: bool = False) -> str:
         each line in the original string.
     """
     result = textwrap.dedent(s)
-    if not keep_newline:
+    if oneline:
         result = result.replace("\n", " ")
     if is_url:
         result = result.replace(" ", "")

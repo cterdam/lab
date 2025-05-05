@@ -3,8 +3,8 @@ import abc
 from src.core.constants import INDENT
 from src.core.util import multiline
 from src.lib.model import ModelBase
-from src.lib.model.txt.lm_gen_params import LmGenParams
-from src.lib.model.txt.lm_gen_result import LmGenResult
+from src.lib.model.txt.gentxt_params import GentxtParams
+from src.lib.model.txt.gentxt_result import GentxtResult
 
 
 class LmBase(ModelBase):
@@ -12,7 +12,7 @@ class LmBase(ModelBase):
 
     namespace_part = "txt"
 
-    def gentxt(self, params: LmGenParams) -> LmGenResult:
+    def gentxt(self, params: GentxtParams) -> GentxtResult:
         self.log.info(
             multiline(
                 """
@@ -44,5 +44,5 @@ class LmBase(ModelBase):
         return result
 
     @abc.abstractmethod
-    def _sub_gentxt(self, params: LmGenParams) -> LmGenResult:
+    def _sub_gentxt(self, params: GentxtParams) -> GentxtResult:
         pass

@@ -4,7 +4,7 @@ from src.core import Config
 from src.core.util import multiline
 
 
-class LmGenParams(Config):
+class GentxtParams(Config):
     """Parameters for language model generation."""
 
     system_prompt: str | None = Field(

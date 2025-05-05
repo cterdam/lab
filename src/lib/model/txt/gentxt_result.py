@@ -4,7 +4,7 @@ from src.core import Config
 from src.core.util import multiline
 
 
-class LmGenResult(Config):
+class GentxtResult(Config):
     """Result from language model generation."""
 
     output: str = Field(

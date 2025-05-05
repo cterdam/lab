@@ -16,8 +16,8 @@ class Logger:
     """
 
     # Since this base class is the highest in MRO, this will be the log dir name
-    # Each descendant class overriding this value will create a dir layer inside
-    namespace_part = "log"
+    # Each descendant class can create a dir layer by setting this str
+    namespace_part: str = "log"
 
     # Reject duplicate logger IDs
     registered_logger_ids = set()
@@ -46,16 +46,21 @@ class Logger:
         ]
     )
 
-    def __init__(self, name: str | None = None, *args, **kwargs):
+    def __init__(self, log_name: str, *args, **kwargs):
+        """Initialize the logger.
+
+        Args:
+            log_name (str): name of the file holding all logs from self.
+        """
 
         # Lazy import to avoid circular import problem
         from src import ctx
 
         # Build up namespace from class hierarchy
         _namespace = [
-            cls.namespace_part
+            part
             for cls in reversed(self.__class__.__mro__)
-            if getattr(cls, "namespace_part", None)
+            if (part := cls.__dict__.get("namespace_part"))
         ]
 
         # Make dir to hold self log
@@ -63,7 +68,7 @@ class Logger:
         _namespace_dir.mkdir(parents=True, exist_ok=True)
 
         # Bind unique ID for this logger
-        self._logger_id = f"{'.'.join(_namespace)}:{name}"
+        self._logger_id = f"{'.'.join(_namespace)}:{log_name}"
         if self._logger_id in self.registered_logger_ids:
             raise ValueError(f"Duplicate logger ID: {self._logger_id}")
         self.registered_logger_ids.add(self._logger_id)
@@ -71,11 +76,11 @@ class Logger:
 
         # Add file sinks
         self.add_sink(
-            _namespace_dir / f"{name}.txt",
+            _namespace_dir / f"{log_name}.txt",
             log_filter=lambda record: record["extra"]["logger_id"] == self._logger_id,
         )
         self.add_sink(
-            _namespace_dir / f"{name}.jsonl",
+            _namespace_dir / f"{log_name}.jsonl",
             log_filter=lambda record: record["extra"]["logger_id"] == self._logger_id,
             serialize=True,
         )

@@ -2,37 +2,30 @@ import abc
 
 from src import log
 from src.core.util import multiline
+from src.lib.model import ModelBase
 
 
-class LmBase(abc.ABC):
+class LmBase(ModelBase):
     """Base class for language models."""
 
-    def __init__(self, model_name: str):
-        log.info(f"Starting LLM init: {model_name}")
-        self._sub_init(model_name)
-        self._model_name = model_name
-        log.success(f"Finished LLM init: {model_name}")
+    namespace_part = "txt"
 
-    @abc.abstractmethod
-    def _sub_init(self, model_name: str):
-        pass
-
-    def generate(self, prompt: str) -> str:
+    def gen(self, prompt: str) -> str:
         log.info(
             multiline(
                 f"""
-                Starting LLM generate: {self._model_name}
+                Starting LM generate: {self._model_name}
                 Prompt:
                 {prompt}
                 """,
                 keep_newline=True,
             )
         )
-        result = self._sub_generate(prompt)
+        result = self._sub_gen(prompt)
         log.success(
             multiline(
                 f"""
-                Finished LLM generate: {self._model_name}
+                Finished LM generate: {self._model_name}
                 Prompt:
                 {prompt}
                 Result:
@@ -44,5 +37,5 @@ class LmBase(abc.ABC):
         return result
 
     @abc.abstractmethod
-    def _sub_generate(self, prompt: str) -> str:
+    def _sub_gen(self, prompt: str) -> str:
         pass

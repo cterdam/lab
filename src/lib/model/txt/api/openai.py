@@ -15,7 +15,7 @@ class OpenaiLm(LmBase):
         self._client = OpenAI()
         self._openai_model_name = model_name.split("/")[1]
 
-    def _sub_generate(self, prompt: str) -> str:
+    def _sub_gen(self, prompt: str) -> str:
         response = self._client.responses.create(
             model=self._openai_model_name,
             input=prompt,

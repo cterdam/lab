@@ -18,7 +18,7 @@ class DeepseekLm(LmBase):
         )
         self._deepseek_model_name = model_name.split("/")[1]
 
-    def _sub_generate(self, prompt: str) -> str:
+    def _sub_gen(self, prompt: str) -> str:
         response = self._client.chat.completions.create(
             model=self._deepseek_model_name,
             messages=[

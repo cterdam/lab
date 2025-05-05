@@ -48,7 +48,7 @@ def prepare_runtime():
     ctx.out_dir.mkdir(parents=True, exist_ok=True)
 
     # Configure root logger
-    log = Logger(name="root")
+    log = Logger(log_name="root")
     log.remove(0)
     log.add_sink(sys.stdout)
     log.add_sink(ctx.out_dir / Logger.namespace_part / "all.txt")

@@ -1,5 +1,6 @@
 from src.core.util import get_project_root
 
+INDENT = 4
 PROJECT_ROOT = get_project_root()
 PYTHON_FILES_ABSOLUTE = list(PROJECT_ROOT.rglob("*.py"))
 PYTHON_FILES_RELATIVE = [

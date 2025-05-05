@@ -1,7 +1,10 @@
 import abc
 
+from src.core.constants import INDENT
 from src.core.util import multiline
 from src.lib.model import ModelBase
+from src.lib.model.txt.lm_gen_params import LmGenParams
+from src.lib.model.txt.lm_gen_result import LmGenResult
 
 
 class LmBase(ModelBase):
@@ -9,32 +12,37 @@ class LmBase(ModelBase):
 
     namespace_part = "txt"
 
-    def gen(self, prompt: str) -> str:
+    def gentxt(self, params: LmGenParams) -> LmGenResult:
         self.log.info(
             multiline(
-                f"""
-                Starting LM generate: {self._model_name}
-                Prompt:
-                {prompt}
+                """
+                Starting LM generate: {model_name}
+                - Params:
+                {params}
                 """,
                 keep_newline=True,
-            )
+            ),
+            model_name=self._model_name,
+            params=params.format_str(indent=INDENT),
         )
-        result = self._sub_gen(prompt)
-        self.log.success(
+        result = self._sub_gentxt(params)
+        self.log.info(
             multiline(
-                f"""
-                Finished LM generate: {self._model_name}
-                Prompt:
-                {prompt}
-                Result:
+                """
+                Finished LM generate: {model_name}
+                - Params:
+                {params}
+                - Result:
                 {result}
                 """,
                 keep_newline=True,
-            )
+            ),
+            model_name=self._model_name,
+            params=params.format_str(indent=INDENT),
+            result=result.format_str(indent=INDENT),
         )
         return result
 
     @abc.abstractmethod
-    def _sub_gen(self, prompt: str) -> str:
+    def _sub_gentxt(self, params: LmGenParams) -> LmGenResult:
         pass

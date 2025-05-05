@@ -1,11 +1,10 @@
 from openai import OpenAI
 
-from src.lib.model.txt import LmBase
+from src.lib.model.txt import LmBase, LmGenParams, LmGenResult
 
 
 class OpenaiLm(LmBase):
     """OpenAI LM.
-
 
     Models: https://platform.openai.com/docs/models
     Pricing: https://platform.openai.com/docs/pricing
@@ -15,9 +14,18 @@ class OpenaiLm(LmBase):
         self._client = OpenAI()
         self._openai_model_name = model_name.split("/")[1]
 
-    def _sub_gen(self, prompt: str) -> str:
+    def _sub_gentxt(self, params: LmGenParams) -> LmGenResult:
         response = self._client.responses.create(
+            input=params.prompt,
             model=self._openai_model_name,
-            input=prompt,
+            instructions=params.system_prompt,
+            max_output_tokens=params.max_new_tokens,
+            temperature=params.temperature,
+            top_p=params.top_p,
         )
-        return response.output_text
+        result = LmGenResult(
+            output=response.output_text,
+            input_tokens=response.usage.input_tokens,  # pyright:ignore
+            output_tokens=response.usage.output_tokens,  # pyright:ignore
+        )
+        return result

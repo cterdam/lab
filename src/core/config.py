@@ -1,3 +1,4 @@
+import textwrap
 from pprint import pformat
 
 from pydantic import BaseModel, ConfigDict
@@ -12,6 +13,10 @@ class Config(BaseModel):
         extra="forbid",
     )
 
-    def format_str(self) -> str:
-        """Format contents as pretty string."""
-        return pformat(self.model_dump())
+    def format_str(self, indent=0) -> str:
+        """Format contents as pretty string.
+
+        Args:
+            indent (int): Number of whitespace to indent on all lines.
+        """
+        return textwrap.indent(pformat(self.model_dump()), " " * indent)

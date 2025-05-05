@@ -4,8 +4,8 @@ import sys
 
 from src import cfg, ctx
 from src.core import Logger
-from src.core.constants import PROJECT_ROOT
-from src.core.util import get_type_name, get_unique_id
+from src.core.constants import INDENT, PROJECT_ROOT
+from src.core.util import get_type_name, get_unique_id, multiline
 
 
 def parse_args():
@@ -58,7 +58,17 @@ def prepare_runtime():
     importlib.import_module("src").log = log  # pyright:ignore
 
     # Setup complete, logger ready
-    log.success("Setup complete. Config opts:\n" + cfg.format_str())
+    log.success(
+        multiline(
+            """
+            Setup complete.
+            - Config opts:
+            {cfg}
+            """,
+            keep_newline=True,
+        ),
+        cfg=cfg.format_str(indent=INDENT),
+    )
     log.info(f"Output in {ctx.out_dir}")
 
 

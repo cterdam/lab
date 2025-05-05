@@ -1,10 +1,10 @@
 import os
 import pathlib
 import typing
+from functools import cached_property
 
 import loguru
 
-from src.core.constants import PROJECT_ROOT
 from src.core.util import multiline
 
 
@@ -21,13 +21,6 @@ class Logger:
 
     # Reject duplicate logger IDs
     registered_logger_ids = set()
-
-    # Use loguru logger with relative path
-    _logger = loguru.logger.patch(
-        lambda record: record["extra"].update(
-            relpath=os.path.relpath(record["file"].path, PROJECT_ROOT)
-        )
-    )
 
     # Allow all logs for downstream sinks
     log_level = 0
@@ -63,18 +56,15 @@ class Logger:
             if (part := cls.__dict__.get("namespace_part"))
         ]
 
-        # Make dir to hold self log
-        _namespace_dir = ctx.out_dir.joinpath(*_namespace)
-        _namespace_dir.mkdir(parents=True, exist_ok=True)
-
         # Bind unique ID for this logger
         self._logger_id = f"{'.'.join(_namespace)}:{log_name}"
         if self._logger_id in self.registered_logger_ids:
             raise ValueError(f"Duplicate logger ID: {self._logger_id}")
         self.registered_logger_ids.add(self._logger_id)
-        self.log = self._logger.bind(logger_id=self._logger_id)
+        self.log = self._base_logger.bind(logger_id=self._logger_id)
 
         # Add file sinks
+        _namespace_dir = ctx.out_dir.joinpath(*_namespace)
         self.add_sink(
             _namespace_dir / f"{log_name}.txt",
             log_filter=lambda record: record["extra"]["logger_id"] == self._logger_id,
@@ -88,8 +78,21 @@ class Logger:
         super().__init__(*args, **kwargs)
 
     def __getattr__(self, name):
-        """default any attrs not overridden in this class to loguru logger."""
+        """Default any attrs not overridden in this class to loguru logger."""
         return getattr(self.log, name)
+
+    @cached_property
+    def _base_logger(self):
+        """All derivative loggers from this class should base on this logger."""
+        from src import ctx
+
+        # Use loguru logger with relative path
+        logger = loguru.logger.patch(
+            lambda record: record["extra"].update(
+                relpath=os.path.relpath(record["file"].path, ctx.repo_root)
+            )
+        )
+        return logger
 
     def add_sink(
         self,

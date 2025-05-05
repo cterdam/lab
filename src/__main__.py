@@ -4,8 +4,7 @@ import sys
 
 from src import cfg, ctx
 from src.core import Logger
-from src.core.constants import INDENT, PROJECT_ROOT
-from src.core.util import get_type_name, get_unique_id, multiline
+from src.core.util import get_type_name, multiline
 
 
 def parse_args():
@@ -37,15 +36,8 @@ def parse_args():
             setattr(cfg, arg_name, arg_val)
 
 
-def prepare_runtime():
+def set_logger():
     """Prepare runtime context."""
-
-    # Determine run name
-    run_name = cfg.run_name or get_unique_id()
-
-    # Make out dir
-    ctx.out_dir = PROJECT_ROOT / "out" / run_name
-    ctx.out_dir.mkdir(parents=True, exist_ok=True)
 
     # Configure root logger
     log = Logger(log_name="root")
@@ -67,7 +59,7 @@ def prepare_runtime():
             """,
             oneline=False,
         ),
-        cfg=cfg.format_str(indent=INDENT),
+        cfg=cfg.format_str(indent=ctx.indent),
     )
     log.info(f"Output in {ctx.out_dir}")
 
@@ -82,7 +74,7 @@ def run_task():
 
 def main():
     parse_args()
-    prepare_runtime()
+    set_logger()
     run_task()
 
 

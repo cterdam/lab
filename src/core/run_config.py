@@ -7,7 +7,7 @@ from src.core.util import multiline
 
 
 class RunConfig(Config):
-    """User-supplied static run config."""
+    """Config options for the run which are supplied by the user."""
 
     task: Literal[
         "dry_run",

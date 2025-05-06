@@ -43,7 +43,8 @@ class Logger:
         """Initialize the logger.
 
         Args:
-            log_name (str): name of the file holding all logs from self.
+            log_name (str): Name of the file holding all logs from self. Needs
+                to be unique in its namespace.
         """
 
         # Lazy import to avoid circular import problem

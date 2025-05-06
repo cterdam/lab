@@ -1,10 +1,6 @@
-import getpass
-import importlib.util
-from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
 
-import ulid
 from pydantic import ConfigDict, Field, computed_field
 
 from src.core.data_core import DataCore
@@ -23,6 +19,8 @@ class Environment(DataCore):
         """Root path of the repo.
         This is assumed to be the parent of the `src` folder.
         """
+        import importlib.util
+
         module_spec = importlib.util.find_spec("src")
         if module_spec is None or module_spec.origin is None:
             raise ModuleNotFoundError("Could not locate src module.")
@@ -53,6 +51,11 @@ class Environment(DataCore):
         if arg.run_name:
             return arg.run_name
         else:
+            import getpass
+            from datetime import datetime, timezone
+
+            import ulid
+
             username: str = getpass.getuser()[:4]
             timedate: str = datetime.now(timezone.utc).strftime("%y%m%d-%H%M%S")
             randhash: str = ulid.new().str[-4:]

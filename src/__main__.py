@@ -53,13 +53,12 @@ def set_logger():
     log.success(
         multiline(
             """
-            Setup complete.
-            - Config opts:
-            {cfg}
+            Finished setup with args:
+            {arg}
             """,
             oneline=False,
         ),
-        cfg=arg.format_str(indent=env.indent),
+        arg=arg.format_str(indent=env.indent),
     )
     log.info(f"Output in {env.out_dir}")
 

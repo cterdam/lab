@@ -1,9 +1,9 @@
 from openai import OpenAI
 
-from src.lib.model.txt import GentxtParams, GentxtResult, LmBase
+from src.lib.model.txt import GentxtParams, GentxtResult, LmBasis
 
 
-class OpenaiLm(LmBase):
+class OpenaiLm(LmBasis):
     """OpenAI LM.
 
     Models: https://platform.openai.com/docs/models

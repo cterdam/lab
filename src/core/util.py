@@ -4,7 +4,14 @@ import typing
 
 
 def get_type_name(t) -> str:
-    """Given a type, infer the class name in str."""
+    """Given a type, infer the class name in str.
+
+    Examples:
+    >>> get_type_name(int)
+    'int'
+    >>> get_type_name(Literal["red", "green"])
+    'Literal[red, green]'
+    """
     if typing.get_origin(t) is typing.Literal:
         # Literal type
         return "Literal[" + ", ".join(str(arg) for arg in typing.get_args(t)) + "]"
@@ -26,6 +33,21 @@ def multiline(s: str, oneline: bool = True, is_url: bool = False) -> str:
     Returns:
         A string formed by removing all common whitespaces near the start of
         each line in the original string.
+
+    Examples:
+        >>> block = \"\"\"\
+        ...     line one
+        ...     line two
+        ... \"\"\"
+        >>> multiline(block)
+        'line one line two'
+        >>> long_url = \"\"\"\
+        ...     https://example.com/
+        ...     some/very/long/
+        ...     path
+        ... \"\"\"
+        >>> multiline(long_url, is_url=True)
+        'https://example.com/some/very/long/path'
     """
     result = textwrap.dedent(s)
     if oneline:
@@ -39,31 +61,15 @@ def as_filename(name: str) -> str:
     """
     Convert any str into a filesystem‑safe filename.
 
-    Rules
-    -----
-    1. Keep only ASCII letters, digits, dash, and underscore.
-       Everything else – including dots, slashes, spaces – becomes “_”.
-    2. Collapse consecutive underscores.
-    3. Strip leading / trailing underscores.
-
-    Examples
-    --------
-    >>> to_safe_filename("openai/gpt-4.1")
-    'openai_gpt-4_1'
-    >>> to_safe_filename("mistral‑ai/mixtral‑8x7b‑inst/💡")
-    'mistral_ai_mixtral_8x7b_inst'
+    Examples:
+        >>> to_safe_filename("openai/gpt-4.1")
+        'openai_gpt-4_1'
+        >>> to_safe_filename("mistral‑ai/mixtral‑8x7b‑inst/💡")
+        'mistral_ai_mixtral_8x7b_inst'
     """
-
-    # Replace any char that is not A‑Z, a‑z, 0‑9, -, _
     out = re.sub(r"[^A-Za-z0-9_-]+", "_", name)
-
-    # Collapse runs of '_'
     out = re.sub(r"_+", "_", out)
-
-    # Trim leading / trailing '_'
     out = out.strip("_")
-
     if not out:
         raise ValueError(f"Invalid name: {name}")
-
     return out

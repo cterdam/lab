@@ -1,7 +1,7 @@
 import os
-import pathlib
 import typing
 from functools import cached_property
+from pathlib import Path
 
 import loguru
 
@@ -96,7 +96,7 @@ class Logger:
 
     def add_sink(
         self,
-        sink: pathlib.Path | typing.TextIO,
+        sink: Path | typing.TextIO,
         level: int | None = None,
         log_format: str | None = None,
         log_filter: typing.Callable | None = None,

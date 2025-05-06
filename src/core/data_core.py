@@ -19,4 +19,6 @@ class DataCore(BaseModel):
         Args:
             indent (int): Number of whitespace to indent on all lines.
         """
-        return textwrap.indent(pformat(self.model_dump()), " " * indent)
+        return textwrap.indent(
+            pformat(self.model_dump(), width=80 - indent), " " * indent
+        )

@@ -4,7 +4,7 @@ from src.core import Logger
 from src.core.util import as_filename
 
 
-class ModelBase(abc.ABC, Logger):
+class ModelBasis(abc.ABC, Logger):
     """Base class for models."""
 
     namespace_part = "model"

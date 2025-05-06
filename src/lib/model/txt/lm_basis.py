@@ -2,12 +2,12 @@ import abc
 
 from src import env
 from src.core.util import multiline
-from src.lib.model import ModelBase
+from src.lib.model import ModelBasis
 from src.lib.model.txt.gentxt_params import GentxtParams
 from src.lib.model.txt.gentxt_result import GentxtResult
 
 
-class LmBase(ModelBase):
+class LmBasis(ModelBasis):
     """Base class for language models."""
 
     namespace_part = "txt"

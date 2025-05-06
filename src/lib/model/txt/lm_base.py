@@ -1,6 +1,6 @@
 import abc
 
-from src import ctx
+from src import env
 from src.core.util import multiline
 from src.lib.model import ModelBase
 from src.lib.model.txt.gentxt_params import GentxtParams
@@ -23,7 +23,7 @@ class LmBase(ModelBase):
                 oneline=False,
             ),
             model_name=self._model_name,
-            params=params.format_str(indent=ctx.indent),
+            params=params.format_str(indent=env.indent),
         )
         result = self._sub_gentxt(params)
         self.log.info(
@@ -38,8 +38,8 @@ class LmBase(ModelBase):
                 oneline=False,
             ),
             model_name=self._model_name,
-            params=params.format_str(indent=ctx.indent),
-            result=result.format_str(indent=ctx.indent),
+            params=params.format_str(indent=env.indent),
+            result=result.format_str(indent=env.indent),
         )
         return result
 

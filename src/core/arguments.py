@@ -2,12 +2,12 @@ from typing import Literal
 
 from pydantic import Field
 
-from src.core.config import Config
+from src.core.data_core import DataCore
 from src.core.util import multiline
 
 
-class RunConfig(Config):
-    """Config options for the run which are supplied by the user."""
+class Arguments(DataCore):
+    """CLI args for the run which are supplied by the user."""
 
     task: Literal[
         "dry_run",

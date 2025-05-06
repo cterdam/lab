@@ -4,8 +4,8 @@ from pprint import pformat
 from pydantic import BaseModel, ConfigDict
 
 
-class Config(BaseModel):
-    """Base dataclass with strict guarantees."""
+class DataCore(BaseModel):
+    """Base dataclass with strict guarantees and handy properties."""
 
     model_config = ConfigDict(
         validate_default=True,

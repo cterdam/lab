@@ -47,7 +47,7 @@ class Logger:
         """
 
         # Lazy import to avoid circular import problem
-        from src import ctx
+        from src import env
 
         # Build up namespace from class hierarchy
         _namespace = [
@@ -64,7 +64,7 @@ class Logger:
         self.log = self._base_logger.bind(logger_id=self._logger_id)
 
         # Add file sinks
-        _namespace_dir = ctx.out_dir.joinpath(*_namespace)
+        _namespace_dir = env.out_dir.joinpath(*_namespace)
         self.add_sink(
             _namespace_dir / f"{log_name}.txt",
             log_filter=lambda record: record["extra"]["logger_id"] == self._logger_id,
@@ -84,12 +84,12 @@ class Logger:
     @cached_property
     def _base_logger(self):
         """All derivative loggers from this class should base on this logger."""
-        from src import ctx
+        from src import env
 
         # Use loguru logger with relative path
         logger = loguru.logger.patch(
             lambda record: record["extra"].update(
-                relpath=os.path.relpath(record["file"].path, ctx.repo_root)
+                relpath=os.path.relpath(record["file"].path, env.repo_root)
             )
         )
         return logger

@@ -1,10 +1,10 @@
 from pydantic import Field
 
-from src.core import Config
+from src.core import DataCore
 from src.core.util import multiline
 
 
-class GentxtResult(Config):
+class GentxtResult(DataCore):
     """Result from language model generation."""
 
     output: str = Field(

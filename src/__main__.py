@@ -2,7 +2,7 @@ import argparse
 import importlib
 import sys
 
-from src import cfg, ctx
+from src import arg, env
 from src.core import Logger
 from src.core.util import get_type_name, multiline
 
@@ -21,7 +21,7 @@ def parse_args():
     )
 
     # Parse args
-    for field_name, field_info in cfg.model_fields.items():
+    for field_name, field_info in arg.model_fields.items():
         parser.add_argument(
             f"--{field_name}",
             metavar=f"[{get_type_name(field_info.annotation)}]",
@@ -33,7 +33,7 @@ def parse_args():
     # Store into config
     for arg_name, arg_val in vars(parser.parse_args()).items():
         if arg_val is not None:
-            setattr(cfg, arg_name, arg_val)
+            setattr(arg, arg_name, arg_val)
 
 
 def set_logger():
@@ -43,8 +43,8 @@ def set_logger():
     log = Logger(log_name="root")
     log.remove(0)
     log.add_sink(sys.stdout)
-    log.add_sink(ctx.out_dir / Logger.namespace_part / "all.txt")
-    log.add_sink(ctx.out_dir / Logger.namespace_part / "all.jsonl", serialize=True)
+    log.add_sink(env.out_dir / Logger.namespace_part / "all.txt")
+    log.add_sink(env.out_dir / Logger.namespace_part / "all.jsonl", serialize=True)
 
     # Inject logger to src
     importlib.import_module("src").log = log  # pyright:ignore
@@ -59,13 +59,13 @@ def set_logger():
             """,
             oneline=False,
         ),
-        cfg=cfg.format_str(indent=ctx.indent),
+        cfg=arg.format_str(indent=env.indent),
     )
-    log.info(f"Output in {ctx.out_dir}")
+    log.info(f"Output in {env.out_dir}")
 
 
 def run_task():
-    match cfg.task:
+    match arg.task:
         case "dry_run":
             from src.task.dry_run import main
 

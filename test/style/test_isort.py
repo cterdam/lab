@@ -2,14 +2,14 @@ import subprocess
 
 import pytest
 
-from src import ctx
+from src import env
 
 
 @pytest.mark.style
 @pytest.mark.parametrize(
     "file_path",
-    ctx.py_files_abs,
-    ids=ctx.py_file_rel,
+    env.py_files_abs,
+    ids=env.py_file_rel,
 )
 def test_isort(file_path):
     result = subprocess.run(

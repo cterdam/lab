@@ -7,11 +7,11 @@ from functools import cached_property
 import ulid
 from pydantic import Field, computed_field
 
-from src.core.config import Config
+from src.core.data_core import DataCore
 from src.core.util import multiline
 
 
-class RunContext(Config):
+class Environment(DataCore):
     """Context info about the run which are not set by the user."""
 
     @computed_field
@@ -44,10 +44,10 @@ class RunContext(Config):
     @computed_field
     @cached_property
     def run_name(self) -> str:
-        from src import cfg
+        from src import arg
 
-        if cfg.run_name:
-            return cfg.run_name
+        if arg.run_name:
+            return arg.run_name
         else:
             username: str = getpass.getuser()[:4]
             timedate: str = datetime.now(timezone.utc).strftime("%y%m%d-%H%M%S")

@@ -4,7 +4,7 @@ from src.core import DataCore
 from src.core.util import multiline
 
 
-class GentxtParams(DataCore):
+class LmGentxtParams(DataCore):
     """Parameters for language model generation."""
 
     system_prompt: str | None = Field(

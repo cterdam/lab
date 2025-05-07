@@ -3,46 +3,39 @@ import abc
 from src import env
 from src.core.util import multiline
 from src.lib.model import ModelBasis
-from src.lib.model.txt.gentxt_params import GentxtParams
-from src.lib.model.txt.gentxt_result import GentxtResult
+from src.lib.model.txt.lm_gentxt_params import LmGentxtParams
+from src.lib.model.txt.lm_gentxt_result import LmGentxtResult
 
 
-class LmBasis(ModelBasis):
+class LmBasis(abc.ABC, ModelBasis):
     """Base class for language models."""
 
     namespace_part = "txt"
 
-    def gentxt(self, params: GentxtParams) -> GentxtResult:
+    def gentxt(self, params: LmGentxtParams) -> LmGentxtResult:
         self.log.info(
             multiline(
                 """
-                Starting LM generate: {model_name}
-                - Params:
+                Starting LM generate with params:
                 {params}
                 """,
                 oneline=False,
             ),
-            model_name=self._model_name,
             params=params.format_str(indent=env.indent),
         )
         result = self._sub_gentxt(params)
         self.log.info(
             multiline(
                 """
-                Finished LM generate: {model_name}
-                - Params:
-                {params}
-                - Result:
+                Finished LM generate with result:
                 {result}
                 """,
                 oneline=False,
             ),
-            model_name=self._model_name,
-            params=params.format_str(indent=env.indent),
             result=result.format_str(indent=env.indent),
         )
         return result
 
     @abc.abstractmethod
-    def _sub_gentxt(self, params: GentxtParams) -> GentxtResult:
+    def _sub_gentxt(self, params: LmGentxtParams) -> LmGentxtResult:
         pass

@@ -1,6 +1,7 @@
 import random
 from pathlib import Path
 
+from src.core import DataCore
 from src.core.util import multiline
 from src.lib.data import DataBasis
 
@@ -11,12 +12,13 @@ class WordBank(DataBasis):
     def __init__(self, log_name: str = "word_bank", *args, **kwargs):
         super().__init__(
             log_name=log_name,
+            params=DataCore(),
             *args,
             **kwargs,
         )
         self.words = []
         self.load_file()
-        self.log.info("Finished init")
+        self.log.debug("Finished init")
 
     def load_file(self, path: Path = Path("/usr/share/dict/words")):
         self.log.debug(f"Loading file {path}")

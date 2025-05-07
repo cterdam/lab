@@ -1,31 +1,28 @@
-import abc
+from src import env
+from src.core import DataCore, Logger
+from src.core.util import multiline
 
-from src.core import Logger
-from src.core.util import as_filename
 
-
-class ModelBasis(abc.ABC, Logger):
+class ModelBasis(Logger):
     """Base class for models."""
 
     namespace_part = "model"
 
     def __init__(
         self,
-        model_name: str,
-        log_name: str | None = None,
+        params: DataCore,
         *args,
         **kwargs,
     ):
-        super().__init__(
-            *args,
-            log_name=log_name or as_filename(model_name),
-            **kwargs,
+        super().__init__(*args, **kwargs)
+        self.log.debug(
+            multiline(
+                """
+                Starting {class_name} init with params:
+                {params}
+                """,
+                oneline=False,
+            ),
+            class_name=self.__class__.__name__,
+            params=params.format_str(indent=env.indent),
         )
-        self.log.info(f"Starting model init: {model_name}")
-        self._sub_init(model_name)
-        self._model_name = model_name
-        self.log.success(f"Finished model init: {model_name}")
-
-    @abc.abstractmethod
-    def _sub_init(self, model_name: str):
-        pass

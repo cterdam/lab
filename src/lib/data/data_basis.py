@@ -1,34 +1,28 @@
-import abc
-
 from src import env
 from src.core import DataCore, Logger
 from src.core.util import multiline
 
 
-class DataBasis(abc.ABC, Logger):
+class DataBasis(Logger):
     """Base class for data services."""
 
     namespace_part = "data"
 
     def __init__(
         self,
-        log_name: str,
-        init_params: DataCore = DataCore(),
+        params: DataCore,
         *args,
         **kwargs,
     ):
-        super().__init__(
-            *args,
-            log_name=log_name,
-            **kwargs,
-        )
+        super().__init__(*args, **kwargs)
         self.log.debug(
             multiline(
                 """
-                Starting data service init with params:
-                {init_params}
+                Starting {class_name} init with params:
+                {params}
                 """,
                 oneline=False,
             ),
-            init_params=init_params.format_str(indent=env.indent),
+            class_name=self.__class__.__name__,
+            params=params.format_str(indent=env.indent),
         )

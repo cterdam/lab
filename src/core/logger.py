@@ -11,13 +11,12 @@ from src.core.util import multiline
 class Logger:
     """Overall base class for anything that keeps its own log file.
 
-    Descendants inherit self.log,  a Loguru logger bound to a unique logger_id.
-    This can be used to write logs to stdout, local file, and more.
-        E.g. `player.log.info(msg)`.
-
+    Descendants inherit self.log, a Loguru logger bound to a unique logger_id.
+    This can be used to write logs to stdout and has its own file sink.
+        E.g. `player.log.info(msg)`
     """
 
-    # Each class in the MRO can add a namespace_part to its log directory path
+    # Each descendant class can add a layer in its log dir path by overriding
     namespace_part: str = "log"
 
     # Allow all logs for downstream sinks
@@ -39,12 +38,6 @@ class Logger:
 
     def __init__(self, *args, log_name: str, **kwargs):
         """Initialize this instance’s logger.
-
-        - Computes a unique `logger_id` from the MRO + `log_name`.
-        - Binds `self.log` to the shared patched Loguru logger.
-        - Adds two default file sinks under its namespace:
-             - `{log_name}.txt`
-             - `{log_name}.jsonl` (serialized)
 
         Args:
             log_name (str): Unique name for this instance’s log files.

@@ -11,9 +11,9 @@ class Arguments(DataCore):
 
     task: Literal[
         "dry_run",
-        "content_gen",
+        "demo",
     ] = Field(
-        default="dry_run",
+        default="demo",
         description=multiline(
             """
             Task to perform. All tasks are implemented under src/task.

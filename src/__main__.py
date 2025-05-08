@@ -70,6 +70,11 @@ def run_task():
 
             main()
 
+        case "demo":
+            from src.task.demo import main
+
+            main()
+
 
 def main():
     parse_args()

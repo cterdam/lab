@@ -1,6 +1,6 @@
 [tool.pytest.ini_options]
 markers = [
-    "style: test code style",
+    "net: uses internet connections",
 ]
 
 [tool.isort]

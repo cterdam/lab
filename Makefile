@@ -1,7 +1,7 @@
 .PHONY: test
 
 test:
-	pytest
+	pytest -n auto
 
 run:
 	python -m src

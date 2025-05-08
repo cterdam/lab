@@ -5,7 +5,6 @@ import pytest
 from src import env
 
 
-@pytest.mark.style
 @pytest.mark.parametrize(
     "file_path",
     env.py_files_abs,

@@ -14,3 +14,5 @@ ipython
 isort
 pre-commit
 pytest
+pytest-sugar
+pytest-xdist

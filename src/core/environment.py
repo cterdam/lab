@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pydantic import ConfigDict, Field, computed_field
 
+from src.core import Logger
 from src.core.data_core import DataCore
 from src.core.util import multiline
 
@@ -67,6 +68,15 @@ class Environment(DataCore):
     def out_dir(self) -> Path:
         """Dir to hold all outputs of the current run."""
         return self.repo_root / "out" / self.run_name
+
+    loggers: dict[str, Logger] = Field(
+        default=dict(),
+        description=multiline(
+            """
+            Maps each logger ID to the instance that has the ID.
+            """
+        ),
+    )
 
     indent: int = Field(
         default=4,

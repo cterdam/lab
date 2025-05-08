@@ -1,6 +1,6 @@
 import os
 import typing
-from functools import cached_property
+from functools import cache, partial
 from pathlib import Path
 
 import loguru
@@ -11,21 +11,19 @@ from src.core.util import multiline
 class Logger:
     """Overall base class for anything that keeps its own log file.
 
-    Can write logs to stdout, local file, and more via the `log` attribute.
+    Descendants inherit self.log,  a Loguru logger bound to a unique logger_id.
+    This can be used to write logs to stdout, local file, and more.
         E.g. `player.log.info(msg)`.
+
     """
 
-    # Since this base class is the highest in MRO, this will be the log dir name
-    # Each descendant class can create a dir layer by setting this str
+    # Each class in the MRO can add a namespace_part to its log directory path
     namespace_part: str = "log"
-
-    # Reject duplicate logger IDs
-    registered_logger_ids = set()
 
     # Allow all logs for downstream sinks
     log_level = 0
 
-    # Define common log format for log msgs
+    # Default log format
     log_format = "\n".join(
         [
             "<dim>" + "─" * 88,
@@ -39,12 +37,17 @@ class Logger:
         ]
     )
 
-    def __init__(self, log_name: str, *args, **kwargs):
-        """Initialize the logger.
+    def __init__(self, *args, log_name: str, **kwargs):
+        """Initialize this instance’s logger.
+
+        - Computes a unique `logger_id` from the MRO + `log_name`.
+        - Binds `self.log` to the shared patched Loguru logger.
+        - Adds two default file sinks under its namespace:
+             - `{log_name}.txt`
+             - `{log_name}.jsonl` (serialized)
 
         Args:
-            log_name (str): Name of the file holding all logs from self. Needs
-                to be unique in its namespace.
+            log_name (str): Unique name for this instance’s log files.
         """
 
         # Lazy import to avoid circular import problem
@@ -59,20 +62,21 @@ class Logger:
 
         # Bind unique ID for this logger
         self._logger_id = f"{'.'.join(_namespace)}:{log_name}"
-        if self._logger_id in self.registered_logger_ids:
+        if self._logger_id in env.loggers:
             raise ValueError(f"Duplicate logger ID: {self._logger_id}")
-        self.registered_logger_ids.add(self._logger_id)
-        self.log = self._base_logger.bind(logger_id=self._logger_id)
+        env.loggers[self._logger_id] = self
+        self.log = Logger._base_logger().bind(logger_id=self._logger_id)
 
         # Add file sinks
         _namespace_dir = env.out_dir.joinpath(*_namespace)
-        self.add_sink(
+        only_self = partial(Logger._only_id, logger_id=self._logger_id)
+        Logger.add_sink(
             _namespace_dir / f"{log_name}.txt",
-            log_filter=lambda record: record["extra"]["logger_id"] == self._logger_id,
+            log_filter=only_self,
         )
-        self.add_sink(
+        Logger.add_sink(
             _namespace_dir / f"{log_name}.jsonl",
-            log_filter=lambda record: record["extra"]["logger_id"] == self._logger_id,
+            log_filter=only_self,
             serialize=True,
         )
 
@@ -82,8 +86,9 @@ class Logger:
         """Default any attrs not overridden in this class to loguru logger."""
         return getattr(self.log, name)
 
-    @cached_property
-    def _base_logger(self):
+    @staticmethod
+    @cache
+    def _base_logger():
         """All derivative loggers from this class should base on this logger."""
         from src import env
 
@@ -95,18 +100,38 @@ class Logger:
         )
         return logger
 
+    @classmethod
     def add_sink(
-        self,
+        cls,
         sink: Path | typing.TextIO,
         level: int | None = None,
         log_format: str | None = None,
         log_filter: typing.Callable | None = None,
         serialize=False,
     ) -> int:
-        return self.log.add(
+        """Attach a sink to the underlying shared Loguru logger.
+
+        Returns:
+            An integer sink ID, which can later be used to remove the sink.
+        """
+        return cls._base_logger().add(
             sink=sink,
-            level=level or self.log_level,
-            format=log_format or self.log_format,
+            level=level or cls.log_level,
+            format=log_format or cls.log_format,
             filter=log_filter,
             serialize=serialize,
         )
+
+    @classmethod
+    def remove_sink(cls, sink_id: int) -> None:
+        """Remove a previously added sink from the shared logger.
+
+        Args:
+            sink_id (int): The integer handle returned by `add_sink`.
+        """
+        cls._base_logger().remove(sink_id)
+
+    @staticmethod
+    def _only_id(record, logger_id):
+        """Loguru filter: only allow records matching the given logger_id."""
+        return record["extra"]["logger_id"] == logger_id

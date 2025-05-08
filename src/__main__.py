@@ -39,14 +39,14 @@ def parse_args():
 def set_logger():
     """Prepare runtime context."""
 
-    # Configure root logger
-    log = Logger(log_name="root")
-    log.remove(0)
-    log.add_sink(sys.stdout)
-    log.add_sink(env.out_dir / Logger.namespace_part / "all.txt")
-    log.add_sink(env.out_dir / Logger.namespace_part / "all.jsonl", serialize=True)
+    # Configure default sinks
+    Logger.remove_sink(0)
+    Logger.add_sink(sys.stdout)
+    Logger.add_sink(env.out_dir / Logger.namespace_part / "all.txt")
+    Logger.add_sink(env.out_dir / Logger.namespace_part / "all.jsonl", serialize=True)
 
-    # Inject logger to src
+    # Inject root logger to src
+    log = Logger(log_name="root")
     importlib.import_module("src").log = log  # pyright:ignore
 
     # Setup complete, logger ready

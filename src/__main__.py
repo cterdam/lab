@@ -58,7 +58,7 @@ def set_logger():
             """,
             oneline=False,
         ),
-        arg=arg.format_str(indent=env.indent),
+        arg=arg,
     )
     log.info(f"Output in {env.out_dir}")
 

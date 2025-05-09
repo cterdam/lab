@@ -1,6 +1,7 @@
 from functools import cached_property
 from pathlib import Path
 
+import rich.pretty
 from pydantic import ConfigDict, Field, computed_field
 
 from src.core import Logger
@@ -86,3 +87,27 @@ class Environment(DataCore):
             """
         ),
     )
+
+    max_linelen: int = Field(
+        default=80,
+        description=multiline(
+            """
+            Maximum line length for string formatting.
+            """
+        ),
+    )
+
+    def repr(
+        self,
+        obj,
+        *,
+        max_width: int | None = None,
+        indent: int | None = None,
+    ):
+        """Format an arbitrary object for str output, using env defaults."""
+        return rich.pretty.pretty_repr(
+            obj,
+            max_width=max_width or self.max_linelen,
+            indent_size=indent or self.indent,
+            expand_all=True,
+        )

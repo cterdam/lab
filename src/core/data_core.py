@@ -1,6 +1,3 @@
-import textwrap
-from pprint import pformat
-
 from pydantic import BaseModel, ConfigDict
 
 
@@ -13,12 +10,7 @@ class DataCore(BaseModel):
         extra="forbid",
     )
 
-    def format_str(self, indent=0) -> str:
-        """Format contents as pretty string.
+    def __str__(self) -> str:
+        from src import env
 
-        Args:
-            indent (int): Number of whitespace to indent on all lines.
-        """
-        return textwrap.indent(
-            pformat(self.model_dump(), width=80 - indent), " " * indent
-        )
+        return env.repr(self)

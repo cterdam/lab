@@ -1,5 +1,6 @@
 from openai import OpenAI
 
+from src import log
 from src.core.util import as_filename
 from src.lib.model.txt import LmBasis
 from src.lib.model.txt.api.openai.openai_lm_gentxt_params import OpenaiLmGentxtParams
@@ -17,21 +18,17 @@ class OpenaiLm(LmBasis):
     def __init__(
         self,
         params: OpenaiLmInitParams,
-        *args,
-        **kwargs,
+        log_name: str | None = None,
     ):
         super().__init__(
-            log_name=kwargs.pop("log_name", None)
-            or as_filename(f"openai/{params.model_name}"),
-            params=params,
-            *args,
-            **kwargs,
+            log_name=log_name or as_filename(f"openai/{params.model_name}")
         )
         self._client = OpenAI()
         self._model_name = params.model_name
-        self.log.debug("Finished init")
 
-    def _sub_gentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
+    @log.input()
+    @log.output(depth=2)
+    def gentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
         response = self._client.responses.create(
             input=params.prompt,
             model=self._model_name,

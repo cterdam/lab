@@ -13,9 +13,12 @@ from src.core.util import multiline
 class Logger:
     """Overall base class for anything that keeps its own log file.
 
-    Descendants inherit self.log, a Loguru logger bound to a unique logger_id.
-    This can be used to write logs to stdout and has its own file sink.
+    Descendants inherit self.log, a logger bound to a unique logger_id. This
+    can be used to write logs to stdout and keeps its own file sink.
         E.g. `player.log.info(msg)`
+
+    This class also provides decorators, input(), output(), and io(), for
+    logging a function's input and output.
     """
 
     # Each descendant class can add a layer in its log dir path by overriding
@@ -58,14 +61,14 @@ class Logger:
     # Log msg format for func input and func output decorators
     _func_input_msg = multiline(
         """
-        ---> {class_name}.{func_name}(...)
+        -> {class_name}.{func_name}(...)
         {func_args}
         """,
         oneline=False,
     )
     _func_output_msg = multiline(
         """
-        {class_name}.{func_name} --->
+        {class_name}.{func_name} ->
         {func_result}
         """,
         oneline=False,
@@ -208,6 +211,7 @@ class Logger:
 
         Args:
             depth: The number of stack frames to skip when attributing the log.
+            Useful when it's nested inside other decorators.
         """
         from src import env
 
@@ -257,6 +261,7 @@ class Logger:
 
         Args:
             depth: The number of stack frames to skip when attributing the log.
+            Useful when it's nested inside other decorators.
         """
         from src import env
 
@@ -282,5 +287,29 @@ class Logger:
                 return func_result
 
             return wrapped_func
+
+        return decorator
+
+    @classmethod
+    def io(cls, depth: int = 1):
+        """
+        Return a decorator that logs both method inputs and outputs.
+
+        The function to decorate needs to be a method of an instance of a
+        descendant of this class. Logs will be emitted using the instance's own
+        logger.
+
+        Normally, the input logs will be emitted before function execution. An
+        exception is when this decorator is used on the __init__ function, in
+        which case input logging has to be delayed until function return. The
+        reason is the instance's logger does not exist prior to that point.
+
+        Args:
+            depth: The number of stack frames to skip when attributing the log.
+            Useful when it's nested inside other decorators.
+        """
+
+        def decorator(func):
+            return cls.output(depth)(cls.input(depth + 1)(func))
 
         return decorator

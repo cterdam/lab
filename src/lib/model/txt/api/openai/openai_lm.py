@@ -15,6 +15,7 @@ class OpenaiLm(LmBasis):
     Pricing: https://platform.openai.com/docs/pricing
     """
 
+    @log.input()
     def __init__(
         self,
         params: OpenaiLmInitParams,
@@ -26,8 +27,7 @@ class OpenaiLm(LmBasis):
         self._client = OpenAI()
         self._model_name = params.model_name
 
-    @log.input()
-    @log.output(depth=2)
+    @log.io()
     def gentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
         response = self._client.responses.create(
             input=params.prompt,

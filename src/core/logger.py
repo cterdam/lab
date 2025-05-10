@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import inspect
 import os
@@ -25,32 +27,33 @@ class Logger:
     namespace_part: str = "log"
 
     # Allow all logs for downstream sinks
-    log_level = 0
+    _log_level = 0
 
     # Default log format
-    log_format = "\n".join(
+    _log_format = "\n".join(
         [
             "<level>[{level:^8}] " + "─" * 49 + "</> {time:YYYY-MM-DD HH:mm:ss!UTC}",
-            "<dim><{extra[logger_id]}> {extra[relpath]}:{line}</>",
+            # "<dim><{extra[logger_id]}> {extra[relpath]}:{line}</>",
+            "<dim>{extra[header]}</>",
             "{message}",
         ]
     )
 
     # Params for configuring severity colorschemes
-    severity_name_func_input = "-> FINP"
-    severity_name_func_output = "FOUT ->"
-    severity_name_cost = "COST"
-    custom_severity_names = [
-        severity_name_func_input,
-        severity_name_func_output,
-        severity_name_cost,
+    _func_input_severity_name = "-> FINP"
+    _func_output_severity_name = "FOUT ->"
+    _counter_severity_name = "COUNT"
+    _custom_severity_names = [
+        _func_input_severity_name,
+        _func_output_severity_name,
+        _counter_severity_name,
     ]
-    severities = [
+    _severities = [
         ("TRACE", 5, "#505050"),
-        (severity_name_func_input, 7, "#38758A"),
-        (severity_name_func_output, 8, "#4A6FA5"),
+        (_func_input_severity_name, 7, "#38758A"),
+        (_func_output_severity_name, 8, "#4A6FA5"),
         ("DEBUG", 10, "#C080D3"),
-        (severity_name_cost, 15, "#DAA520"),
+        (_counter_severity_name, 15, "#DAA520"),
         ("INFO", 20, "#5FAFAC"),
         ("SUCCESS", 25, "#2E8B57"),
         ("WARNING", 30, "#E09C34"),
@@ -58,7 +61,7 @@ class Logger:
         ("CRITICAL", 50, "#FF0000"),
     ]
 
-    # Log msg format for func input and func output decorators
+    # Msg format for specific msg types
     _func_input_msg = multiline(
         """
         -> {class_name}.{func_name}(...)
@@ -68,7 +71,7 @@ class Logger:
     )
     _func_output_msg = multiline(
         """
-        {class_name}.{func_name} ->
+        {class_name}.{func_name}(...) ->
         {func_result}
         """,
         oneline=False,
@@ -127,21 +130,17 @@ class Logger:
         instead.
 
         All derivative loggers from this class should base on this logger."""
-        from src import env
 
         # Use loguru logger
         logger = loguru.logger
 
-        # Send relative path with records
-        logger = logger.patch(
-            lambda record: record["extra"].update(
-                relpath=os.path.relpath(record["file"].path, env.repo_root)
-            )
-        )
+        # Send relative path and header str with records
+        logger = logger.patch(Logger._patch_relpath)
+        logger = logger.patch(Logger._patch_header)
 
         # Configure logging severities with colorscheme
-        for name, no, fg in Logger.severities:
-            if name in Logger.custom_severity_names:
+        for name, no, fg in Logger._severities:
+            if name in Logger._custom_severity_names:
                 # Custom severity, register here
                 logger.level(
                     name=name,
@@ -175,8 +174,8 @@ class Logger:
         """
         return cls._base_logger().add(
             sink=sink,
-            level=level or cls.log_level,
-            format=log_format or cls.log_format,
+            level=level or cls._log_level,
+            format=log_format or cls._log_format,
             filter=log_filter,
             serialize=serialize,
         )
@@ -191,9 +190,32 @@ class Logger:
         cls._base_logger().remove(sink_id)
 
     @staticmethod
-    def _filter_by_id(record, logger_id):
+    def _filter_by_id(record: loguru.Record, logger_id: str):
         """Loguru filter to only allow records matching the given logger_id"""
         return record["extra"]["logger_id"] == logger_id
+
+    @staticmethod
+    def _patch_relpath(record: loguru.Record) -> None:
+        """Loguru patch to add an extra field for relative path."""
+        from src import env
+
+        record["extra"]["relpath"] = os.path.relpath(record["file"].path, env.repo_root)
+
+    @staticmethod
+    def _patch_header(record: loguru.Record) -> None:
+        """Loguru patch to add a header str as extra field."""
+        from src import env
+
+        # "<dim><{extra[logger_id]}> {extra[relpath]}:{line}</>",
+        left = record["extra"]["logger_id"]
+        right = record["extra"]["relpath"] + ":" + str(record["line"])
+        separator = " | "
+        n_spaces = env.max_linelen - len(left) - len(right)
+        if n_spaces < len(separator):
+            header = left + separator + right
+        else:
+            header = left + " " * n_spaces + right
+        record["extra"]["header"] = header
 
     @classmethod
     def input(cls, depth: int = 1):
@@ -229,7 +251,7 @@ class Logger:
                 }
                 if not is_init:
                     self.log.opt(depth=depth).log(
-                        cls.severity_name_func_input,
+                        cls._func_input_severity_name,
                         cls._func_input_msg,
                         class_name=self.__class__.__name__,
                         func_name=func.__name__,
@@ -238,7 +260,7 @@ class Logger:
                 func_result = func(*args, **kwargs)
                 if is_init:
                     self.log.opt(depth=depth).log(
-                        cls.severity_name_func_input,
+                        cls._func_input_severity_name,
                         cls._func_input_msg,
                         class_name=self.__class__.__name__,
                         func_name=func.__name__,
@@ -271,7 +293,7 @@ class Logger:
                 self = args[0]
                 func_result = func(*args, **kwargs)
                 self.log.opt(depth=depth).log(
-                    cls.severity_name_func_output,
+                    cls._func_output_severity_name,
                     cls._func_output_msg,
                     class_name=self.__class__.__name__,
                     func_name=func.__name__,

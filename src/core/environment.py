@@ -70,6 +70,12 @@ class Environment(DataCore):
         """Dir to hold all outputs of the current run."""
         return self.repo_root / "out" / self.run_name
 
+    @computed_field
+    @cached_property
+    def log_dir(self) -> Path:
+        """Dir to hold all logs of the run."""
+        return self.out_dir / "log"
+
     loggers: dict[str, Logger] = Field(
         default=dict(),
         description=multiline(

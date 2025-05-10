@@ -24,7 +24,7 @@ class Logger:
     """
 
     # Each descendant class can add a layer in its log dir path by overriding
-    namespace_part: str = "log"
+    namespace_part: str | None = None
 
     # Allow all logs for downstream sinks
     _log_level = 0
@@ -94,14 +94,16 @@ class Logger:
         ]
 
         # Bind unique ID for this logger
-        self._logger_id = f"{'.'.join(_namespace)}:{log_name}"
+        self._logger_id = (
+            f"{'.'.join(_namespace)}:{log_name}" if _namespace else log_name
+        )
         if self._logger_id in env.loggers:
             raise ValueError(f"Duplicate logger ID: {self._logger_id}")
         env.loggers[self._logger_id] = self
         self.log = Logger._base_logger().bind(logger_id=self._logger_id)
 
         # Add file sinks
-        _namespace_dir = env.out_dir.joinpath(*_namespace)
+        _namespace_dir = env.log_dir.joinpath(*_namespace)
         only_self = functools.partial(Logger._filter_by_id, logger_id=self._logger_id)
         Logger.add_sink(
             _namespace_dir / f"{log_name}.txt",

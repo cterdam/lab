@@ -42,8 +42,8 @@ def set_logger():
     # Configure default sinks
     Logger.remove_sink(0)
     Logger.add_sink(sys.stdout)
-    Logger.add_sink(env.out_dir / Logger.namespace_part / "all.txt")
-    Logger.add_sink(env.out_dir / Logger.namespace_part / "all.jsonl", serialize=True)
+    Logger.add_sink(env.log_dir / "all.txt")
+    Logger.add_sink(env.log_dir / "all.jsonl", serialize=True)
 
     # Inject root logger to src
     log = Logger(log_name="root")

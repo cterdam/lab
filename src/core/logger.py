@@ -33,27 +33,26 @@ class Logger:
     _log_format = "\n".join(
         [
             "<level>[{level:^8}] " + "─" * 49 + "</> {time:YYYY-MM-DD HH:mm:ss!UTC}",
-            # "<dim><{extra[logger_id]}> {extra[relpath]}:{line}</>",
             "<dim>{extra[header]}</>",
             "{message}",
         ]
     )
 
-    # Params for configuring severity colorschemes
-    _func_input_severity_name = "-> FINP"
-    _func_output_severity_name = "FOUT ->"
-    _counter_severity_name = "COUNT"
-    _custom_severity_names = [
-        _func_input_severity_name,
-        _func_output_severity_name,
-        _counter_severity_name,
+    # Params for configuring levels and colorschemes
+    _func_input_level_name = "-> FINP"
+    _func_output_level_name = "FOUT ->"
+    _counter_level_name = "COUNT"
+    _custom_level_names = [
+        _func_input_level_name,
+        _func_output_level_name,
+        _counter_level_name,
     ]
-    _severities = [
+    _levels = [
         ("TRACE", 5, "#505050"),
-        (_func_input_severity_name, 7, "#38758A"),
-        (_func_output_severity_name, 8, "#4A6FA5"),
+        (_func_input_level_name, 7, "#38758A"),
+        (_func_output_level_name, 8, "#4A6FA5"),
         ("DEBUG", 10, "#C080D3"),
-        (_counter_severity_name, 15, "#DAA520"),
+        (_counter_level_name, 15, "#DAA520"),
         ("INFO", 20, "#5FAFAC"),
         ("SUCCESS", 25, "#2E8B57"),
         ("WARNING", 30, "#E09C34"),
@@ -99,16 +98,16 @@ class Logger:
         if self._logger_id in env.loggers:
             raise ValueError(f"Duplicate logger ID: {self._logger_id}")
         env.loggers[self._logger_id] = self
-        self.log = self._base_logger().bind(logger_id=self._logger_id)
+        self.log = Logger._base_logger().bind(logger_id=self._logger_id)
 
         # Add file sinks
         _namespace_dir = env.out_dir.joinpath(*_namespace)
-        only_self = functools.partial(self._filter_by_id, logger_id=self._logger_id)
-        self.add_sink(
+        only_self = functools.partial(Logger._filter_by_id, logger_id=self._logger_id)
+        Logger.add_sink(
             _namespace_dir / f"{log_name}.txt",
             log_filter=only_self,
         )
-        self.add_sink(
+        Logger.add_sink(
             _namespace_dir / f"{log_name}.jsonl",
             log_filter=only_self,
             serialize=True,
@@ -138,10 +137,10 @@ class Logger:
         logger = logger.patch(Logger._patch_relpath)
         logger = logger.patch(Logger._patch_header)
 
-        # Configure logging severities with colorscheme
-        for name, no, fg in Logger._severities:
-            if name in Logger._custom_severity_names:
-                # Custom severity, register here
+        # Configure logging levels with colorscheme
+        for name, no, fg in Logger._levels:
+            if name in Logger._custom_level_names:
+                # Custom level, register here
                 logger.level(
                     name=name,
                     no=no,
@@ -149,7 +148,7 @@ class Logger:
                     icon="",
                 )
             else:
-                # Build-in severity, just change color and icon here
+                # Builtin level, just change color and icon here
                 logger.level(
                     name=name,
                     color=f"<bold><fg {fg}>",
@@ -158,9 +157,8 @@ class Logger:
 
         return logger
 
-    @classmethod
+    @staticmethod
     def add_sink(
-        cls,
         sink: pathlib.Path | typing.TextIO,
         level: int | None = None,
         log_format: str | None = None,
@@ -172,22 +170,22 @@ class Logger:
         Returns:
             An integer sink ID, which can later be used to remove the sink.
         """
-        return cls._base_logger().add(
+        return Logger._base_logger().add(
             sink=sink,
-            level=level or cls._log_level,
-            format=log_format or cls._log_format,
+            level=level or Logger._log_level,
+            format=log_format or Logger._log_format,
             filter=log_filter,
             serialize=serialize,
         )
 
-    @classmethod
-    def remove_sink(cls, sink_id: int) -> None:
+    @staticmethod
+    def remove_sink(sink_id: int) -> None:
         """Remove a previously added sink from the shared logger.
 
         Args:
             sink_id (int): The integer handle returned by `add_sink`.
         """
-        cls._base_logger().remove(sink_id)
+        Logger._base_logger().remove(sink_id)
 
     @staticmethod
     def _filter_by_id(record: loguru.Record, logger_id: str):
@@ -217,8 +215,8 @@ class Logger:
             header = left + " " * n_spaces + right
         record["extra"]["header"] = header
 
-    @classmethod
-    def input(cls, depth: int = 1):
+    @staticmethod
+    def input(depth: int = 1):
         """
         Decorator to log the inputs passed into a function.
 
@@ -233,7 +231,7 @@ class Logger:
 
         Args:
             depth: The number of stack frames to skip when attributing the log.
-            Useful when it's nested inside other decorators.
+                Useful when it's nested inside other decorators.
         """
         from src import env
 
@@ -251,8 +249,8 @@ class Logger:
                 }
                 if not is_init:
                     self.log.opt(depth=depth).log(
-                        cls._func_input_severity_name,
-                        cls._func_input_msg,
+                        Logger._func_input_level_name,
+                        Logger._func_input_msg,
                         class_name=self.__class__.__name__,
                         func_name=func.__name__,
                         func_args=env.repr(func_args),
@@ -260,8 +258,8 @@ class Logger:
                 func_result = func(*args, **kwargs)
                 if is_init:
                     self.log.opt(depth=depth).log(
-                        cls._func_input_severity_name,
-                        cls._func_input_msg,
+                        Logger._func_input_level_name,
+                        Logger._func_input_msg,
                         class_name=self.__class__.__name__,
                         func_name=func.__name__,
                         func_args=env.repr(func_args),
@@ -272,8 +270,8 @@ class Logger:
 
         return decorator
 
-    @classmethod
-    def output(cls, depth: int = 1):
+    @staticmethod
+    def output(depth: int = 1):
         """
         Decorator to log the outputs returned from a function.
 
@@ -283,7 +281,7 @@ class Logger:
 
         Args:
             depth: The number of stack frames to skip when attributing the log.
-            Useful when it's nested inside other decorators.
+                Useful when it's nested inside other decorators.
         """
         from src import env
 
@@ -293,8 +291,8 @@ class Logger:
                 self = args[0]
                 func_result = func(*args, **kwargs)
                 self.log.opt(depth=depth).log(
-                    cls._func_output_severity_name,
-                    cls._func_output_msg,
+                    Logger._func_output_level_name,
+                    Logger._func_output_msg,
                     class_name=self.__class__.__name__,
                     func_name=func.__name__,
                     func_result=textwrap.indent(
@@ -312,8 +310,8 @@ class Logger:
 
         return decorator
 
-    @classmethod
-    def io(cls, depth: int = 1):
+    @staticmethod
+    def io(depth: int = 1):
         """
         Return a decorator that logs both method inputs and outputs.
 
@@ -328,10 +326,10 @@ class Logger:
 
         Args:
             depth: The number of stack frames to skip when attributing the log.
-            Useful when it's nested inside other decorators.
+                Useful when it's nested inside other decorators.
         """
 
         def decorator(func):
-            return cls.output(depth)(cls.input(depth + 1)(func))
+            return Logger.output(depth)(Logger.input(depth + 1)(func))
 
         return decorator

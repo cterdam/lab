@@ -27,10 +27,10 @@ class Logger:
     namespace_part: str | None = None
 
     # Allow all logs for downstream sinks
-    _log_level = 0
+    _LOG_LEVEL = 0
 
     # Default log format
-    _log_format = "\n".join(
+    _LOG_FORMAT = "\n".join(
         [
             "<level>[{level:^8}] " + "─" * 49 + "</> {time:YYYY-MM-DD HH:mm:ss!UTC}",
             "<dim>{extra[header]}</>",
@@ -39,20 +39,20 @@ class Logger:
     )
 
     # Params for configuring levels and colorschemes
-    _func_input_level_name = "-> FINP"
-    _func_output_level_name = "FOUT ->"
-    _counter_level_name = "COUNT"
-    _custom_level_names = [
-        _func_input_level_name,
-        _func_output_level_name,
-        _counter_level_name,
+    _FUNC_INPUT_LEVEL_NAME = "-> FINP"
+    _FUNC_OUTPUT_LEVEL_NAME = "FOUT ->"
+    _COUNTER_LEVEL_NAME = "COUNT"
+    _CUSTOM_LEVEL_NAMES = [
+        _FUNC_INPUT_LEVEL_NAME,
+        _FUNC_OUTPUT_LEVEL_NAME,
+        _COUNTER_LEVEL_NAME,
     ]
-    _levels = [
+    _LEVELS = [
         ("TRACE", 5, "#505050"),
-        (_func_input_level_name, 7, "#38758A"),
-        (_func_output_level_name, 8, "#4A6FA5"),
+        (_FUNC_INPUT_LEVEL_NAME, 7, "#38758A"),
+        (_FUNC_OUTPUT_LEVEL_NAME, 8, "#4A6FA5"),
         ("DEBUG", 10, "#C080D3"),
-        (_counter_level_name, 15, "#DAA520"),
+        (_COUNTER_LEVEL_NAME, 15, "#DAA520"),
         ("INFO", 20, "#5FAFAC"),
         ("SUCCESS", 25, "#2E8B57"),
         ("WARNING", 30, "#E09C34"),
@@ -61,14 +61,14 @@ class Logger:
     ]
 
     # Msg format for specific msg types
-    _func_input_msg = multiline(
+    _FUNC_INPUT_MSG = multiline(
         """
         -> {class_name}.{func_name}(...)
         {func_args}
         """,
         oneline=False,
     )
-    _func_output_msg = multiline(
+    _FUNC_OUTPUT_MSG = multiline(
         """
         {class_name}.{func_name}(...) ->
         {func_result}
@@ -140,8 +140,8 @@ class Logger:
         logger = logger.patch(Logger._patch_header)
 
         # Configure logging levels with colorscheme
-        for name, no, fg in Logger._levels:
-            if name in Logger._custom_level_names:
+        for name, no, fg in Logger._LEVELS:
+            if name in Logger._CUSTOM_LEVEL_NAMES:
                 # Custom level, register here
                 logger.level(
                     name=name,
@@ -174,8 +174,8 @@ class Logger:
         """
         return Logger._base_logger().add(
             sink=sink,
-            level=level or Logger._log_level,
-            format=log_format or Logger._log_format,
+            level=level or Logger._LOG_LEVEL,
+            format=log_format or Logger._LOG_FORMAT,
             filter=log_filter,
             serialize=serialize,
         )
@@ -218,6 +218,24 @@ class Logger:
         record["extra"]["header"] = header
 
     @staticmethod
+    def _get_async_pad() -> int:
+        """Helper for func input output decorators to find depth pad number.
+
+        Inspect the current call stack and, beyond the decorator wrapper itself,
+        skip over any asyncio internals so that logs attribute correctly to the
+        user’s call site for a coroutine.
+        """
+        stack = inspect.stack()
+        pad = 0
+        while True:
+            filename = stack[pad].filename
+            if "asyncio" in filename or os.path.basename(filename) == "logger.py":
+                pad += 1
+            else:
+                break
+        return pad
+
+    @staticmethod
     def input(depth: int = 1):
         """
         Decorator to log the inputs passed into a function or coroutine.
@@ -240,30 +258,32 @@ class Logger:
         def decorator(func):
 
             is_init = func.__name__ == "__init__"
+            is_async = inspect.iscoroutinefunction(func)
+            func_sig = inspect.signature(func)
 
-            if inspect.iscoroutinefunction(func):
+            if is_async:
 
                 @functools.wraps(func)
                 async def wrapped_async(*args, **kwargs):
                     self = args[0]
-                    bound_args = inspect.signature(func).bind_partial(*args, **kwargs)
+                    bound_args = func_sig.bind_partial(*args, **kwargs)
                     bound_args.apply_defaults()
                     func_args = {
                         k: v for k, v in bound_args.arguments.items() if k != "self"
                     }
                     if not is_init:
-                        self.log.opt(depth=depth).log(
-                            Logger._func_input_level_name,
-                            Logger._func_input_msg,
+                        self.log.opt(depth=depth + Logger._get_async_pad()).log(
+                            Logger._FUNC_INPUT_LEVEL_NAME,
+                            Logger._FUNC_INPUT_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             func_args=env.repr(func_args),
                         )
                     func_result = await func(*args, **kwargs)
                     if is_init:
-                        self.log.opt(depth=depth).log(
-                            Logger._func_input_level_name,
-                            Logger._func_input_msg,
+                        self.log.opt(depth=depth + Logger._get_async_pad()).log(
+                            Logger._FUNC_INPUT_LEVEL_NAME,
+                            Logger._FUNC_INPUT_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             func_args=env.repr(func_args),
@@ -277,15 +297,15 @@ class Logger:
                 @functools.wraps(func)
                 def wrapped_func(*args, **kwargs):
                     self = args[0]
-                    bound_args = inspect.signature(func).bind_partial(*args, **kwargs)
+                    bound_args = func_sig.bind_partial(*args, **kwargs)
                     bound_args.apply_defaults()
                     func_args = {
                         k: v for k, v in bound_args.arguments.items() if k != "self"
                     }
                     if not is_init:
                         self.log.opt(depth=depth).log(
-                            Logger._func_input_level_name,
-                            Logger._func_input_msg,
+                            Logger._FUNC_INPUT_LEVEL_NAME,
+                            Logger._FUNC_INPUT_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             func_args=env.repr(func_args),
@@ -293,8 +313,8 @@ class Logger:
                     func_result = func(*args, **kwargs)
                     if is_init:
                         self.log.opt(depth=depth).log(
-                            Logger._func_input_level_name,
-                            Logger._func_input_msg,
+                            Logger._FUNC_INPUT_LEVEL_NAME,
+                            Logger._FUNC_INPUT_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             func_args=env.repr(func_args),
@@ -322,15 +342,18 @@ class Logger:
 
         def decorator(func):
 
-            if inspect.iscoroutinefunction(func):
+            is_async = inspect.iscoroutinefunction(func)
+
+            if is_async:
 
                 @functools.wraps(func)
                 async def wrapped_afunc(*args, **kwargs):
                     self = args[0]
                     func_result = await func(*args, **kwargs)
-                    self.log.opt(depth=depth).log(
-                        Logger._func_output_level_name,
-                        Logger._func_output_msg,
+                    # +1 to achieve parity with input line num for coroutines
+                    self.log.opt(depth=depth + Logger._get_async_pad() + 1).log(
+                        Logger._FUNC_OUTPUT_LEVEL_NAME,
+                        Logger._FUNC_OUTPUT_MSG,
                         class_name=self.__class__.__name__,
                         func_name=func.__name__,
                         func_result=textwrap.indent(
@@ -353,8 +376,8 @@ class Logger:
                     self = args[0]
                     func_result = func(*args, **kwargs)
                     self.log.opt(depth=depth).log(
-                        Logger._func_output_level_name,
-                        Logger._func_output_msg,
+                        Logger._FUNC_OUTPUT_LEVEL_NAME,
+                        Logger._FUNC_OUTPUT_MSG,
                         class_name=self.__class__.__name__,
                         func_name=func.__name__,
                         func_result=textwrap.indent(

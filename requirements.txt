@@ -17,3 +17,6 @@ pre-commit
 pytest
 pytest-sugar
 pytest-xdist
+
+# Env
+dotenv

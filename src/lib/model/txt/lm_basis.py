@@ -11,3 +11,6 @@ class LmBasis(abc.ABC, ModelBasis):
 
     @abc.abstractmethod
     def gentxt(self, *args, **kwargs) -> LmGentxtResult: ...
+
+    @abc.abstractmethod
+    async def agentxt(self, *args, **kwargs) -> LmGentxtResult: ...

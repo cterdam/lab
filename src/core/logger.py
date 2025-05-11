@@ -220,7 +220,7 @@ class Logger:
     @staticmethod
     def input(depth: int = 1):
         """
-        Decorator to log the inputs passed into a function.
+        Decorator to log the inputs passed into a function or coroutine.
 
         The function to decorate needs to be a method of an instance of a
         descendant of this class. Logs will be emitted using the instance's own
@@ -233,7 +233,7 @@ class Logger:
 
         Args:
             depth: The number of stack frames to skip when attributing the log.
-                Useful when it's nested inside other decorators.
+                Useful when nested inside other decorators.
         """
         from src import env
 
@@ -241,41 +241,74 @@ class Logger:
 
             is_init = func.__name__ == "__init__"
 
-            @functools.wraps(func)
-            def wrapped_func(*args, **kwargs):
-                self = args[0]
-                bound_args = inspect.signature(func).bind_partial(*args, **kwargs)
-                bound_args.apply_defaults()
-                func_args = {
-                    k: v for k, v in bound_args.arguments.items() if k != "self"
-                }
-                if not is_init:
-                    self.log.opt(depth=depth).log(
-                        Logger._func_input_level_name,
-                        Logger._func_input_msg,
-                        class_name=self.__class__.__name__,
-                        func_name=func.__name__,
-                        func_args=env.repr(func_args),
-                    )
-                func_result = func(*args, **kwargs)
-                if is_init:
-                    self.log.opt(depth=depth).log(
-                        Logger._func_input_level_name,
-                        Logger._func_input_msg,
-                        class_name=self.__class__.__name__,
-                        func_name=func.__name__,
-                        func_args=env.repr(func_args),
-                    )
-                return func_result
+            if inspect.iscoroutinefunction(func):
 
-            return wrapped_func
+                @functools.wraps(func)
+                async def wrapped_async(*args, **kwargs):
+                    self = args[0]
+                    bound_args = inspect.signature(func).bind_partial(*args, **kwargs)
+                    bound_args.apply_defaults()
+                    func_args = {
+                        k: v for k, v in bound_args.arguments.items() if k != "self"
+                    }
+                    if not is_init:
+                        self.log.opt(depth=depth).log(
+                            Logger._func_input_level_name,
+                            Logger._func_input_msg,
+                            class_name=self.__class__.__name__,
+                            func_name=func.__name__,
+                            func_args=env.repr(func_args),
+                        )
+                    func_result = await func(*args, **kwargs)
+                    if is_init:
+                        self.log.opt(depth=depth).log(
+                            Logger._func_input_level_name,
+                            Logger._func_input_msg,
+                            class_name=self.__class__.__name__,
+                            func_name=func.__name__,
+                            func_args=env.repr(func_args),
+                        )
+                    return func_result
+
+                return wrapped_async
+
+            else:
+
+                @functools.wraps(func)
+                def wrapped_func(*args, **kwargs):
+                    self = args[0]
+                    bound_args = inspect.signature(func).bind_partial(*args, **kwargs)
+                    bound_args.apply_defaults()
+                    func_args = {
+                        k: v for k, v in bound_args.arguments.items() if k != "self"
+                    }
+                    if not is_init:
+                        self.log.opt(depth=depth).log(
+                            Logger._func_input_level_name,
+                            Logger._func_input_msg,
+                            class_name=self.__class__.__name__,
+                            func_name=func.__name__,
+                            func_args=env.repr(func_args),
+                        )
+                    func_result = func(*args, **kwargs)
+                    if is_init:
+                        self.log.opt(depth=depth).log(
+                            Logger._func_input_level_name,
+                            Logger._func_input_msg,
+                            class_name=self.__class__.__name__,
+                            func_name=func.__name__,
+                            func_args=env.repr(func_args),
+                        )
+                    return func_result
+
+                return wrapped_func
 
         return decorator
 
     @staticmethod
     def output(depth: int = 1):
         """
-        Decorator to log the outputs returned from a function.
+        Decorator to log the outputs returned from a function or coroutine.
 
         The function to decorate needs to be a method of an instance of a
         descendant of this class. Logs will be emitted using the instance's own
@@ -283,39 +316,66 @@ class Logger:
 
         Args:
             depth: The number of stack frames to skip when attributing the log.
-                Useful when it's nested inside other decorators.
+                Useful when nested inside other decorators.
         """
         from src import env
 
         def decorator(func):
-            @functools.wraps(func)
-            def wrapped_func(*args, **kwargs):
-                self = args[0]
-                func_result = func(*args, **kwargs)
-                self.log.opt(depth=depth).log(
-                    Logger._func_output_level_name,
-                    Logger._func_output_msg,
-                    class_name=self.__class__.__name__,
-                    func_name=func.__name__,
-                    func_result=textwrap.indent(
-                        env.repr(
-                            func_result,
-                            max_width=env.max_linelen - env.indent,
-                            indent=env.indent,
-                        ),
-                        prefix=" " * env.indent,
-                    ),
-                )
-                return func_result
 
-            return wrapped_func
+            if inspect.iscoroutinefunction(func):
+
+                @functools.wraps(func)
+                async def wrapped_afunc(*args, **kwargs):
+                    self = args[0]
+                    func_result = await func(*args, **kwargs)
+                    self.log.opt(depth=depth).log(
+                        Logger._func_output_level_name,
+                        Logger._func_output_msg,
+                        class_name=self.__class__.__name__,
+                        func_name=func.__name__,
+                        func_result=textwrap.indent(
+                            env.repr(
+                                func_result,
+                                max_width=env.max_linelen - env.indent,
+                                indent=env.indent,
+                            ),
+                            prefix=" " * env.indent,
+                        ),
+                    )
+                    return func_result
+
+                return wrapped_afunc
+
+            else:
+
+                @functools.wraps(func)
+                def wrapped_func(*args, **kwargs):
+                    self = args[0]
+                    func_result = func(*args, **kwargs)
+                    self.log.opt(depth=depth).log(
+                        Logger._func_output_level_name,
+                        Logger._func_output_msg,
+                        class_name=self.__class__.__name__,
+                        func_name=func.__name__,
+                        func_result=textwrap.indent(
+                            env.repr(
+                                func_result,
+                                max_width=env.max_linelen - env.indent,
+                                indent=env.indent,
+                            ),
+                            prefix=" " * env.indent,
+                        ),
+                    )
+                    return func_result
+
+                return wrapped_func
 
         return decorator
 
     @staticmethod
     def io(depth: int = 1):
         """
-        Return a decorator that logs both method inputs and outputs.
+        Decorator to log both inputs and outputs of a function or coroutine.
 
         The function to decorate needs to be a method of an instance of a
         descendant of this class. Logs will be emitted using the instance's own
@@ -328,7 +388,7 @@ class Logger:
 
         Args:
             depth: The number of stack frames to skip when attributing the log.
-                Useful when it's nested inside other decorators.
+                Useful when nested inside other decorators.
         """
 
         def decorator(func):

@@ -71,9 +71,11 @@ def run_task():
             main()
 
         case "demo":
+            import asyncio
+
             from src.task.demo import main
 
-            main()
+            asyncio.run(main())
 
 
 def main():

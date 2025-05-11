@@ -1,4 +1,6 @@
-from openai import OpenAI
+import functools
+
+import openai
 
 from src import log
 from src.core.util import as_filename
@@ -24,12 +26,36 @@ class OpenaiLm(LmBasis):
         super().__init__(
             log_name=log_name or as_filename(f"openai/{params.model_name}")
         )
-        self._client = OpenAI()
         self._model_name = params.model_name
+
+    @functools.cached_property
+    def _client(self) -> openai.OpenAI:
+        return openai.OpenAI()
+
+    @functools.cached_property
+    def _aclient(self) -> openai.AsyncOpenAI:
+        return openai.AsyncOpenAI()
 
     @log.io()
     def gentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
         response = self._client.responses.create(
+            input=params.prompt,
+            model=self._model_name,
+            instructions=params.system_prompt,
+            max_output_tokens=params.max_new_tokens,
+            temperature=params.temperature,
+            top_p=params.top_p,
+        )
+        result = OpenaiLmGentxtResult(
+            output=response.output_text,
+            input_tokens=response.usage.input_tokens,  # pyright:ignore
+            output_tokens=response.usage.output_tokens,  # pyright:ignore
+        )
+        return result
+
+    @log.io()
+    async def agentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
+        response = await self._aclient.responses.create(
             input=params.prompt,
             model=self._model_name,
             instructions=params.system_prompt,

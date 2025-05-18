@@ -30,12 +30,14 @@ class Logger:
     _LOG_LEVEL = 0
 
     # Default log format
-    _LOG_FORMAT = "\n".join(
-        [
-            "<level>[{level:^8}] " + "─" * 49 + "</> {time:YYYY-MM-DD HH:mm:ss!UTC}",
-            "<dim>{extra[header]}</>",
-            "{message}",
-        ]
+    _LOG_FORMAT = (
+        multiline(
+            """
+            <green>{time:YYYY-MM-DD HH:mm:ss!UTC}</> <level>[{level:^8}]</>
+            <dim><cyan>{extra[logger_id]}</></> | <dim><yellow>{extra[relpath]}:{line}</></>
+            """
+        )
+        + "\n{message}"
     )
 
     # Params for configuring levels and colorschemes
@@ -104,7 +106,7 @@ class Logger:
 
         # Add file sinks
         _namespace_dir = env.log_dir.joinpath(*_namespace)
-        only_self = functools.partial(Logger._filter_by_id, logger_id=self._logger_id)
+        only_self = lambda record: record["extra"]["logger_id"] == self._logger_id
         Logger.add_sink(
             _namespace_dir / f"{log_name}.txt",
             log_filter=only_self,
@@ -132,12 +134,17 @@ class Logger:
 
         All derivative loggers from this class should base on this logger."""
 
+        from src import env
+
         # Use loguru logger
         logger = loguru.logger
 
         # Send relative path and header str with records
-        logger = logger.patch(Logger._patch_relpath)
-        logger = logger.patch(Logger._patch_header)
+        logger = logger.patch(
+            lambda record: record["extra"].update(
+                relpath=os.path.relpath(record["file"].path, env.repo_root)
+            )
+        )
 
         # Configure logging levels with colorscheme
         for name, no, fg in Logger._LEVELS:
@@ -188,34 +195,6 @@ class Logger:
             sink_id (int): The integer handle returned by `add_sink`.
         """
         Logger._base_logger().remove(sink_id)
-
-    @staticmethod
-    def _filter_by_id(record: loguru.Record, logger_id: str):
-        """Loguru filter to only allow records matching the given logger_id"""
-        return record["extra"]["logger_id"] == logger_id
-
-    @staticmethod
-    def _patch_relpath(record: loguru.Record) -> None:
-        """Loguru patch to add an extra field for relative path."""
-        from src import env
-
-        record["extra"]["relpath"] = os.path.relpath(record["file"].path, env.repo_root)
-
-    @staticmethod
-    def _patch_header(record: loguru.Record) -> None:
-        """Loguru patch to add a header str as extra field."""
-        from src import env
-
-        # "<dim><{extra[logger_id]}> {extra[relpath]}:{line}</>",
-        left = record["extra"]["logger_id"]
-        right = record["extra"]["relpath"] + ":" + str(record["line"])
-        separator = " | "
-        n_spaces = env.max_linelen - len(left) - len(right)
-        if n_spaces < len(separator):
-            header = left + separator + right
-        else:
-            header = left + " " * n_spaces + right
-        record["extra"]["header"] = header
 
     @staticmethod
     def _get_async_pad() -> int:

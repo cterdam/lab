@@ -41,7 +41,7 @@ def set_logger():
 
     # Configure default sinks
     Logger.remove_sink(0)
-    Logger.add_sink(sys.stdout)
+    Logger.add_sink(sys.stdout, level=10)
     Logger.add_sink(env.log_dir / "all.txt")
     Logger.add_sink(env.log_dir / "all.jsonl", serialize=True)
 

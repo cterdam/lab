@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import functools
 import inspect
 import os
@@ -185,6 +183,7 @@ class Logger:
             format=log_format or Logger._LOG_FORMAT,
             filter=log_filter,
             serialize=serialize,
+            enqueue=True,
         )
 
     @staticmethod

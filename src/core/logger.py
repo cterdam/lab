@@ -1,9 +1,10 @@
+import asyncio
+import atexit
 import functools
 import inspect
 import os
-import pathlib
 import textwrap
-import typing
+import threading
 
 import loguru
 
@@ -11,18 +12,21 @@ from src.core.util import multiline
 
 
 class Logger:
-    """Overall base class for anything that keeps its own log file.
+    """Overall base class for an object that keeps its own log file.
 
     Descendants inherit self.log, a logger bound to a unique logger_id. This
     can be used to write logs to stdout and keeps its own file sink.
         E.g. `player.log.info(msg)`
 
-    This class also provides decorators, input(), output(), and io(), for
+    This class also provides three decorators: input(), output(), and io(), for
     logging a function's input and output.
     """
 
     # Each descendant class can add a layer in its log dir path by overriding
     namespace_part: str | None = None
+
+    # Event loop to manage all logging async sinks, run in a separate thread.
+    _log_event_loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
 
     # Allow all logs for downstream sinks
     _LOG_LEVEL = 0
@@ -42,10 +46,14 @@ class Logger:
     _FUNC_INPUT_LEVEL_NAME = "-> FINP"
     _FUNC_OUTPUT_LEVEL_NAME = "FOUT ->"
     _COUNTER_LEVEL_NAME = "COUNT"
-    _CUSTOM_LEVEL_NAMES = [
-        _FUNC_INPUT_LEVEL_NAME,
-        _FUNC_OUTPUT_LEVEL_NAME,
-        _COUNTER_LEVEL_NAME,
+    _BUILTIN_LEVEL_NAMES = [
+        "TRACE",
+        "DEBUG",
+        "INFO",
+        "SUCCESS",
+        "WARNING",
+        "ERROR",
+        "CRITICAL",
     ]
     _LEVELS = [
         ("TRACE", 5, "#505050"),
@@ -107,11 +115,11 @@ class Logger:
         only_self = lambda record: record["extra"]["logger_id"] == self._logger_id
         Logger.add_sink(
             _namespace_dir / f"{log_name}.txt",
-            log_filter=only_self,
+            filter=only_self,
         )
         Logger.add_sink(
             _namespace_dir / f"{log_name}.jsonl",
-            log_filter=only_self,
+            filter=only_self,
             serialize=True,
         )
 
@@ -121,10 +129,12 @@ class Logger:
         """Default any attrs not overridden in this class to loguru logger."""
         return getattr(self.log, name)
 
+    # SETUP & TEARDOWN #########################################################
+
     @staticmethod
     @functools.cache
     def _base_logger():
-        """Use class-level attributes to register the base logger.
+        """Set up and return the base logger.
 
         This function code will only run once as there is only one base logger
         in the loguru methodology. Subsequent calls will hit the functools.cache
@@ -146,45 +156,54 @@ class Logger:
 
         # Configure logging levels with colorscheme
         for name, no, fg in Logger._LEVELS:
-            if name in Logger._CUSTOM_LEVEL_NAMES:
-                # Custom level, register here
-                logger.level(
-                    name=name,
-                    no=no,
-                    color=f"<bold><fg {fg}>",
-                    icon="",
-                )
-            else:
+            if name in Logger._BUILTIN_LEVEL_NAMES:
                 # Builtin level, just change color and icon here
                 logger.level(
                     name=name,
                     color=f"<bold><fg {fg}>",
                     icon="",
                 )
+            else:
+                # Custom level, register severity here
+                logger.level(
+                    name=name,
+                    no=no,
+                    color=f"<bold><fg {fg}>",
+                    icon="",
+                )
+
+        # Start logging event loop in daemon thread
+        threading.Thread(target=Logger._log_event_loop.run_forever, daemon=True).start()
 
         return logger
 
     @staticmethod
-    def add_sink(
-        sink: pathlib.Path | typing.TextIO,
-        level: int | None = None,
-        log_format: str | None = None,
-        log_filter: typing.Callable | None = None,
-        serialize=False,
-    ) -> int:
+    @atexit.register
+    def _flush_logs():
+        """Flush all logs enqueued at async sinks upon program exit."""
+
+        async def _await_logger_complete():
+            await Logger._base_logger().complete()
+
+        asyncio.run_coroutine_threadsafe(
+            _await_logger_complete(), Logger._log_event_loop
+        ).result()
+        Logger._log_event_loop.call_soon_threadsafe(Logger._log_event_loop.stop)
+
+    @staticmethod
+    def add_sink(sink, *args, **kwargs) -> int:
         """Attach a sink to the underlying shared Loguru logger.
 
         Returns:
             An integer sink ID, which can later be used to remove the sink.
         """
-        return Logger._base_logger().add(
-            sink=sink,
-            level=level or Logger._LOG_LEVEL,
-            format=log_format or Logger._LOG_FORMAT,
-            filter=log_filter,
-            serialize=serialize,
-            enqueue=True,
-        )
+        kwargs.setdefault("level", Logger._LOG_LEVEL)
+        kwargs.setdefault("format", Logger._LOG_FORMAT)
+        kwargs["enqueue"] = True
+        if inspect.iscoroutinefunction(sink):
+            kwargs["loop"] = Logger._log_event_loop
+
+        return Logger._base_logger().add(sink, *args, **kwargs)
 
     @staticmethod
     def remove_sink(sink_id: int) -> None:
@@ -194,6 +213,8 @@ class Logger:
             sink_id (int): The integer handle returned by `add_sink`.
         """
         Logger._base_logger().remove(sink_id)
+
+    # DECORATORS ###############################################################
 
     @staticmethod
     def _get_async_pad() -> int:

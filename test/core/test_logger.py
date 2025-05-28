@@ -1,7 +1,7 @@
 import pytest
 
 from src import env
-from src.core.logger import Logger
+from src.core import Logger
 
 
 @pytest.fixture(autouse=True)

@@ -5,9 +5,9 @@ class DataCore(BaseModel):
     """Base dataclass with strict guarantees and handy properties."""
 
     model_config = ConfigDict(
-        validate_default=True,
-        validate_assignment=True,
         extra="forbid",
+        validate_assignment=True,
+        validate_default=True,
     )
 
     def __str__(self) -> str:

@@ -41,7 +41,8 @@ async def run_async(n_tasks: int, wb: WordBank, model: OpenaiLm):
 
 def main():
     load_dotenv()
-    n_tasks = 5
+
+    n_tasks = 1
     wb = WordBank()
     model = OpenaiLm(params=OpenaiLmInitParams(model_name="gpt-4.1"))
 

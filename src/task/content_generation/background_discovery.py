@@ -1,8 +1,8 @@
 """
-Background Discovery Component for AI-driven content generation.
+Background Discovery component for AI-driven content generation.
 
-This component conducts comprehensive research and background discovery
-for a given topic, providing the foundation for content creation.
+This component conducts comprehensive background research on a given topic,
+providing the foundational information needed for content creation.
 """
 
 import asyncio
@@ -12,7 +12,7 @@ from pydantic import Field
 
 from src import log
 from src.core import DataCore
-from src.lib.model.txt import LmBasis
+from src.lib.model.txt.lm_basis import LmBasis
 from src.lib.model.txt.lm_gentxt_params import LmGentxtParams
 from src.lib.model.txt.lm_gentxt_result import LmGentxtResult
 

@@ -1,8 +1,9 @@
 """
-Structural Planning Component for AI-driven content generation.
+Structural Planning component for AI-driven content generation.
 
-This component takes background research and transforms it into a well-organized,
-logical content structure and plan.
+This component takes background research and creates a detailed structural
+plan and strategy for content creation, organizing information into a
+logical and engaging framework.
 """
 
 import asyncio
@@ -12,7 +13,7 @@ from pydantic import Field
 
 from src import log
 from src.core import DataCore
-from src.lib.model.txt import LmBasis
+from src.lib.model.txt.lm_basis import LmBasis
 from src.lib.model.txt.lm_gentxt_params import LmGentxtParams
 from src.lib.model.txt.lm_gentxt_result import LmGentxtResult
 

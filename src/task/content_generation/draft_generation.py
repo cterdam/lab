@@ -1,8 +1,9 @@
 """
-Draft Generation Component for AI-driven content generation.
+Draft Generation component for AI-driven content generation.
 
-This component takes the structural plan and background research to generate
-the final content draft.
+This component takes the background research and structural plan to generate
+the final content draft, transforming the structured information into
+compelling, well-written content.
 """
 
 import asyncio
@@ -12,12 +13,15 @@ from pydantic import Field
 
 from src import log
 from src.core import DataCore
-from src.lib.model.txt import LmBasis
+from src.lib.model.txt.lm_basis import LmBasis
 from src.lib.model.txt.lm_gentxt_params import LmGentxtParams
 from src.lib.model.txt.lm_gentxt_result import LmGentxtResult
 
 from .background_discovery import BackgroundDiscoveryResult
-from .prompts import DRAFT_GENERATION_PROMPT_TEMPLATE, DRAFT_GENERATION_SYSTEM_PROMPT
+from .prompts import (
+    DRAFT_GENERATION_PROMPT_TEMPLATE,
+    DRAFT_GENERATION_SYSTEM_PROMPT,
+)
 from .structural_planning import StructuralPlanningResult
 
 

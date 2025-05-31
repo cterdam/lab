@@ -77,10 +77,10 @@ class Logger:
     )
 
     def __init__(self, *args, log_name: str, **kwargs):
-        """Initialize this instance’s logger.
+        """Initialize this instance's logger.
 
         Args:
-            log_name (str): Unique name for this instance’s log files.
+            log_name (str): Unique name for this instance's log files.
         """
 
         # Lazy import to avoid circular import problem
@@ -199,7 +199,14 @@ class Logger:
         """Loguru patch to add an extra field for relative path."""
         from src import env
 
-        record["extra"]["relpath"] = os.path.relpath(record["file"].path, env.repo_root)
+        try:
+            record["extra"]["relpath"] = os.path.relpath(
+                record["file"].path, env.repo_root
+            )
+        except ValueError:
+            # Handle cross-drive paths on Windows (e.g., C: vs D:)
+            # Fall back to just the filename when drives differ
+            record["extra"]["relpath"] = os.path.basename(record["file"].path)
 
     @staticmethod
     def _patch_header(record: loguru.Record) -> None:
@@ -223,7 +230,7 @@ class Logger:
 
         Inspect the current call stack and, beyond the decorator wrapper itself,
         skip over any asyncio internals so that logs attribute correctly to the
-        user’s call site for a coroutine.
+        user's call site for a coroutine.
         """
         stack = inspect.stack()
         pad = 0

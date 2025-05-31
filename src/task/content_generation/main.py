@@ -199,7 +199,7 @@ async def demo_async_pipeline(model):
     return results
 
 
-def demo_with_different_models():
+def demo_with_different_models(model):
     """
     Demonstrate using different LLM models (when available).
     """
@@ -207,17 +207,17 @@ def demo_with_different_models():
 
     # Example with different models (you can extend this based on available models)
     models = [
-        ("GPT-4O-Mini", OpenaiLm(params=OpenaiLmInitParams(model_name="gpt-4o-mini"))),
+        ("GPT-4O-Mini", model),  # Reuse the existing model instance
         # Add more models as available in your setup
         # ("DeepSeek", DeepSeekLm(params=DeepSeekLmInitParams(model_name="deepseek-chat"))),
     ]
 
     topic = "Climate Change Mitigation Strategies"
 
-    for model_name, model in models:
+    for model_name, model_instance in models:
         log.info(f"Testing with {model_name}...")
 
-        pipeline = ContentGenerationPipeline(model)
+        pipeline = ContentGenerationPipeline(model_instance)
         params = ContentGenerationPipelineParams(
             topic=topic,
             content_objectives="Create an educational article about climate change solutions",
@@ -267,7 +267,7 @@ def main():
         log.info("\n" + "=" * 50 + "\n")
 
         # Demo 4: Different models
-        demo_with_different_models()
+        demo_with_different_models(model)
 
         log.success("All content generation demos completed successfully!")
 

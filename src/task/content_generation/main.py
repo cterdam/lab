@@ -49,7 +49,7 @@ def demo_individual_components(model):
     log.info("Running Structural Planning...")
     planning = StructuralPlanning(model)
     planning_params = StructuralPlanningParams(
-        background_research=discovery_result.interest_analysis,
+        interest_analysis=discovery_result.interest_analysis,
         content_objectives="Create an engaging article about AI and work for business leaders",
         target_audience="Business executives and decision makers",
         content_type="Professional article",
@@ -67,7 +67,7 @@ def demo_individual_components(model):
     log.info("Running Draft Generation...")
     generation = DraftGeneration(model)
     generation_params = DraftGenerationParams(
-        background_research=discovery_result.interest_analysis,
+        interest_analysis=discovery_result.interest_analysis,
         structural_plan=planning_result.structural_plan,
         additional_instructions="Focus on practical implications and actionable insights for business leaders.",
     )
@@ -172,14 +172,16 @@ def demo_with_different_models(model):
         # ("DeepSeek", DeepSeekLm(params=DeepSeekLmInitParams(model_name="deepseek-chat"))),
     ]
 
-    topic = "Climate Change Mitigation Strategies"
+    field_of_topic = "Environment"
+    keywords = "climate change mitigation strategies carbon footprint"
 
     for model_name, model_instance in models:
         log.info(f"Testing with {model_name}...")
 
         pipeline = ContentGenerationPipeline(model_instance)
         params = ContentGenerationPipelineParams(
-            topic=topic,
+            field_of_topic=field_of_topic,
+            keywords=keywords,
             content_objectives="Create an educational article about climate change solutions",
             target_audience="General public interested in environmental issues",
             content_type="Educational article",
@@ -230,9 +232,6 @@ def main():
         demo_with_different_models(model)
 
         log.success("All content generation demos completed successfully!")
-
-        # Return one result for inspection
-        return result
 
     except Exception as e:
         log.error(f"Error in content generation demo: {e}")

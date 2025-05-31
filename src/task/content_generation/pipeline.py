@@ -184,7 +184,7 @@ class ContentGenerationPipeline:
         # Step 2: Structural Planning
         self.logger.info("Step 2: Structural Planning")
         planning_params = StructuralPlanningParams(
-            background_research=discovery_result.interest_analysis,
+            interest_analysis=discovery_result.interest_analysis,
             content_objectives=params.content_objectives,
             target_audience=params.target_audience,
             content_type=params.content_type,
@@ -196,7 +196,7 @@ class ContentGenerationPipeline:
         # Step 3: Draft Generation
         self.logger.info("Step 3: Draft Generation")
         generation_params = DraftGenerationParams(
-            background_research=discovery_result.interest_analysis,
+            interest_analysis=discovery_result.interest_analysis,
             structural_plan=planning_result.structural_plan,
             additional_instructions=params.additional_instructions,
             max_tokens=params.generation_max_tokens,
@@ -267,7 +267,7 @@ class ContentGenerationPipeline:
         # Step 2: Structural Planning
         self.logger.info("Step 2: Structural Planning")
         planning_params = StructuralPlanningParams(
-            background_research=discovery_result.interest_analysis,
+            interest_analysis=discovery_result.interest_analysis,
             content_objectives=params.content_objectives,
             target_audience=params.target_audience,
             content_type=params.content_type,
@@ -279,7 +279,7 @@ class ContentGenerationPipeline:
         # Step 3: Draft Generation
         self.logger.info("Step 3: Draft Generation")
         generation_params = DraftGenerationParams(
-            background_research=discovery_result.interest_analysis,
+            interest_analysis=discovery_result.interest_analysis,
             structural_plan=planning_result.structural_plan,
             additional_instructions=params.additional_instructions,
             max_tokens=params.generation_max_tokens,

@@ -1,7 +1,7 @@
 """
 Draft Generation component for AI-driven content generation.
 
-This component takes the background research and structural plan to generate
+This component takes the interest analysis and structural plan to generate
 the final content draft, transforming the structured information into
 compelling, well-written content.
 """
@@ -28,8 +28,8 @@ from .structural_planning import StructuralPlanningResult
 class DraftGenerationParams(DataCore):
     """Parameters for draft generation."""
 
-    background_research: str = Field(
-        description="Comprehensive background research from the discovery phase"
+    interest_analysis: str = Field(
+        description="Interest analysis from the discovery phase containing eye-catching questions and engagement strategies"
     )
 
     structural_plan: str = Field(
@@ -54,8 +54,8 @@ class DraftGenerationParams(DataCore):
 class DraftGenerationResult(DataCore):
     """Result from draft generation."""
 
-    background_research: str = Field(
-        description="The background research used for generation"
+    interest_analysis: str = Field(
+        description="The interest analysis used for generation"
     )
 
     structural_plan: str = Field(description="The structural plan used for generation")
@@ -77,7 +77,7 @@ class DraftGeneration:
     """
     Draft Generation Component.
 
-    Takes the structural plan and background research to generate the final
+    Takes the structural plan and interest analysis to generate the final
     content draft, completing the content generation pipeline.
     """
 
@@ -106,7 +106,7 @@ class DraftGeneration:
 
         # Prepare the prompt
         prompt = DRAFT_GENERATION_PROMPT_TEMPLATE.format(
-            background_research=params.background_research,
+            interest_research=params.interest_analysis,
             structural_plan=params.structural_plan,
             additional_instructions=params.additional_instructions,
         )
@@ -124,7 +124,7 @@ class DraftGeneration:
 
         # Create and return result
         result = DraftGenerationResult(
-            background_research=params.background_research,
+            interest_analysis=params.interest_analysis,
             structural_plan=params.structural_plan,
             additional_instructions=params.additional_instructions,
             content_draft=llm_result.output,
@@ -151,7 +151,7 @@ class DraftGeneration:
 
         # Prepare the prompt
         prompt = DRAFT_GENERATION_PROMPT_TEMPLATE.format(
-            background_research=params.background_research,
+            interest_research=params.interest_analysis,
             structural_plan=params.structural_plan,
             additional_instructions=params.additional_instructions,
         )
@@ -169,7 +169,7 @@ class DraftGeneration:
 
         # Create and return result
         result = DraftGenerationResult(
-            background_research=params.background_research,
+            interest_analysis=params.interest_analysis,
             structural_plan=params.structural_plan,
             additional_instructions=params.additional_instructions,
             content_draft=llm_result.output,
@@ -202,7 +202,7 @@ class DraftGeneration:
             DraftGenerationResult containing the final content draft
         """
         params = DraftGenerationParams(
-            background_research=planning_result.background_research,
+            interest_analysis=planning_result.interest_analysis,
             structural_plan=planning_result.structural_plan,
             additional_instructions=additional_instructions,
             max_tokens=max_tokens,
@@ -231,7 +231,7 @@ class DraftGeneration:
             DraftGenerationResult containing the final content draft
         """
         params = DraftGenerationParams(
-            background_research=planning_result.background_research,
+            interest_analysis=planning_result.interest_analysis,
             structural_plan=planning_result.structural_plan,
             additional_instructions=additional_instructions,
             max_tokens=max_tokens,
@@ -262,7 +262,7 @@ class DraftGeneration:
             DraftGenerationResult containing the final content draft
         """
         params = DraftGenerationParams(
-            background_research=discovery_result.interest_analysis,
+            interest_analysis=discovery_result.interest_analysis,
             structural_plan=planning_result.structural_plan,
             additional_instructions=additional_instructions,
             max_tokens=max_tokens,
@@ -293,7 +293,7 @@ class DraftGeneration:
             DraftGenerationResult containing the final content draft
         """
         params = DraftGenerationParams(
-            background_research=discovery_result.interest_analysis,
+            interest_analysis=discovery_result.interest_analysis,
             structural_plan=planning_result.structural_plan,
             additional_instructions=additional_instructions,
             max_tokens=max_tokens,

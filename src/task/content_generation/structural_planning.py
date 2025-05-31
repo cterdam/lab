@@ -1,7 +1,7 @@
 """
 Structural Planning component for AI-driven content generation.
 
-This component takes background research and creates a detailed structural
+This component takes interest analysis and creates a detailed structural
 plan and strategy for content creation, organizing information into a
 logical and engaging framework.
 """
@@ -27,8 +27,8 @@ from .prompts import (
 class StructuralPlanningParams(DataCore):
     """Parameters for structural planning."""
 
-    background_research: str = Field(
-        description="Comprehensive background research from the discovery phase"
+    interest_analysis: str = Field(
+        description="Interest analysis from the discovery phase containing eye-catching questions and engagement strategies"
     )
 
     content_objectives: str = Field(
@@ -59,9 +59,7 @@ class StructuralPlanningParams(DataCore):
 class StructuralPlanningResult(DataCore):
     """Result from structural planning."""
 
-    background_research: str = Field(
-        description="The original background research used"
-    )
+    interest_analysis: str = Field(description="The original interest analysis used")
 
     content_objectives: str = Field(description="The content objectives specified")
 
@@ -84,7 +82,7 @@ class StructuralPlanning:
     """
     Structural Planning Component.
 
-    Takes comprehensive background research and transforms it into a well-organized,
+    Takes interest analysis and transforms it into a well-organized,
     logical content structure and detailed plan for content creation.
     """
 
@@ -113,7 +111,7 @@ class StructuralPlanning:
 
         # Prepare the prompt
         prompt = STRUCTURAL_PLANNING_PROMPT_TEMPLATE.format(
-            background_research=params.background_research,
+            interest_research=params.interest_analysis,
             content_objectives=params.content_objectives,
             target_audience=params.target_audience,
             content_type=params.content_type,
@@ -132,7 +130,7 @@ class StructuralPlanning:
 
         # Create and return result
         result = StructuralPlanningResult(
-            background_research=params.background_research,
+            interest_analysis=params.interest_analysis,
             content_objectives=params.content_objectives,
             target_audience=params.target_audience,
             content_type=params.content_type,
@@ -162,7 +160,7 @@ class StructuralPlanning:
 
         # Prepare the prompt
         prompt = STRUCTURAL_PLANNING_PROMPT_TEMPLATE.format(
-            background_research=params.background_research,
+            interest_research=params.interest_analysis,
             content_objectives=params.content_objectives,
             target_audience=params.target_audience,
             content_type=params.content_type,
@@ -181,7 +179,7 @@ class StructuralPlanning:
 
         # Create and return result
         result = StructuralPlanningResult(
-            background_research=params.background_research,
+            interest_analysis=params.interest_analysis,
             content_objectives=params.content_objectives,
             target_audience=params.target_audience,
             content_type=params.content_type,
@@ -221,7 +219,7 @@ class StructuralPlanning:
             StructuralPlanningResult containing detailed content structure
         """
         params = StructuralPlanningParams(
-            background_research=discovery_result.interest_analysis,
+            interest_analysis=discovery_result.interest_analysis,
             content_objectives=content_objectives,
             target_audience=target_audience,
             content_type=content_type,
@@ -255,7 +253,7 @@ class StructuralPlanning:
             StructuralPlanningResult containing detailed content structure
         """
         params = StructuralPlanningParams(
-            background_research=discovery_result.interest_analysis,
+            interest_analysis=discovery_result.interest_analysis,
             content_objectives=content_objectives,
             target_audience=target_audience,
             content_type=content_type,

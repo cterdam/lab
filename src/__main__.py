@@ -75,6 +75,11 @@ def run_task():
 
             main()
 
+        case "content_generation":
+            from src.task.content_generation import main
+
+            main()
+
 
 def main():
     parse_args()

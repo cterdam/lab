@@ -17,7 +17,7 @@ from src.lib.model.txt.lm_basis import LmBasis
 from src.lib.model.txt.lm_gentxt_params import LmGentxtParams
 from src.lib.model.txt.lm_gentxt_result import LmGentxtResult
 
-from .background_discovery import BackgroundDiscoveryResult
+from .interest_discovery import InterestDiscoveryResult
 from .prompts import (
     STRUCTURAL_PLANNING_PROMPT_TEMPLATE,
     STRUCTURAL_PLANNING_SYSTEM_PROMPT,
@@ -199,7 +199,7 @@ class StructuralPlanning:
 
     def plan_from_discovery(
         self,
-        discovery_result: BackgroundDiscoveryResult,
+        discovery_result: InterestDiscoveryResult,
         content_objectives: str = "Create informative and engaging content that educates the target audience",
         target_audience: str = "General audience with interest in the topic",
         content_type: str = "Article/Blog Post",
@@ -207,10 +207,10 @@ class StructuralPlanning:
         temperature: float = 0.4,
     ) -> StructuralPlanningResult:
         """
-        Create a structural plan directly from background discovery results.
+        Create a structural plan directly from interest discovery results.
 
         Args:
-            discovery_result: Result from background discovery component
+            discovery_result: Result from interest discovery component
             content_objectives: Objectives for the content
             target_audience: Description of target audience
             content_type: Type of content to create
@@ -221,7 +221,7 @@ class StructuralPlanning:
             StructuralPlanningResult containing detailed content structure
         """
         params = StructuralPlanningParams(
-            background_research=discovery_result.background_research,
+            background_research=discovery_result.interest_analysis,
             content_objectives=content_objectives,
             target_audience=target_audience,
             content_type=content_type,
@@ -233,7 +233,7 @@ class StructuralPlanning:
 
     async def aplan_from_discovery(
         self,
-        discovery_result: BackgroundDiscoveryResult,
+        discovery_result: InterestDiscoveryResult,
         content_objectives: str = "Create informative and engaging content that educates the target audience",
         target_audience: str = "General audience with interest in the topic",
         content_type: str = "Article/Blog Post",
@@ -241,10 +241,10 @@ class StructuralPlanning:
         temperature: float = 0.4,
     ) -> StructuralPlanningResult:
         """
-        Create an asynchronous structural plan directly from background discovery results.
+        Create an asynchronous structural plan directly from interest discovery results.
 
         Args:
-            discovery_result: Result from background discovery component
+            discovery_result: Result from interest discovery component
             content_objectives: Objectives for the content
             target_audience: Description of target audience
             content_type: Type of content to create
@@ -255,7 +255,7 @@ class StructuralPlanning:
             StructuralPlanningResult containing detailed content structure
         """
         params = StructuralPlanningParams(
-            background_research=discovery_result.background_research,
+            background_research=discovery_result.interest_analysis,
             content_objectives=content_objectives,
             target_audience=target_audience,
             content_type=content_type,

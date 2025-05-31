@@ -11,12 +11,12 @@ from src.lib.model.txt.api.openai import (
     OpenaiLmInitParams,
 )
 
-from .background_discovery import BackgroundDiscovery, BackgroundDiscoveryParams
+from .interest_discovery import InterestDiscovery, InterestDiscoveryParams
 
 
-def test_background_discovery():
-    """Test the background discovery component."""
-    print("Testing Background Discovery Component...")
+def test_interest_discovery():
+    """Test the interest discovery component."""
+    print("Testing Interest Discovery Component...")
 
     # Load environment variables
     load_dotenv()
@@ -24,26 +24,80 @@ def test_background_discovery():
     # Initialize model
     model = OpenaiLm(params=OpenaiLmInitParams(model_name="gpt-4o-mini"))
 
-    # Test background discovery
-    discovery = BackgroundDiscovery(model)
-    params = BackgroundDiscoveryParams(
-        topic="Python programming for beginners",
+    # Test interest discovery
+    discovery = InterestDiscovery(model)
+    params = InterestDiscoveryParams(
+        field_of_topic="Technology",
+        keywords="Python programming for beginners",
         max_tokens=1000,  # Small for testing
-        temperature=0.3,
+        temperature=0.7,
     )
 
     try:
         result = discovery.discover(params)
-        print(f"✅ Background Discovery successful!")
-        print(f"   Topic: {result.topic}")
-        print(f"   Research length: {len(result.background_research)} characters")
+        print(f"✅ Interest Discovery successful!")
+        print(f"   Field: {result.field_of_topic}")
+        print(f"   Keywords: {result.keywords}")
+        print(f"   Analysis length: {len(result.interest_analysis)} characters")
         print(f"   Tokens: {result.input_tokens} input, {result.output_tokens} output")
-        print(f"   Preview: {result.background_research[:200]}...")
+        print(f"   Preview: {result.interest_analysis[:200]}...")
         return True
     except Exception as e:
-        print(f"❌ Background Discovery failed: {e}")
+        print(f"❌ Interest Discovery failed: {e}")
+        return False
+
+
+def test_quick_pipeline():
+    """Test a quick run of the full pipeline."""
+    print("\nTesting Quick Pipeline...")
+
+    try:
+        from .pipeline import ContentGenerationPipeline, ContentGenerationPipelineParams
+
+        # Load environment variables
+        load_dotenv()
+
+        # Initialize model and pipeline
+        model = OpenaiLm(params=OpenaiLmInitParams(model_name="gpt-4o-mini"))
+        pipeline = ContentGenerationPipeline(model)
+
+        # Quick test with minimal tokens
+        params = ContentGenerationPipelineParams(
+            field_of_topic="Education",
+            keywords="online learning effectiveness debate",
+            content_objectives="Create a brief controversial article",
+            target_audience="Educators",
+            content_type="Opinion piece",
+            discovery_max_tokens=800,
+            planning_max_tokens=600,
+            generation_max_tokens=1000,
+        )
+
+        result = pipeline.generate_content(params)
+        print(f"✅ Quick Pipeline successful!")
+        print(f"   Field: {result.field_of_topic}")
+        print(f"   Keywords: {result.keywords}")
+        print(f"   Final content length: {len(result.final_content)} characters")
+        print(
+            f"   Total tokens: {result.total_input_tokens} input, {result.total_output_tokens} output"
+        )
+        return True
+
+    except Exception as e:
+        print(f"❌ Quick Pipeline failed: {e}")
         return False
 
 
 if __name__ == "__main__":
-    test_background_discovery()
+    print("Running Content Generation Pipeline Tests...\n")
+
+    # Test individual component
+    success1 = test_interest_discovery()
+
+    # Test full pipeline
+    success2 = test_quick_pipeline()
+
+    if success1 and success2:
+        print(f"\n🎉 All tests passed!")
+    else:
+        print(f"\n❌ Some tests failed. Check the output above.")

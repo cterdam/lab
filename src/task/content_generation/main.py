@@ -15,8 +15,8 @@ from src.lib.model.txt.api.openai import (
     OpenaiLmInitParams,
 )
 
-from .background_discovery import BackgroundDiscovery, BackgroundDiscoveryParams
 from .draft_generation import DraftGeneration, DraftGenerationParams
+from .interest_discovery import InterestDiscovery, InterestDiscoveryParams
 from .pipeline import ContentGenerationPipeline, ContentGenerationPipelineParams
 from .structural_planning import StructuralPlanning, StructuralPlanningParams
 
@@ -27,16 +27,19 @@ def demo_individual_components(model):
     """
     log.info("=== Individual Components Demo ===")
 
-    topic = "The future of renewable energy"
+    field_of_topic = "Technology"
+    keywords = "artificial intelligence and future of work"
 
-    # Component 1: Background Discovery
-    log.info("Running Background Discovery...")
-    discovery = BackgroundDiscovery(model)
-    discovery_params = BackgroundDiscoveryParams(topic=topic)
+    # Component 1: Interest Discovery
+    log.info("Running Interest Discovery...")
+    discovery = InterestDiscovery(model)
+    discovery_params = InterestDiscoveryParams(
+        field_of_topic=field_of_topic, keywords=keywords
+    )
     discovery_result = discovery.discover(discovery_params)
 
     log.info(
-        f"Background research generated: {len(discovery_result.background_research)} characters"
+        f"Interest analysis generated: {len(discovery_result.interest_analysis)} characters"
     )
     log.info(
         f"Discovery tokens: {discovery_result.input_tokens} input, {discovery_result.output_tokens} output"
@@ -46,8 +49,8 @@ def demo_individual_components(model):
     log.info("Running Structural Planning...")
     planning = StructuralPlanning(model)
     planning_params = StructuralPlanningParams(
-        background_research=discovery_result.background_research,
-        content_objectives="Create an informative article about renewable energy for business leaders",
+        background_research=discovery_result.interest_analysis,
+        content_objectives="Create an engaging article about AI and work for business leaders",
         target_audience="Business executives and decision makers",
         content_type="Professional article",
     )
@@ -64,9 +67,9 @@ def demo_individual_components(model):
     log.info("Running Draft Generation...")
     generation = DraftGeneration(model)
     generation_params = DraftGenerationParams(
-        background_research=discovery_result.background_research,
+        background_research=discovery_result.interest_analysis,
         structural_plan=planning_result.structural_plan,
-        additional_instructions="Write in a professional but accessible tone. Include specific examples and actionable insights.",
+        additional_instructions="Focus on practical implications and actionable insights for business leaders.",
     )
     generation_result = generation.generate(generation_params)
 
@@ -88,115 +91,72 @@ def demo_individual_components(model):
         + planning_result.output_tokens
         + generation_result.output_tokens
     )
-    log.success(
-        f"Individual components completed. Total tokens: {total_input} input, {total_output} output"
-    )
+
+    log.info(f"Total tokens used: {total_input} input, {total_output} output")
 
 
-def demo_complete_pipeline(model):
+def demo_pipeline(model):
     """
     Demonstrate using the complete pipeline with provided model.
     """
     log.info("=== Complete Pipeline Demo ===")
 
-    # Initialize pipeline
     pipeline = ContentGenerationPipeline(model)
 
-    # Configure pipeline parameters
     params = ContentGenerationPipelineParams(
-        topic="Artificial Intelligence in Healthcare",
-        content_objectives="Create a comprehensive guide that explains AI applications in healthcare for medical professionals",
-        target_audience="Healthcare professionals, doctors, and medical administrators",
-        content_type="Educational guide",
-        additional_instructions="Focus on practical applications, ethical considerations, and future prospects. Use medical terminology appropriately but ensure accessibility.",
-        # Customize token limits and temperatures for each component
-        discovery_max_tokens=3500,
-        discovery_temperature=0.2,  # More factual
-        planning_max_tokens=2500,
-        planning_temperature=0.4,  # Balanced
-        generation_max_tokens=4500,
-        generation_temperature=0.7,  # More creative
+        field_of_topic="Health & Wellness",
+        keywords="intermittent fasting weight loss benefits risks",
+        content_objectives="Create an informative yet controversial article about intermittent fasting",
+        target_audience="Health-conscious individuals aged 25-45",
+        content_type="Blog post",
+        additional_instructions="Focus on controversial aspects and recent scientific debates about intermittent fasting.",
     )
 
-    # Generate content
     result = pipeline.generate_content(params)
 
-    # Display results
-    log.info(f"Topic: {result.topic}")
-    log.info(f"Content Type: {result.content_type}")
-    log.info(f"Target Audience: {result.target_audience}")
+    log.info(f"Pipeline completed for field: {result.field_of_topic}")
+    log.info(f"Keywords used: {result.keywords}")
     log.info(f"Final content length: {len(result.final_content)} characters")
     log.info(
-        f"Total tokens: {result.total_input_tokens} input, {result.total_output_tokens} output"
+        f"Total pipeline tokens: {result.total_input_tokens} input, {result.total_output_tokens} output"
     )
 
-    # Save the final content for review
-    content_preview = (
-        result.final_content[:500] + "..."
-        if len(result.final_content) > 500
-        else result.final_content
-    )
-    log.info(f"Content preview:\n{content_preview}")
+    # Print a preview of each component's output
+    log.info("\n--- Interest Discovery Preview ---")
+    log.info(result.discovery_result.interest_analysis[:300] + "...")
 
-    log.success("Complete pipeline demo completed successfully!")
+    log.info("\n--- Structural Plan Preview ---")
+    log.info(result.planning_result.structural_plan[:300] + "...")
 
-    return result
+    log.info("\n--- Final Content Preview ---")
+    log.info(result.final_content[:300] + "...")
 
 
 async def demo_async_pipeline(model):
     """
-    Demonstrate using the async pipeline for better performance with provided model.
+    Demonstrate using the async pipeline with provided model.
     """
     log.info("=== Async Pipeline Demo ===")
 
-    # Initialize pipeline
     pipeline = ContentGenerationPipeline(model)
 
-    # Configure parameters for multiple topics
-    topics = [
-        {
-            "topic": "Sustainable Agriculture Practices",
-            "objectives": "Create an informative article about sustainable farming for farmers and agricultural businesses",
-            "audience": "Farmers, agricultural professionals, and sustainability experts",
-            "type": "Technical article",
-        },
-        {
-            "topic": "Remote Work Best Practices",
-            "objectives": "Create a practical guide for effective remote work management",
-            "audience": "Managers, team leaders, and remote workers",
-            "type": "Practical guide",
-        },
-    ]
-
-    # Generate content for multiple topics asynchronously
-    tasks = []
-    for topic_config in topics:
-        params = ContentGenerationPipelineParams(
-            topic=topic_config["topic"],
-            content_objectives=topic_config["objectives"],
-            target_audience=topic_config["audience"],
-            content_type=topic_config["type"],
-        )
-        tasks.append(pipeline.agenerate_content(params))
-
-    # Wait for all to complete
-    results = await asyncio.gather(*tasks)
-
-    # Display results
-    for i, result in enumerate(results, 1):
-        log.info(f"Result {i}: {result.topic}")
-        log.info(f"  - Content length: {len(result.final_content)} characters")
-        log.info(
-            f"  - Tokens: {result.total_input_tokens} input, {result.total_output_tokens} output"
-        )
-
-    total_input = sum(r.total_input_tokens for r in results)
-    total_output = sum(r.total_output_tokens for r in results)
-    log.success(
-        f"Async pipeline demo completed! Total: {total_input} input, {total_output} output tokens"
+    params = ContentGenerationPipelineParams(
+        field_of_topic="Finance",
+        keywords="cryptocurrency bitcoin regulation government control",
+        content_objectives="Create a provocative article about cryptocurrency regulation",
+        target_audience="Crypto investors and financial enthusiasts",
+        content_type="Opinion piece",
+        additional_instructions="Focus on government overreach concerns and decentralization benefits.",
     )
 
-    return results
+    result = await pipeline.agenerate_content(params)
+
+    log.info(f"Async pipeline completed for field: {result.field_of_topic}")
+    log.info(f"Keywords used: {result.keywords}")
+    log.info(f"Final content length: {len(result.final_content)} characters")
+    log.info(
+        f"Total pipeline tokens: {result.total_input_tokens} input, {result.total_output_tokens} output"
+    )
 
 
 def demo_with_different_models(model):
@@ -257,7 +217,7 @@ def main():
         log.info("\n" + "=" * 50 + "\n")
 
         # Demo 2: Complete pipeline
-        result = demo_complete_pipeline(model)
+        demo_pipeline(model)
 
         log.info("\n" + "=" * 50 + "\n")
 

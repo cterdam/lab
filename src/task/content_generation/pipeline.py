@@ -2,7 +2,7 @@
 Content Generation Pipeline for AI-driven content generation.
 
 This module provides a complete pipeline that orchestrates all three components:
-1. Background Discovery
+1. Interest Discovery
 2. Structural Planning
 3. Draft Generation
 """
@@ -16,15 +16,15 @@ from src import log
 from src.core import DataCore
 from src.lib.model.txt import LmBasis
 
-from .background_discovery import (
-    BackgroundDiscovery,
-    BackgroundDiscoveryParams,
-    BackgroundDiscoveryResult,
-)
 from .draft_generation import (
     DraftGeneration,
     DraftGenerationParams,
     DraftGenerationResult,
+)
+from .interest_discovery import (
+    InterestDiscovery,
+    InterestDiscoveryParams,
+    InterestDiscoveryResult,
 )
 from .structural_planning import (
     StructuralPlanning,
@@ -36,7 +36,13 @@ from .structural_planning import (
 class ContentGenerationPipelineParams(DataCore):
     """Parameters for the complete content generation pipeline."""
 
-    topic: str = Field(description="The main topic for content generation")
+    field_of_topic: str = Field(
+        description="The specific field or domain for content generation"
+    )
+
+    keywords: str = Field(
+        description="Keywords or sentence related to the field of topic"
+    )
 
     content_objectives: str = Field(
         default="Create informative and engaging content that educates the target audience",
@@ -60,11 +66,11 @@ class ContentGenerationPipelineParams(DataCore):
 
     # Component-specific parameters
     discovery_max_tokens: Optional[int] = Field(
-        default=4000, description="Maximum tokens for background discovery"
+        default=4000, description="Maximum tokens for interest discovery"
     )
 
     discovery_temperature: float = Field(
-        default=0.3, description="Temperature for background discovery"
+        default=0.7, description="Temperature for interest discovery"
     )
 
     planning_max_tokens: Optional[int] = Field(
@@ -87,7 +93,9 @@ class ContentGenerationPipelineParams(DataCore):
 class ContentGenerationPipelineResult(DataCore):
     """Result from the complete content generation pipeline."""
 
-    topic: str = Field(description="The original topic")
+    field_of_topic: str = Field(description="The original field of topic")
+
+    keywords: str = Field(description="The original keywords")
 
     content_objectives: str = Field(description="The content objectives specified")
 
@@ -96,8 +104,8 @@ class ContentGenerationPipelineResult(DataCore):
     content_type: str = Field(description="The type of content specified")
 
     # Component results
-    discovery_result: BackgroundDiscoveryResult = Field(
-        description="Result from background discovery component"
+    discovery_result: InterestDiscoveryResult = Field(
+        description="Result from interest discovery component"
     )
 
     planning_result: StructuralPlanningResult = Field(
@@ -126,7 +134,7 @@ class ContentGenerationPipeline:
     Complete Content Generation Pipeline.
 
     Orchestrates the three-component pipeline for AI-driven content generation:
-    1. Background Discovery - Research and analyze the topic
+    1. Interest Discovery - Discover eye-catching questions based on keywords and field
     2. Structural Planning - Create content structure and strategy
     3. Draft Generation - Generate the final content draft
     """
@@ -143,7 +151,7 @@ class ContentGenerationPipeline:
         self.logger = log.bind(component=log_name)
 
         # Initialize all components
-        self.discovery = BackgroundDiscovery(model, "background_discovery")
+        self.discovery = InterestDiscovery(model, "interest_discovery")
         self.planning = StructuralPlanning(model, "structural_planning")
         self.generation = DraftGeneration(model, "draft_generation")
 
@@ -160,13 +168,14 @@ class ContentGenerationPipeline:
             ContentGenerationPipelineResult containing all results and final content
         """
         self.logger.info(
-            f"Starting content generation pipeline for topic: {params.topic}"
+            f"Starting content generation pipeline for field: {params.field_of_topic}, keywords: {params.keywords}"
         )
 
-        # Step 1: Background Discovery
-        self.logger.info("Step 1: Background Discovery")
-        discovery_params = BackgroundDiscoveryParams(
-            topic=params.topic,
+        # Step 1: Interest Discovery
+        self.logger.info("Step 1: Interest Discovery")
+        discovery_params = InterestDiscoveryParams(
+            field_of_topic=params.field_of_topic,
+            keywords=params.keywords,
             max_tokens=params.discovery_max_tokens,
             temperature=params.discovery_temperature,
         )
@@ -175,7 +184,7 @@ class ContentGenerationPipeline:
         # Step 2: Structural Planning
         self.logger.info("Step 2: Structural Planning")
         planning_params = StructuralPlanningParams(
-            background_research=discovery_result.background_research,
+            background_research=discovery_result.interest_analysis,
             content_objectives=params.content_objectives,
             target_audience=params.target_audience,
             content_type=params.content_type,
@@ -187,7 +196,7 @@ class ContentGenerationPipeline:
         # Step 3: Draft Generation
         self.logger.info("Step 3: Draft Generation")
         generation_params = DraftGenerationParams(
-            background_research=discovery_result.background_research,
+            background_research=discovery_result.interest_analysis,
             structural_plan=planning_result.structural_plan,
             additional_instructions=params.additional_instructions,
             max_tokens=params.generation_max_tokens,
@@ -195,7 +204,7 @@ class ContentGenerationPipeline:
         )
         generation_result = self.generation.generate(generation_params)
 
-        # Calculate totals
+        # Calculate total token usage
         total_input_tokens = (
             discovery_result.input_tokens
             + planning_result.input_tokens
@@ -209,7 +218,8 @@ class ContentGenerationPipeline:
 
         # Create final result
         result = ContentGenerationPipelineResult(
-            topic=params.topic,
+            field_of_topic=params.field_of_topic,
+            keywords=params.keywords,
             content_objectives=params.content_objectives,
             target_audience=params.target_audience,
             content_type=params.content_type,
@@ -221,11 +231,9 @@ class ContentGenerationPipeline:
             total_output_tokens=total_output_tokens,
         )
 
-        self.logger.success(
-            f"Content generation pipeline completed for: {params.topic}"
-        )
+        self.logger.success("Content generation pipeline completed successfully")
         self.logger.info(
-            f"Total tokens: {total_input_tokens} input, {total_output_tokens} output"
+            f"Total tokens used: {total_input_tokens} input, {total_output_tokens} output"
         )
 
         return result
@@ -243,13 +251,14 @@ class ContentGenerationPipeline:
             ContentGenerationPipelineResult containing all results and final content
         """
         self.logger.info(
-            f"Starting async content generation pipeline for topic: {params.topic}"
+            f"Starting async content generation pipeline for field: {params.field_of_topic}, keywords: {params.keywords}"
         )
 
-        # Step 1: Background Discovery
-        self.logger.info("Step 1: Background Discovery")
-        discovery_params = BackgroundDiscoveryParams(
-            topic=params.topic,
+        # Step 1: Interest Discovery
+        self.logger.info("Step 1: Interest Discovery")
+        discovery_params = InterestDiscoveryParams(
+            field_of_topic=params.field_of_topic,
+            keywords=params.keywords,
             max_tokens=params.discovery_max_tokens,
             temperature=params.discovery_temperature,
         )
@@ -258,7 +267,7 @@ class ContentGenerationPipeline:
         # Step 2: Structural Planning
         self.logger.info("Step 2: Structural Planning")
         planning_params = StructuralPlanningParams(
-            background_research=discovery_result.background_research,
+            background_research=discovery_result.interest_analysis,
             content_objectives=params.content_objectives,
             target_audience=params.target_audience,
             content_type=params.content_type,
@@ -270,7 +279,7 @@ class ContentGenerationPipeline:
         # Step 3: Draft Generation
         self.logger.info("Step 3: Draft Generation")
         generation_params = DraftGenerationParams(
-            background_research=discovery_result.background_research,
+            background_research=discovery_result.interest_analysis,
             structural_plan=planning_result.structural_plan,
             additional_instructions=params.additional_instructions,
             max_tokens=params.generation_max_tokens,
@@ -278,7 +287,7 @@ class ContentGenerationPipeline:
         )
         generation_result = await self.generation.agenerate(generation_params)
 
-        # Calculate totals
+        # Calculate total token usage
         total_input_tokens = (
             discovery_result.input_tokens
             + planning_result.input_tokens
@@ -292,7 +301,8 @@ class ContentGenerationPipeline:
 
         # Create final result
         result = ContentGenerationPipelineResult(
-            topic=params.topic,
+            field_of_topic=params.field_of_topic,
+            keywords=params.keywords,
             content_objectives=params.content_objectives,
             target_audience=params.target_audience,
             content_type=params.content_type,
@@ -304,11 +314,9 @@ class ContentGenerationPipeline:
             total_output_tokens=total_output_tokens,
         )
 
-        self.logger.success(
-            f"Async content generation pipeline completed for: {params.topic}"
-        )
+        self.logger.success("Async content generation pipeline completed successfully")
         self.logger.info(
-            f"Total tokens: {total_input_tokens} input, {total_output_tokens} output"
+            f"Total tokens used: {total_input_tokens} input, {total_output_tokens} output"
         )
 
         return result

@@ -17,7 +17,7 @@ from src.lib.model.txt.lm_basis import LmBasis
 from src.lib.model.txt.lm_gentxt_params import LmGentxtParams
 from src.lib.model.txt.lm_gentxt_result import LmGentxtResult
 
-from .background_discovery import BackgroundDiscoveryResult
+from .interest_discovery import InterestDiscoveryResult
 from .prompts import (
     DRAFT_GENERATION_PROMPT_TEMPLATE,
     DRAFT_GENERATION_SYSTEM_PROMPT,
@@ -242,7 +242,7 @@ class DraftGeneration:
 
     def generate_from_discovery_and_planning(
         self,
-        discovery_result: BackgroundDiscoveryResult,
+        discovery_result: InterestDiscoveryResult,
         planning_result: StructuralPlanningResult,
         additional_instructions: str = "Generate high-quality, engaging content that follows best practices for readability and engagement.",
         max_tokens: Optional[int] = 5000,
@@ -252,7 +252,7 @@ class DraftGeneration:
         Generate a content draft from both discovery and planning results.
 
         Args:
-            discovery_result: Result from background discovery component
+            discovery_result: Result from interest discovery component
             planning_result: Result from structural planning component
             additional_instructions: Additional specific instructions
             max_tokens: Maximum tokens for response
@@ -262,7 +262,7 @@ class DraftGeneration:
             DraftGenerationResult containing the final content draft
         """
         params = DraftGenerationParams(
-            background_research=discovery_result.background_research,
+            background_research=discovery_result.interest_analysis,
             structural_plan=planning_result.structural_plan,
             additional_instructions=additional_instructions,
             max_tokens=max_tokens,
@@ -273,7 +273,7 @@ class DraftGeneration:
 
     async def agenerate_from_discovery_and_planning(
         self,
-        discovery_result: BackgroundDiscoveryResult,
+        discovery_result: InterestDiscoveryResult,
         planning_result: StructuralPlanningResult,
         additional_instructions: str = "Generate high-quality, engaging content that follows best practices for readability and engagement.",
         max_tokens: Optional[int] = 5000,
@@ -283,7 +283,7 @@ class DraftGeneration:
         Generate an asynchronous content draft from both discovery and planning results.
 
         Args:
-            discovery_result: Result from background discovery component
+            discovery_result: Result from interest discovery component
             planning_result: Result from structural planning component
             additional_instructions: Additional specific instructions
             max_tokens: Maximum tokens for response
@@ -293,7 +293,7 @@ class DraftGeneration:
             DraftGenerationResult containing the final content draft
         """
         params = DraftGenerationParams(
-            background_research=discovery_result.background_research,
+            background_research=discovery_result.interest_analysis,
             structural_plan=planning_result.structural_plan,
             additional_instructions=additional_instructions,
             max_tokens=max_tokens,

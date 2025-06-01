@@ -464,66 +464,69 @@ def main():
     params = render_sidebar()
 
     # Main content area
-    col1, col2 = st.columns([2, 1])
+    st.subheader("🤖 Agents")
 
-    with col1:
-        st.subheader("🤖 Agents")
+    # Agent status cards
+    agent_cols = st.columns(3)  # Create three columns for agent cards
 
-        # Agent status cards
-        if st.session_state.is_generating:
+    if st.session_state.is_generating:
+        with agent_cols[0]:
             render_agent_card(
                 "🔍",
                 "Discovery Agent",
                 "Analyzing keywords and discovering engaging angles",
                 "Running",
             )
+        with agent_cols[1]:
             render_agent_card(
                 "📋",
                 "Planning Agent",
                 "Creating content structure and strategy",
                 "Ready",
             )
-            render_agent_card(
-                "✍️", "Writer Agent", "Generating final content draft", "Ready"
-            )
-        else:
+        with agent_cols[2]:
+            render_agent_card("✍️", "Writer Agent", "Generating final content", "Ready")
+    else:
+        with agent_cols[0]:
             render_agent_card(
                 "🔍",
                 "Discovery Agent",
                 "Analyzes keywords and discovers engaging angles",
                 "Ready",
             )
+        with agent_cols[1]:
             render_agent_card(
                 "📋",
                 "Planning Agent",
                 "Creates content structure and strategy",
                 "Ready",
             )
-            render_agent_card(
-                "✍️", "Writer Agent", "Generates final content draft", "Ready"
-            )
+        with agent_cols[2]:
+            render_agent_card("✍️", "Writer Agent", "Generates final content", "Ready")
 
-    with col2:
-        st.subheader("🎮 Controls")
+    # Moved Controls section here
+    st.subheader("🎮 Controls")
 
-        # Validation
-        if not params["field_of_topic"].strip():
-            st.warning("⚠️ Please enter a field of topic")
-            generate_disabled = True
-        elif not params["keywords"].strip():
-            st.warning("⚠️ Please enter some keywords")
-            generate_disabled = True
-        elif not os.getenv("OPENAI_API_KEY"):
-            st.warning("⚠️ OpenAI API key required")
-            generate_disabled = True
-        else:
-            generate_disabled = False
+    # Validation
+    if not params["field_of_topic"].strip():
+        st.warning("⚠️ Please enter a field of topic")
+        generate_disabled = True
+    elif not params["keywords"].strip():
+        st.warning("⚠️ Please enter some keywords")
+        generate_disabled = True
+    elif not os.getenv("OPENAI_API_KEY"):
+        st.warning("⚠️ OpenAI API key required")
+        generate_disabled = True
+    else:
+        generate_disabled = False
 
-        # Generate button
+    # Generate button
+    # Create 3 columns for the button row, to align with agent cards
+    _, btn_col, _ = st.columns([1, 1, 1])  # Use 3 equal columns
+    with btn_col:  # Place button in the middle column
         if st.button(
             "🚀 Generate Content",
             disabled=generate_disabled or st.session_state.is_generating,
-            use_container_width=True,
             type="primary",
         ):
             st.session_state.is_generating = True

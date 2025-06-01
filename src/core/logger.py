@@ -5,6 +5,7 @@ import inspect
 import os
 import textwrap
 import threading
+from typing import Any, Dict
 
 import loguru
 
@@ -148,11 +149,7 @@ class Logger:
         logger = loguru.logger
 
         # Send relative path and header str with records
-        logger = logger.patch(
-            lambda record: record["extra"].update(
-                relpath=os.path.relpath(record["file"].path, env.repo_root)
-            )
-        )
+        logger = logger.patch(Logger._patch_relpath)
 
         # Configure logging levels with colorscheme
         for name, no, fg in Logger._LEVELS:
@@ -181,14 +178,29 @@ class Logger:
     @atexit.register
     def _flush_logs():
         """Flush all logs enqueued at async sinks upon program exit."""
+        try:
+            # Create a local reference to avoid NameError during shutdown
+            base_logger = Logger._base_logger()
+            event_loop = Logger._log_event_loop
 
-        async def _await_logger_complete():
-            await Logger._base_logger().complete()
+            async def _await_logger_complete():
+                await base_logger.complete()
 
-        asyncio.run_coroutine_threadsafe(
-            _await_logger_complete(), Logger._log_event_loop
-        ).result()
-        Logger._log_event_loop.call_soon_threadsafe(Logger._log_event_loop.stop)
+            # Check if event loop is still running
+            if not event_loop.is_closed():
+                try:
+                    asyncio.run_coroutine_threadsafe(
+                        _await_logger_complete(), event_loop
+                    ).result(
+                        timeout=1.0
+                    )  # Add timeout to prevent hanging
+                    event_loop.call_soon_threadsafe(event_loop.stop)
+                except Exception:
+                    # Ignore errors during shutdown
+                    pass
+        except Exception:
+            # Ignore all errors during shutdown to prevent noise
+            pass
 
     @staticmethod
     def add_sink(sink, *args, **kwargs) -> int:
@@ -215,12 +227,12 @@ class Logger:
         Logger._base_logger().remove(sink_id)
 
     @staticmethod
-    def _filter_by_id(record: loguru.Record, logger_id: str):
+    def _filter_by_id(record: Dict[str, Any], logger_id: str):
         """Loguru filter to only allow records matching the given logger_id"""
         return record["extra"]["logger_id"] == logger_id
 
     @staticmethod
-    def _patch_relpath(record: loguru.Record) -> None:
+    def _patch_relpath(record: Dict[str, Any]) -> None:
         """Loguru patch to add an extra field for relative path."""
         from src import env
 
@@ -234,7 +246,7 @@ class Logger:
             record["extra"]["relpath"] = os.path.basename(record["file"].path)
 
     @staticmethod
-    def _patch_header(record: loguru.Record) -> None:
+    def _patch_header(record: Dict[str, Any]) -> None:
         """Loguru patch to add a header str as extra field."""
         from src import env
 

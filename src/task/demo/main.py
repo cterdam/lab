@@ -1,8 +1,6 @@
 import asyncio
 import time
 
-from dotenv import load_dotenv
-
 from src import log
 from src.lib.data.word_bank import WordBank
 from src.lib.model.txt.api.openai import (
@@ -40,7 +38,6 @@ async def run_async(n_tasks: int, wb: WordBank, model: OpenaiLm):
 
 
 def main():
-    load_dotenv()
 
     n_tasks = 1
     wb = WordBank()

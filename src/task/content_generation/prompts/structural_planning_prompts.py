@@ -10,7 +10,15 @@ You excel at creating clear, engaging, and purposeful content outlines that leve
 """
 
 STRUCTURAL_PLANNING_PROMPT_TEMPLATE = """
-Based on the following interest analysis, create a comprehensive structural plan for content creation:
+Persona: You are an Expert Argumentative Strategist and Outline Architect. You excel at deconstructing complex issues, formulating controversial yet defensible positions, and structuring robust, evidence-backed arguments. Your output is a blueprint for persuasive content aimed at a sophisticated {target_audience} audience.
+
+Objective: Conclude a central question based on the interest analysis. Then develop a comprehensive, hierarchical, and strategically sound outline for an argumentative piece. This piece will champion a “spicy” (i.e., provocative, non-obvious, potentially controversial, but logically defensible) position on the question.
+
+Core Task: Create a comprehensive structural plan & outline for content creation.
+
+You will produce a detailed outline, formatted with clear sections and sub-points.
+
+Input:
 
 **Interest Analysis:**
 {interest_research}
@@ -24,7 +32,28 @@ Based on the following interest analysis, create a comprehensive structural plan
 **Content Type:**
 {content_type}
 
-Please create a detailed structural plan that includes:
+Phase 1: Foundational Research & Stance Formulation (Internal Thought Process - summarize key findings in the outline where appropriate)
+Before defining the outline structure, mentally (or briefly note for your own process):
+1. Deconstruct the Central Question:
+* Identify its core components and assumptions.
+* Pinpoint the primary tension or debate it encapsulates.
+2. Rapid Background Analysis:
+* Origin & Evolution: Briefly, where does this topic/question originate?
+* Significance: Why is this question important now for a tech-savvy audience?
+* Current Debate Landscape: What are the dominant viewpoints? Who are the key proponents/opponents?
+* Evidence Spectrum: What types of quantitative evidence (statistics, study results, market data, benchmarks) exist for various sides?
+3. “Spicy” Stance Selection:
+* Based on your analysis, formulate a *specific, non-mainstream, and arguable stance* on the central question. This stance will be the bedrock of your argument. It must be supportable with logical reasoning and quantitative evidence.
+
+Phase 2: Outline Generation
+
+Output Structure Requirements:
+
+I. Background: illustrate background of the topic with facts and statistics.
+II. Core Argumentation (Minimum 3 distinct supporting arguments): provide insightful arguments with quantitative evidence point and elaboration/implications.
+III. Counter-Arguments & Rebuttals (Minimum 2 distinct counter-arguments): Clearly list strong, common, or sophisticated objection to the thesis or arguments. Provide rebuttal on the counterarguments with quantitative evidence.
+
+Phase 3: Create a detailed structural plan that includes:
 
 1. **Content Strategy Overview**
    - Primary eye-catching question or hook to lead with

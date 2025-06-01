@@ -17,40 +17,13 @@ Focus on questions that would make people stop scrolling and want to engage, deb
 """
 
 INTEREST_DISCOVERY_PROMPT_TEMPLATE = """
-Field of Topic: {field_of_topic}
-Keywords: {keywords}
 
-Based on the above field and keywords, discover the most eye-catching questions that could attract maximum audience attention. Your analysis should include:
+You are an expert writer who knows a lot about {field_of_topic} topics. You specialize in producing informative and eye-catching content.
 
-1. **Primary Eye-Catching Question**
-   - The single most controversial/attention-grabbing question
-   - Should be concise (under 15 words)
-   - Must be relevant to the field and keywords
+{keywords} seems to be on the headlines lately. First perform some background research. What is it? Why is it important? Why should people care about it?
 
-2. **Alternative Compelling Questions**
-   - 3-5 additional questions with high engagement potential
-   - Each should approach the topic from different controversial angles
-   - Focus on current debates, sensitive issues, or trending concerns
-
-3. **Controversy Analysis**
-   - Why these questions are controversial or attention-grabbing
-   - What makes them sensitive or debate-worthy
-   - Current relevance and trending factors
-
-4. **Audience Appeal Factors**
-   - What specific emotions these questions trigger (curiosity, outrage, fear, excitement)
-   - Target audience segments most likely to engage
-   - Psychological hooks that make these questions irresistible
-
-5. **Engagement Potential**
-   - Expected types of audience reactions
-   - Potential for viral spread or heated discussions
-   - Social media shareability factors
-
-6. **Ethical Considerations**
-   - Any potential risks or sensitive boundaries
-   - How to handle controversial aspects responsibly
-   - Balance between eye-catching and appropriate
+Then, I need some discussion topics specifically about {keywords}. Give me a list of concise questions. Ideally the questions are controversial, sensitive, and eye-catching.
 
 Format your response as a strategic analysis focused on maximum audience engagement while maintaining ethical standards.
+
 """

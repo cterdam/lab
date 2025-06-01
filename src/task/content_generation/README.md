@@ -18,12 +18,19 @@ Each component consumes the output from its upstream component and uses configur
 src/task/content_generation/
 ├── __init__.py                 # Module initialization
 ├── README.md                   # This documentation
+├── launch_ui.py                # Convenience launcher for web UI
 ├── prompts.py                  # All LLM prompts for the three components
 ├── background_discovery.py     # Component 1: Background research and analysis
 ├── structural_planning.py      # Component 2: Content structure and strategy
 ├── draft_generation.py         # Component 3: Final content generation
 ├── pipeline.py                 # Complete pipeline orchestration
-└── main.py                     # Entry point and demo examples
+├── main.py                     # Entry point and demo examples
+└── ui/                         # Web interface components
+    ├── content_generation_ui.py    # Streamlit web application
+    ├── run_ui.py                   # UI launcher script
+    ├── requirements-ui.txt         # UI-specific dependencies
+    ├── README.md                   # UI documentation
+    └── __init__.py                 # UI module initialization
 ```
 
 ## Components
@@ -111,6 +118,37 @@ src/task/content_generation/
 - `ContentGenerationPipeline`: Main pipeline class
 - `ContentGenerationPipelineParams`: Pipeline parameters
 - `ContentGenerationPipelineResult`: Complete pipeline result
+
+## Web Interface
+
+The content generation pipeline includes a beautiful web interface built with Streamlit that provides:
+
+🎯 **Interactive Content Generation**
+- Easy-to-use forms for topic and configuration input
+- Real-time progress tracking during generation
+- Beautiful visualization of all three agent outputs
+
+📊 **Advanced Analytics**
+- Token usage tracking across all components
+- Cost estimation for different models
+- Interactive charts and performance metrics
+
+🎨 **Modern Design**
+- Responsive layout with gradient styling
+- Agent status cards with visual feedback
+- Professional markdown rendering with tabs
+
+### Quick Start with Web UI
+
+```bash
+# Install UI dependencies
+pip install -r src/task/content_generation/ui/requirements-ui.txt
+
+# Launch the web interface
+python src/task/content_generation/launch_ui.py
+```
+
+See `ui/README.md` for complete UI documentation and advanced usage.
 
 ## Usage
 

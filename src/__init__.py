@@ -4,6 +4,6 @@ from src.core.logger import Logger
 
 arg = Arguments()
 env = Environment()
-log: Logger = None  # pyright:ignore
+log = Logger(log_name="global")
 
 del Arguments, Environment, Logger

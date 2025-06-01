@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+
 from src import arg, log
 
 
@@ -14,6 +16,12 @@ def run_task():
 
             main()
 
+        case "content_generation":
+            from src.task.content_generation import main
+
+            main()
+
 
 if __name__ == "__main__":
+    load_dotenv()
     run_task()

@@ -15,6 +15,7 @@ class Arguments(DataCore):
     task: Literal[
         "dry_run",
         "demo",
+        "content_generation",
     ] = Field(
         default="demo",
         description=multiline(

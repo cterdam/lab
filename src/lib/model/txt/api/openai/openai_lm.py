@@ -38,34 +38,42 @@ class OpenaiLm(LmBasis):
 
     @log.io()
     def gentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
-        response = self._client.responses.create(
-            input=params.prompt,
+        messages = []
+        if params.system_prompt:
+            messages.append({"role": "system", "content": params.system_prompt})
+        messages.append({"role": "user", "content": params.prompt})
+
+        response = self._client.chat.completions.create(
             model=self._model_name,
-            instructions=params.system_prompt,
-            max_output_tokens=params.max_new_tokens,
+            messages=messages,
+            max_tokens=params.max_new_tokens,
             temperature=params.temperature,
             top_p=params.top_p,
         )
         result = OpenaiLmGentxtResult(
-            output=response.output_text,
-            input_tokens=response.usage.input_tokens,  # pyright:ignore
-            output_tokens=response.usage.output_tokens,  # pyright:ignore
+            output=response.choices[0].message.content or "",
+            input_tokens=response.usage.prompt_tokens if response.usage else 0,
+            output_tokens=response.usage.completion_tokens if response.usage else 0,
         )
         return result
 
     @log.io()
     async def agentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
-        response = await self._aclient.responses.create(
-            input=params.prompt,
+        messages = []
+        if params.system_prompt:
+            messages.append({"role": "system", "content": params.system_prompt})
+        messages.append({"role": "user", "content": params.prompt})
+
+        response = await self._aclient.chat.completions.create(
             model=self._model_name,
-            instructions=params.system_prompt,
-            max_output_tokens=params.max_new_tokens,
+            messages=messages,
+            max_tokens=params.max_new_tokens,
             temperature=params.temperature,
             top_p=params.top_p,
         )
         result = OpenaiLmGentxtResult(
-            output=response.output_text,
-            input_tokens=response.usage.input_tokens,  # pyright:ignore
-            output_tokens=response.usage.output_tokens,  # pyright:ignore
+            output=response.choices[0].message.content or "",
+            input_tokens=response.usage.prompt_tokens if response.usage else 0,
+            output_tokens=response.usage.completion_tokens if response.usage else 0,
         )
         return result

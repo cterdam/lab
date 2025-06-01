@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import Field
+from pydantic import ConfigDict, Field, computed_field
 
 from src.core.data_core import DataCore
 from src.core.util import multiline
@@ -8,6 +8,9 @@ from src.core.util import multiline
 
 class Arguments(DataCore):
     """CLI args for the run which are supplied by the user."""
+
+    # Arguments should not change after parsing
+    model_config = ConfigDict(frozen=True)
 
     task: Literal[
         "dry_run",

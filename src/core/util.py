@@ -1,25 +1,5 @@
 import re
 import textwrap
-import typing
-
-
-def get_type_name(t) -> str:
-    """Given a type, infer the class name in str.
-
-    Examples:
-    >>> get_type_name(int)
-    'int'
-    >>> get_type_name(Literal["red", "green"])
-    'Literal[red, green]'
-    """
-    if typing.get_origin(t) is typing.Literal:
-        # Literal type
-        return "Literal[" + ", ".join(str(arg) for arg in typing.get_args(t)) + "]"
-    elif hasattr(t, "__name__"):
-        # Primitive type
-        return t.__name__
-    else:
-        return str(t)
 
 
 def multiline(s: str, oneline: bool = True, is_url: bool = False) -> str:

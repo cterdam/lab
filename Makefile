@@ -3,8 +3,8 @@
 test:
 	pytest -n auto
 
-demo:
-	python -m src --task=demo
+run:
+	python -m src
 
 clean:
 	rm -rf out/*

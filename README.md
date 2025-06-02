@@ -32,15 +32,17 @@
 
 ## Extend
 
-- To add a new config option:
-  - Add a field in `src/core/config.py`
+- To add a new arg option:
+  - Add a field in `src/core/arguments.py`
   - A CLI arg with the same name will be added automatically.
-    The parsed value will be in `cfg`.
+  - The arg value could be provided via the command line, environmental
+    variables, or a `.env` file at repo root, in this order.
+  - The parsed value will be in `src.arg`.
 
 - To add a new task:
   - Create dir with `cp -r src/task/dry_run src/task/<new_task_name>`
   - Implement task in `main()` in `src/task/<new_task_name>/main.py`
-  - Add an option in the `task` Literal field in `src/core/config.py`
+  - Add an option in the `task` Literal field in `src/core/arguments.py`
   - Add a branching case in `run_task()` in `src/__main__.py`
 
 ## Contribute

@@ -1,16 +1,22 @@
 from typing import Literal
 
-from pydantic import ConfigDict, Field, computed_field
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.core.data_core import DataCore
+from src.core import DataCore
 from src.core.util import multiline
 
 
-class Arguments(DataCore):
-    """CLI args for the run which are supplied by the user."""
+class Arguments(BaseSettings, DataCore):  # pyright: ignore
+    """All args optional."""
 
-    # Arguments should not change after parsing
-    model_config = ConfigDict(frozen=True)
+    model_config = SettingsConfigDict(
+        case_sensitive=True,
+        cli_parse_args=True,
+        frozen=True,
+    )
+
+    # Available arguments begin ###############################################
 
     task: Literal[
         "dry_run",
@@ -24,12 +30,21 @@ class Arguments(DataCore):
         ),
     )
 
-    run_name: str | None = Field(
-        default=None,
+    run_name: str = Field(
+        default="",
         description=multiline(
             """
             Name of the current run which will also used as output dir under
             `out/`. If empty, a unique run name will be generated in its place.
+            """
+        ),
+    )
+
+    OPENAI_API_KEY: SecretStr = Field(
+        default=SecretStr(""),
+        description=multiline(
+            """
+            Default OpenAI API key.
             """
         ),
     )

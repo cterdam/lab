@@ -1,4 +1,4 @@
-import functools
+from functools import cached_property
 
 import openai
 
@@ -27,14 +27,15 @@ class OpenaiLm(LmBasis):
             log_name=log_name or as_filename(f"openai/{params.model_name}")
         )
         self._model_name = params.model_name
+        self._api_key = params.api_key
 
-    @functools.cached_property
+    @cached_property
     def _client(self) -> openai.OpenAI:
-        return openai.OpenAI()
+        return openai.OpenAI(api_key=self._api_key.get_secret_value())
 
-    @functools.cached_property
+    @cached_property
     def _aclient(self) -> openai.AsyncOpenAI:
-        return openai.AsyncOpenAI()
+        return openai.AsyncOpenAI(api_key=self._api_key.get_secret_value())
 
     @log.io()
     def gentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:

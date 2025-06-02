@@ -1,5 +1,6 @@
 # Data
 pydantic==2.10.6
+pydantic-settings==2.8.1
 ulid-py==1.1.0
 
 # Model

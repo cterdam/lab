@@ -2,7 +2,7 @@ from src import arg, log
 
 
 def run_task():
-    log.debug(f"Running task '{arg.task}'")
+    log.debug(f"Entering task '{arg.task}'")
     match arg.task:
         case "dry_run":
             from src.task.dry_run import main

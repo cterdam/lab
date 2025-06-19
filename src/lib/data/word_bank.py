@@ -9,9 +9,9 @@ class WordBank(DataBasis):
     """A simple bank of words."""
 
     @log.input()
-    def __init__(self, log_name: str = "word_bank", *args, **kwargs):
+    def __init__(self, logname: str = "word_bank", *args, **kwargs):
         super().__init__(
-            log_name=log_name,
+            logname=logname,
             *args,
             **kwargs,
         )

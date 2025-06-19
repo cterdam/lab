@@ -14,6 +14,6 @@ def reset_logger_state(tmp_path, monkeypatch):
 
 def test_duplicate_logger_single_thread():
     dup_name = "dup"
-    _ = Logger(log_name=dup_name)
+    _ = Logger(logname=dup_name)
     with pytest.raises(ValueError):
-        Logger(log_name=dup_name)
+        Logger(logname=dup_name)

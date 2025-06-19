@@ -12,14 +12,28 @@ from src.core.util import multiline
 
 
 class Logger:
-    """Overall base class for an object that keeps its own log file.
+    """Overall base class for any entity that keeps its own log file.
 
-    Descendants inherit self.log, a logger bound to a unique logger_id. This
-    can be used to write logs to stdout and keeps its own file sink.
-        E.g. `player.log.info(msg)`
+    Descendants own:
+    - logid (str): A string ID for this instance for the purpose of logging.
+        This is unique across this run.
+    - logging methods (str -> None):
+        - trace
+        - debug
+        - info
+        - success
+        - warning
+        - error
+        - critical
 
-    This class also provides three decorators: input(), output(), and io(), for
-    logging a function's input and output.
+    Example use of logging methods:
+    >>> player.info(msg)
+
+    This class also provides three decorators:
+    - input
+    - output
+    - io
+    These can be used to capture a function's input and output.
     """
 
     # Each descendant class can add a layer in its log dir path by overriding
@@ -36,47 +50,36 @@ class Logger:
         multiline(
             """
             <green>{time:YYYY-MM-DD HH:mm:ss!UTC}</> <level>[{level:^8}]</>
-            <dim><cyan>{extra[logger_id]}</></> | <dim><yellow>{extra[relpath]}:{line}</></>
+            <dim><cyan>{extra[logid]}</></> | <dim><yellow>{extra[relpath]}:{line}</></>
             """
         )
         + "\n{message}"
     )
 
-    # Params for configuring levels and colorschemes
-    _FUNC_INPUT_LEVEL_NAME = "-> FINP"
-    _FUNC_OUTPUT_LEVEL_NAME = "FOUT ->"
-    _COUNTER_LEVEL_NAME = "COUNT"
-    _BUILTIN_LEVEL_NAMES = [
-        "TRACE",
-        "DEBUG",
-        "INFO",
-        "SUCCESS",
-        "WARNING",
-        "ERROR",
-        "CRITICAL",
+    # Params for configuring log levels and colorschemes
+    _FUNC_INPUT_LVL_NAME = "FINP <-"
+    _FUNC_OUTPUT_LVL_NAME = "FOUT ->"
+    _COUNTER_LVL_NAME = "COUNT"
+    _LOG_LVLS = [
+        ("TRACE", 5, "#505050", True),
+        (_FUNC_INPUT_LVL_NAME, 7, "#38758A", False),
+        (_FUNC_OUTPUT_LVL_NAME, 8, "#4A6FA5", False),
+        ("DEBUG", 10, "#C080D3", True),
+        (_COUNTER_LVL_NAME, 15, "#DAA520", False),
+        ("INFO", 20, "#5FAFAC", True),
+        ("SUCCESS", 25, "#2E8B57", True),
+        ("WARNING", 30, "#E09C34", True),
+        ("ERROR", 40, "#E04E3A", True),
+        ("CRITICAL", 50, "#FF0000", True),
     ]
-    _LEVELS = [
-        ("TRACE", 5, "#505050"),
-        (_FUNC_INPUT_LEVEL_NAME, 7, "#38758A"),
-        (_FUNC_OUTPUT_LEVEL_NAME, 8, "#4A6FA5"),
-        ("DEBUG", 10, "#C080D3"),
-        (_COUNTER_LEVEL_NAME, 15, "#DAA520"),
-        ("INFO", 20, "#5FAFAC"),
-        ("SUCCESS", 25, "#2E8B57"),
-        ("WARNING", 30, "#E09C34"),
-        ("ERROR", 40, "#E04E3A"),
-        ("CRITICAL", 50, "#FF0000"),
-    ]
-
-    # Msg format for specific msg types
-    _FUNC_INPUT_MSG = multiline(
+    _FUNC_INPUT_LVL_MSG = multiline(
         """
-        -> {class_name}.{func_name}(...)
+        {class_name}.{func_name}(...) <-
         {func_args}
         """,
         oneline=False,
     )
-    _FUNC_OUTPUT_MSG = multiline(
+    _FUNC_OUTPUT_LVL_MSG = multiline(
         """
         {class_name}.{func_name}(...) ->
         {func_result}
@@ -84,11 +87,12 @@ class Logger:
         oneline=False,
     )
 
-    def __init__(self, *args, log_name: str, **kwargs):
+    def __init__(self, *args, logname: str, **kwargs):
         """Initialize this instance’s logger.
 
         Args:
-            log_name (str): Unique name for this instance’s log files.
+            logname (str): Name for this instance’s log files. Should be unique
+                in this instance's namespace.
         """
 
         # Lazy import to avoid circular import problem
@@ -96,29 +100,32 @@ class Logger:
 
         # Build up namespace from class hierarchy
         _namespace = [
-            part
+            namespace_part
             for cls in reversed(self.__class__.__mro__)
-            if (part := cls.__dict__.get("namespace_part"))
+            if (namespace_part := cls.__dict__.get("namespace_part"))
         ]
 
-        # Bind unique ID for this logger
-        self._logger_id = (
-            f"{'.'.join(_namespace)}:{log_name}" if _namespace else log_name
-        )
-        if self._logger_id in env.loggers:
-            raise ValueError(f"Duplicate logger ID: {self._logger_id}")
-        env.loggers[self._logger_id] = self
-        self.log = Logger._base_logger().bind(logger_id=self._logger_id)
+        # Bind unique logid for this instance
+        self.logid = f"{'.'.join(_namespace)}:{logname}" if _namespace else logname
+        if self.logid in env.loggers:
+            raise ValueError(f"Duplicate logid: {self.logid}")
+        env.loggers[self.logid] = self
+        self.log = Logger._base_logger().bind(logid=self.logid)
 
         # Add file sinks
         _namespace_dir = env.log_dir.joinpath(*_namespace)
-        only_self = lambda record: record["extra"]["logger_id"] == self._logger_id
+        only_self = lambda record: record["extra"]["logid"] == self.logid
         Logger.add_sink(
-            _namespace_dir / f"{log_name}.txt",
+            _namespace_dir / f"{logname}.txt",
             filter=only_self,
         )
         Logger.add_sink(
-            _namespace_dir / f"{log_name}.jsonl",
+            _namespace_dir / f"{logname}.colo.txt",
+            filter=only_self,
+            colorize=True,
+        )
+        Logger.add_sink(
+            _namespace_dir / f"{logname}.jsonl",
             filter=only_self,
             serialize=True,
         )
@@ -155,20 +162,20 @@ class Logger:
         )
 
         # Configure logging levels with colorscheme
-        for name, no, fg in Logger._LEVELS:
-            if name in Logger._BUILTIN_LEVEL_NAMES:
+        for lvl_name, lvl_no, lvl_fg, lvl_is_builtin in Logger._LOG_LVLS:
+            if lvl_is_builtin:
                 # Builtin level, just change color and icon here
                 logger.level(
-                    name=name,
-                    color=f"<bold><fg {fg}>",
+                    name=lvl_name,
+                    color=f"<bold><fg {lvl_fg}>",
                     icon="",
                 )
             else:
                 # Custom level, register severity here
                 logger.level(
-                    name=name,
-                    no=no,
-                    color=f"<bold><fg {fg}>",
+                    name=lvl_name,
+                    no=lvl_no,
+                    color=f"<bold><fg {lvl_fg}>",
                     icon="",
                 )
 
@@ -272,8 +279,8 @@ class Logger:
                     }
                     if not is_init:
                         self.log.opt(depth=depth + Logger._get_async_pad()).log(
-                            Logger._FUNC_INPUT_LEVEL_NAME,
-                            Logger._FUNC_INPUT_MSG,
+                            Logger._FUNC_INPUT_LVL_NAME,
+                            Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             func_args=env.repr(func_args),
@@ -281,8 +288,8 @@ class Logger:
                     func_result = await func(*args, **kwargs)
                     if is_init:
                         self.log.opt(depth=depth + Logger._get_async_pad()).log(
-                            Logger._FUNC_INPUT_LEVEL_NAME,
-                            Logger._FUNC_INPUT_MSG,
+                            Logger._FUNC_INPUT_LVL_NAME,
+                            Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             func_args=env.repr(func_args),
@@ -303,8 +310,8 @@ class Logger:
                     }
                     if not is_init:
                         self.log.opt(depth=depth).log(
-                            Logger._FUNC_INPUT_LEVEL_NAME,
-                            Logger._FUNC_INPUT_MSG,
+                            Logger._FUNC_INPUT_LVL_NAME,
+                            Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             func_args=env.repr(func_args),
@@ -312,8 +319,8 @@ class Logger:
                     func_result = func(*args, **kwargs)
                     if is_init:
                         self.log.opt(depth=depth).log(
-                            Logger._FUNC_INPUT_LEVEL_NAME,
-                            Logger._FUNC_INPUT_MSG,
+                            Logger._FUNC_INPUT_LVL_NAME,
+                            Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             func_args=env.repr(func_args),
@@ -351,8 +358,8 @@ class Logger:
                     func_result = await func(*args, **kwargs)
                     # +1 to achieve parity with input line num for coroutines
                     self.log.opt(depth=depth + Logger._get_async_pad() + 1).log(
-                        Logger._FUNC_OUTPUT_LEVEL_NAME,
-                        Logger._FUNC_OUTPUT_MSG,
+                        Logger._FUNC_OUTPUT_LVL_NAME,
+                        Logger._FUNC_OUTPUT_LVL_MSG,
                         class_name=self.__class__.__name__,
                         func_name=func.__name__,
                         func_result=textwrap.indent(
@@ -375,8 +382,8 @@ class Logger:
                     self = args[0]
                     func_result = func(*args, **kwargs)
                     self.log.opt(depth=depth).log(
-                        Logger._FUNC_OUTPUT_LEVEL_NAME,
-                        Logger._FUNC_OUTPUT_MSG,
+                        Logger._FUNC_OUTPUT_LVL_NAME,
+                        Logger._FUNC_OUTPUT_LVL_MSG,
                         class_name=self.__class__.__name__,
                         func_name=func.__name__,
                         func_result=textwrap.indent(

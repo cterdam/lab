@@ -1,3 +1,4 @@
+import importlib.util
 from functools import cached_property
 from pathlib import Path
 
@@ -21,8 +22,6 @@ class Environment(DataCore):
         """Root path of the repo.
         This is assumed to be the parent of the `src` folder.
         """
-        import importlib.util
-
         module_spec = importlib.util.find_spec("src")
         if module_spec is None or module_spec.origin is None:
             raise ModuleNotFoundError("Could not locate src module.")
@@ -48,6 +47,7 @@ class Environment(DataCore):
     @cached_property
     def run_name(self) -> str:
         """Name of the current run."""
+        # Lazy import to avoid circular import problem
         from src import arg
 
         if arg.run_name:

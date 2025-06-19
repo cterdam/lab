@@ -21,11 +21,9 @@ class OpenaiLm(LmBasis):
     def __init__(
         self,
         params: OpenaiLmInitParams,
-        log_name: str | None = None,
+        logname: str | None = None,
     ):
-        super().__init__(
-            log_name=log_name or as_filename(f"openai/{params.model_name}")
-        )
+        super().__init__(logname=logname or as_filename(f"openai/{params.model_name}"))
         self._model_name = params.model_name
         self._api_key = params.api_key
 

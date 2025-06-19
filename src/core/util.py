@@ -1,4 +1,6 @@
+import random
 import re
+import string
 import textwrap
 
 
@@ -37,7 +39,7 @@ def multiline(s: str, oneline: bool = True, is_url: bool = False) -> str:
     return result.strip()
 
 
-def as_filename(name: str) -> str:
+def as_filename(s: str) -> str:
     """
     Convert any str into a filesystem‑safe filename.
 
@@ -47,9 +49,14 @@ def as_filename(name: str) -> str:
         >>> to_safe_filename("mistral‑ai/mixtral‑8x7b‑inst/💡")
         'mistral_ai_mixtral_8x7b_inst'
     """
-    out = re.sub(r"[^A-Za-z0-9_-]+", "_", name)
+    out = re.sub(r"[^A-Za-z0-9_-]+", "_", s)
     out = re.sub(r"_+", "_", out)
     out = out.strip("_")
     if not out:
-        raise ValueError(f"Invalid name: {name}")
+        raise ValueError(f"Invalid input: {s}")
     return out
+
+
+def randalnu(length: int = 4) -> str:
+    """Return a randomized alphanumeric string of the given length."""
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))

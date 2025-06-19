@@ -7,7 +7,7 @@ from pydantic import ConfigDict, Field, computed_field
 
 from src.core import Logger
 from src.core.data_core import DataCore
-from src.core.util import multiline
+from src.core.util import multiline, randalnu
 
 
 class Environment(DataCore):
@@ -56,11 +56,9 @@ class Environment(DataCore):
             import getpass
             from datetime import datetime, timezone
 
-            import ulid
-
             username: str = getpass.getuser()[:4]
             timedate: str = datetime.now(timezone.utc).strftime("%y%m%d-%H%M%S")
-            randhash: str = ulid.new().str[-4:]
+            randhash: str = randalnu(4)
             uniqueid: str = f"{username}-{timedate}-{randhash}"
             return uniqueid
 

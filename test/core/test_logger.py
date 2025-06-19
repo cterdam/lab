@@ -12,7 +12,7 @@ def reset_logger_state(tmp_path, monkeypatch):
     monkeypatch.setattr(env, "repo_root", tmp_path)
 
 
-def test_duplicate_logger_single_thread():
+def test_duplicate_logger_no_concurrency():
     dup_name = "dup"
     _ = Logger(logname=dup_name)
     with pytest.raises(ValueError):

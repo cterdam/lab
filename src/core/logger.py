@@ -1,10 +1,11 @@
 import asyncio
 import atexit
-import functools
 import inspect
 import os
 import textwrap
-import threading
+from functools import cache, wraps
+from threading import Thread
+from typing import final
 
 import loguru
 
@@ -17,7 +18,7 @@ class Logger:
     Descendants own:
     - logid (str): A string ID for this instance for the purpose of logging.
         This is unique across this run.
-    - logging methods (str -> None):
+    - logging methods:
         - trace
         - debug
         - info
@@ -60,18 +61,6 @@ class Logger:
     _FUNC_INPUT_LVL_NAME = "FINP <-"
     _FUNC_OUTPUT_LVL_NAME = "FOUT ->"
     _COUNTER_LVL_NAME = "COUNT"
-    _LOG_LVLS = [
-        ("TRACE", 5, "#505050", True),
-        (_FUNC_INPUT_LVL_NAME, 7, "#38758A", False),
-        (_FUNC_OUTPUT_LVL_NAME, 8, "#4A6FA5", False),
-        ("DEBUG", 10, "#C080D3", True),
-        (_COUNTER_LVL_NAME, 15, "#DAA520", False),
-        ("INFO", 20, "#5FAFAC", True),
-        ("SUCCESS", 25, "#2E8B57", True),
-        ("WARNING", 30, "#E09C34", True),
-        ("ERROR", 40, "#E04E3A", True),
-        ("CRITICAL", 50, "#FF0000", True),
-    ]
     _FUNC_INPUT_LVL_MSG = multiline(
         """
         {class_name}.{func_name}(...) <-
@@ -86,6 +75,50 @@ class Logger:
         """,
         oneline=False,
     )
+    _LOG_LVLS = [
+        ("TRACE", 5, "#505050", True),
+        (_FUNC_INPUT_LVL_NAME, 7, "#38758A", False),
+        (_FUNC_OUTPUT_LVL_NAME, 8, "#4A6FA5", False),
+        ("DEBUG", 10, "#C080D3", True),
+        (_COUNTER_LVL_NAME, 15, "#DAA520", False),
+        ("INFO", 20, "#5FAFAC", True),
+        ("SUCCESS", 25, "#2E8B57", True),
+        ("WARNING", 30, "#E09C34", True),
+        ("ERROR", 40, "#E04E3A", True),
+        ("CRITICAL", 50, "#FF0000", True),
+    ]
+
+    # LOGGING METHODS ##########################################################
+
+    @final
+    def trace(self, *args, **kwargs):
+        self.log.trace(*args, **kwargs)
+
+    @final
+    def debug(self, *args, **kwargs):
+        self.log.debug(*args, **kwargs)
+
+    @final
+    def info(self, *args, **kwargs):
+        self.log.info(*args, **kwargs)
+
+    @final
+    def success(self, *args, **kwargs):
+        self.log.success(*args, **kwargs)
+
+    @final
+    def warning(self, *args, **kwargs):
+        self.log.warning(*args, **kwargs)
+
+    @final
+    def error(self, *args, **kwargs):
+        self.log.error(*args, **kwargs)
+
+    @final
+    def critical(self, *args, **kwargs):
+        self.log.critical(*args, **kwargs)
+
+    # SETUP & TEARDOWN #########################################################
 
     def __init__(self, *args, logname: str, **kwargs):
         """Initialize this instance’s logger.
@@ -105,7 +138,7 @@ class Logger:
             if (namespace_part := cls.__dict__.get("namespace_part"))
         ]
 
-        # Bind unique logid for this instance
+        # Bind unique logid and logger for this instance
         self.logid = f"{'.'.join(_namespace)}:{logname}" if _namespace else logname
         if self.logid in env.loggers:
             raise ValueError(f"Duplicate logid: {self.logid}")
@@ -132,14 +165,8 @@ class Logger:
 
         super().__init__(*args, **kwargs)
 
-    def __getattr__(self, name):
-        """Default any attrs not overridden in this class to loguru logger."""
-        return getattr(self.log, name)
-
-    # SETUP & TEARDOWN #########################################################
-
     @staticmethod
-    @functools.cache
+    @cache
     def _base_logger():
         """Set up and return the base logger.
 
@@ -180,7 +207,7 @@ class Logger:
                 )
 
         # Start logging event loop in daemon thread
-        threading.Thread(target=Logger._log_event_loop.run_forever, daemon=True).start()
+        Thread(target=Logger._log_event_loop.run_forever, daemon=True).start()
 
         return logger
 
@@ -269,7 +296,7 @@ class Logger:
 
             if is_async:
 
-                @functools.wraps(func)
+                @wraps(func)
                 async def wrapped_async(*args, **kwargs):
                     self = args[0]
                     bound_args = func_sig.bind_partial(*args, **kwargs)
@@ -300,7 +327,7 @@ class Logger:
 
             else:
 
-                @functools.wraps(func)
+                @wraps(func)
                 def wrapped_func(*args, **kwargs):
                     self = args[0]
                     bound_args = func_sig.bind_partial(*args, **kwargs)
@@ -352,7 +379,7 @@ class Logger:
 
             if is_async:
 
-                @functools.wraps(func)
+                @wraps(func)
                 async def wrapped_afunc(*args, **kwargs):
                     self = args[0]
                     func_result = await func(*args, **kwargs)
@@ -377,7 +404,7 @@ class Logger:
 
             else:
 
-                @functools.wraps(func)
+                @wraps(func)
                 def wrapped_func(*args, **kwargs):
                     self = args[0]
                     func_result = func(*args, **kwargs)

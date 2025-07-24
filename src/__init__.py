@@ -40,7 +40,12 @@ def setup_msg() -> None:
 
 
 env: Environment = Environment()
-arg: Arguments = Arguments(_env_file=env.repo_root / ".env")  # pyright:ignore
+arg: Arguments = Arguments(
+    _env_file=[  # pyright:ignore
+        env.repo_root / ".env",
+        env.repo_root / "args",
+    ]
+)
 log: Logger = set_logger()
 
 setup_msg()

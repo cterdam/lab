@@ -1,10 +1,16 @@
-.PHONY: test
+.ONESHELL:
+.SILENT:
+.PHONY: run test clean
 
 test:
 	pytest -n auto
 
 run:
-	python -m src
+	set -euo pipefail
+	trap 'docker compose down >/dev/null 2>&1' EXIT INT TERM
+	docker compose build -q
+	docker compose up -d --quiet-pull >/dev/null 2>&1
+	docker logs -f $$(docker compose ps -q gpt)
 
 clean:
 	rm -rf out/*

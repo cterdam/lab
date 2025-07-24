@@ -20,7 +20,10 @@ class WordBank(DataBasis):
 
     @log.input()
     def load_file(self, path: Path = Path("/usr/share/dict/words")):
-        target = [word for word in path.read_text().splitlines()]
+        try:
+            target = [word for word in path.read_text().splitlines()]
+        except:
+            target = ["apple", "bank", "chocolate", "dash"]
         self.words.extend(target)
 
     @log.output()

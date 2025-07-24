@@ -2,22 +2,30 @@
 
 **G**eneral Ra**p**id Proto**t**yping.
 
-## Setup
+## Quickstart
+
+### Option 1: Run with Docker
+
+```zsh
+make run
+```
+
+### Option 2: Run locally
 
 - Create virtual environment
   - `conda create --name <project_name> python=3.12`
   - `conda activate <project_name>`
 - Install dependencies
   - `pip install -r requirements.txt`
-- Install precommit:
-  - `pre-commit install`
+- Run
+  - `python -m src`
 
-## Run
+## Configure
 
-- Run task
-  - `python -m src --task=<task_name>`
-
-- See all options
+- Place API keys in `.env`.
+- Place other command-line arguments in `args` in the shell format.
+  - For example, on each line: `key=value`
+- To see all options:
   - `python -m src -h`
 
 ## Test
@@ -47,6 +55,8 @@
 
 ## Contribute
 
+- Install precommit:
+  - `pre-commit install`
 - Use [black](https://github.com/psf/black) and
   [isort](https://github.com/PyCQA/isort) for Python files. This is enforced
   with precommit hooks.

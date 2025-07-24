@@ -9,11 +9,11 @@ from src.core.util import multiline
 def set_logger() -> Logger:
     """Prepare src logger."""
 
-    # Remove default stderr sink
+    # Remove default sink
     Logger.remove_sink(0)
 
     # Configure sinks
-    Logger.add_sink(sys.stdout, level=10)
+    Logger.add_sink(sys.stderr, level=10)
     Logger.add_sink(env.log_dir / "all.txt")
     Logger.add_sink(env.log_dir / "all.colo.txt", colorize=True)
     Logger.add_sink(env.log_dir / "all.jsonl", serialize=True)

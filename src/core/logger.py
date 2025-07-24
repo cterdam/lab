@@ -75,6 +75,7 @@ class Logger:
         """,
         oneline=False,
     )
+    # (lvl_name, lvl_no, lvl_fg, lvl_is_builtin) for each lvl
     _LOG_LVLS = [
         ("TRACE", 5, "#505050", True),
         (_FUNC_INPUT_LVL_NAME, 7, "#38758A", False),

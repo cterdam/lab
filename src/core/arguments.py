@@ -1,6 +1,7 @@
+import os
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, RedisDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.core import DataCore
@@ -37,6 +38,15 @@ class Arguments(BaseSettings, DataCore):  # pyright: ignore
             """
             Name of the current run which will also used as output dir under
             `out/`. If empty, a unique run name will be generated in its place.
+            """
+        ),
+    )
+
+    REDIS_URL: RedisDsn = Field(
+        default=None,  # pyright:ignore
+        description=multiline(
+            """
+            URL for redis server.
             """
         ),
     )

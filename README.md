@@ -17,6 +17,8 @@ make run
   - `conda activate <project_name>`
 - Install dependencies
   - `pip install -r requirements.txt`
+- Start a Redis server and pass its address in `args`
+  - For example: `REDIS_URL=redis://redis:6379/0`
 - Run
   - `python -m src`
 

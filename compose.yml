@@ -2,12 +2,12 @@ services:
 
   redis:
     image: redis:8-alpine
-    command: ["redis-server", "--save", ""]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 5s
       retries: 3
+    command: redis-server --save "" --port 6379
 
   app:
     build: .

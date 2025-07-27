@@ -1,5 +1,4 @@
 import importlib.util
-import os
 from functools import cached_property
 from pathlib import Path
 
@@ -84,39 +83,25 @@ class Environment(DataCore):
         ),
     )
 
-    REDIS_URL: str = Field(
-        default=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
-        description=multiline(
-            """
-            URL for redis server.
-            """
-        ),
-    )
-
     @cached_property
     def r(self) -> redis.Redis:
         """Synchronous redis client."""
-        return redis.from_url(self.REDIS_URL)
+        from src import arg
+
+        return redis.from_url(str(arg.REDIS_URL))
 
     @cached_property
     def ar(self) -> aredis.Redis:
         """Asynchronous redis client."""
-        return aredis.from_url(self.REDIS_URL)
+        from src import arg
+
+        return aredis.from_url(str(arg.REDIS_URL))
 
     LOGGERS_SET_KEY: str = Field(
         default="loggers",
         description=multiline(
             """
             Redis key to retrieve the set of all loggers.
-            """
-        ),
-    )
-
-    loggers: dict[str, Logger] = Field(
-        default=dict(),
-        description=multiline(
-            """
-            Maps each logger ID to the instance that has the ID.
             """
         ),
     )

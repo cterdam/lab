@@ -15,5 +15,6 @@ ipython
 isort
 pre-commit
 pytest
+pytest-asyncio
 pytest-sugar
 pytest-xdist

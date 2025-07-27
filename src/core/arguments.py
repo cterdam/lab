@@ -14,6 +14,7 @@ class Arguments(BaseSettings, DataCore):  # pyright: ignore
         case_sensitive=True,
         cli_parse_args=True,
         frozen=True,
+        validate_default=False,
     )
 
     # Available arguments begin ###############################################
@@ -31,7 +32,7 @@ class Arguments(BaseSettings, DataCore):  # pyright: ignore
     )
 
     run_name: str = Field(
-        default="",
+        default=None,  # pyright:ignore
         description=multiline(
             """
             Name of the current run which will also used as output dir under
@@ -41,7 +42,7 @@ class Arguments(BaseSettings, DataCore):  # pyright: ignore
     )
 
     OPENAI_API_KEY: SecretStr = Field(
-        default=SecretStr(""),
+        default=None,  # pyright:ignore
         description=multiline(
             """
             Default OpenAI API key.

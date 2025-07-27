@@ -50,8 +50,10 @@ class Logger:
     _LOG_FORMAT = (
         multiline(
             """
-            <green>{time:YYYY-MM-DD HH:mm:ss!UTC}</> <level>[{level:^8}]</>
-            <dim><cyan>{extra[logid]}</></> | <dim><yellow>{extra[relpath]}:{line}</></>
+            <dim><green>{time:YYYY-MM-DD HH:mm:ss!UTC}</></>
+            <level>[{level:^8}]</>
+            <dim><cyan>{extra[logid]}</></> |
+            <dim><yellow>{extra[relpath]}:{line}</></>
             """
         )
         + "\n{message}"

@@ -39,7 +39,7 @@ async def run_async(n_tasks: int, wb: WordBank, model: OpenaiLm):
 
 def main():
 
-    n_tasks = 10
+    n_tasks = 3
     wb = WordBank()
     model = OpenaiLm(params=OpenaiLmInitParams(model_name="gpt-4.1"))
 

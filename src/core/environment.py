@@ -1,7 +1,10 @@
 import importlib.util
+import os
 from functools import cached_property
 from pathlib import Path
 
+import redis
+import redis.asyncio as aredis
 import rich.pretty
 from pydantic import ConfigDict, Field, computed_field
 
@@ -29,13 +32,11 @@ class Environment(DataCore):
         repo_root = src_path.parent
         return repo_root
 
-    @computed_field
     @cached_property
     def py_files_abs(self) -> list[Path]:
         """Absolute paths to all .py files in this repo."""
         return list(self.repo_root.rglob("*.py"))
 
-    @computed_field
     @cached_property
     def py_file_rel(self) -> list[str]:
         """Relative paths to all .py files in this repo, from repo root."""
@@ -74,6 +75,43 @@ class Environment(DataCore):
         """Dir to hold all logs of the run."""
         return self.out_dir / "log"
 
+    ROOT_LOGID: str = Field(
+        default="root",
+        description=multiline(
+            """
+            logid for the root logger available as src.log
+            """
+        ),
+    )
+
+    REDIS_URL: str = Field(
+        default=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+        description=multiline(
+            """
+            URL for redis server.
+            """
+        ),
+    )
+
+    @cached_property
+    def r(self) -> redis.Redis:
+        """Synchronous redis client."""
+        return redis.from_url(self.REDIS_URL)
+
+    @cached_property
+    def ar(self) -> aredis.Redis:
+        """Asynchronous redis client."""
+        return aredis.from_url(self.REDIS_URL)
+
+    LOGGERS_SET_KEY: str = Field(
+        default="loggers",
+        description=multiline(
+            """
+            Redis key to retrieve the set of all loggers.
+            """
+        ),
+    )
+
     loggers: dict[str, Logger] = Field(
         default=dict(),
         description=multiline(
@@ -83,7 +121,7 @@ class Environment(DataCore):
         ),
     )
 
-    indent: int = Field(
+    INDENT: int = Field(
         default=4,
         description=multiline(
             """
@@ -92,7 +130,7 @@ class Environment(DataCore):
         ),
     )
 
-    max_linelen: int = Field(
+    MAX_LINELEN: int = Field(
         default=80,
         description=multiline(
             """
@@ -111,7 +149,7 @@ class Environment(DataCore):
         """Format an arbitrary object for str output, using env defaults."""
         return rich.pretty.pretty_repr(
             obj,
-            max_width=max_width or self.max_linelen,
-            indent_size=indent or self.indent,
+            max_width=max_width or self.MAX_LINELEN,
+            indent_size=indent or self.INDENT,
             expand_all=True,
         )

@@ -2,7 +2,7 @@ services:
 
   redis:
     image: redis:8-alpine
-    command: ["redis-server", "--save", "", "--appendonly", "yes"]
+    command: ["redis-server", "--save", ""]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -19,8 +19,20 @@ services:
     env_file: .env
     environment:
       REDIS_URL: redis://redis:6379/0
-    command: python -m src
     volumes:
       - ./out:/gpt/out
     ports:
       - "8000:8000"
+    command: python -m src
+
+  test:
+    build: .
+    image: gpt
+    depends_on:
+      - redis
+    tty: true
+    stdin_open: true
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    command: pytest -n auto

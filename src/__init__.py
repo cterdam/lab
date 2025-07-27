@@ -18,7 +18,7 @@ def set_logger() -> Logger:
     Logger.add_sink(env.log_dir / "all.colo.txt", colorize=True)
     Logger.add_sink(env.log_dir / "all.jsonl", serialize=True)
 
-    return Logger(logname="root")
+    return Logger(logname=env.ROOT_LOGID)
 
 
 def setup_msg() -> None:

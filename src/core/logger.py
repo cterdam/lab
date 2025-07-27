@@ -95,31 +95,31 @@ class Logger:
 
     @final
     def trace(self, *args, **kwargs):
-        self.log.trace(*args, **kwargs)
+        self.log.opt(depth=1).trace(*args, **kwargs)
 
     @final
     def debug(self, *args, **kwargs):
-        self.log.debug(*args, **kwargs)
+        self.log.opt(depth=1).debug(*args, **kwargs)
 
     @final
     def info(self, *args, **kwargs):
-        self.log.info(*args, **kwargs)
+        self.log.opt(depth=1).info(*args, **kwargs)
 
     @final
     def success(self, *args, **kwargs):
-        self.log.success(*args, **kwargs)
+        self.log.opt(depth=1).success(*args, **kwargs)
 
     @final
     def warning(self, *args, **kwargs):
-        self.log.warning(*args, **kwargs)
+        self.log.opt(depth=1).warning(*args, **kwargs)
 
     @final
     def error(self, *args, **kwargs):
-        self.log.error(*args, **kwargs)
+        self.log.opt(depth=1).error(*args, **kwargs)
 
     @final
     def critical(self, *args, **kwargs):
-        self.log.critical(*args, **kwargs)
+        self.log.opt(depth=1).critical(*args, **kwargs)
 
     # SETUP & TEARDOWN #########################################################
 
@@ -143,9 +143,9 @@ class Logger:
 
         # Bind unique logid and logger for this instance
         self.logid = f"{'.'.join(_namespace)}:{logname}" if _namespace else logname
-        if self.logid in env.loggers:
+        existent = env.r.sadd(env.LOGGERS_SET_KEY, self.logid) == 0
+        if self.logid != env.ROOT_LOGID and existent:
             raise ValueError(f"Duplicate logid: {self.logid}")
-        env.loggers[self.logid] = self
         self.log = Logger._base_logger().bind(logid=self.logid)
 
         # Add file sinks
@@ -395,10 +395,10 @@ class Logger:
                         func_result=textwrap.indent(
                             env.repr(
                                 func_result,
-                                max_width=env.max_linelen - env.indent,
-                                indent=env.indent,
+                                max_width=env.MAX_LINELEN - env.INDENT,
+                                indent=env.INDENT,
                             ),
-                            prefix=" " * env.indent,
+                            prefix=" " * env.INDENT,
                         ),
                     )
                     return func_result
@@ -419,10 +419,10 @@ class Logger:
                         func_result=textwrap.indent(
                             env.repr(
                                 func_result,
-                                max_width=env.max_linelen - env.indent,
-                                indent=env.indent,
+                                max_width=env.MAX_LINELEN - env.INDENT,
+                                indent=env.INDENT,
                             ),
-                            prefix=" " * env.indent,
+                            prefix=" " * env.INDENT,
                         ),
                     )
                     return func_result

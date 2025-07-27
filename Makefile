@@ -3,14 +3,20 @@
 .PHONY: run test clean
 
 test:
-	pytest -n auto
+	set -euo pipefail
+	trap 'docker compose down >/dev/null 2>&1' EXIT INT TERM
+	docker compose build test -q
+	docker compose up test -d --quiet-pull >/dev/null 2>&1
+	docker logs -f $$(docker compose ps -q test)
+	docker compose down >/dev/null 2>&1
 
 run:
 	set -euo pipefail
 	trap 'docker compose down >/dev/null 2>&1' EXIT INT TERM
-	docker compose build -q
-	docker compose up -d --quiet-pull >/dev/null 2>&1
+	docker compose build app -q
+	docker compose up app -d --quiet-pull >/dev/null 2>&1
 	docker logs -f $$(docker compose ps -q app)
+	docker compose down >/dev/null 2>&1
 
 clean:
 	rm -rf out/*

@@ -1,5 +1,5 @@
 services:
-  gpt:
+  app:
     build: .
     image: gpt
     tty: true

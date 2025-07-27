@@ -10,7 +10,7 @@ run:
 	trap 'docker compose down >/dev/null 2>&1' EXIT INT TERM
 	docker compose build -q
 	docker compose up -d --quiet-pull >/dev/null 2>&1
-	docker logs -f $$(docker compose ps -q gpt)
+	docker logs -f $$(docker compose ps -q app)
 
 clean:
 	rm -rf out/*

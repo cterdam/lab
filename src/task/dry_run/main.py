@@ -1,2 +1,2 @@
 def main():
-    assert False
+    pass

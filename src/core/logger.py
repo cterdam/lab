@@ -1,6 +1,7 @@
 import inspect
 import os
 import textwrap
+import time
 from functools import cache, wraps
 from typing import final
 
@@ -66,7 +67,7 @@ class Logger:
     )
     _FUNC_OUTPUT_LVL_MSG = multiline(
         """
-        {class_name}.{func_name}(...) ->
+        {class_name}.{func_name}(...) -> {elapsed_time} ->
         {func_result}
         """,
         oneline=False,
@@ -360,13 +361,16 @@ class Logger:
                 @wraps(func)
                 async def wrapped_afunc(*args, **kwargs):
                     self = args[0]
+                    start_time = time.perf_counter()
                     func_result = await func(*args, **kwargs)
+                    end_time = time.perf_counter()
                     # +1 to achieve parity with input line num for coroutines
                     self.log.opt(depth=depth + Logger._get_async_pad() + 1).log(
                         Logger._FUNC_OUTPUT_LVL_NAME,
                         Logger._FUNC_OUTPUT_LVL_MSG,
                         class_name=self.__class__.__name__,
                         func_name=func.__name__,
+                        elapsed_time=f"{(end_time - start_time):.4f}s",
                         func_result=textwrap.indent(
                             env.repr(
                                 func_result,
@@ -385,12 +389,15 @@ class Logger:
                 @wraps(func)
                 def wrapped_func(*args, **kwargs):
                     self = args[0]
+                    start_time = time.perf_counter()
                     func_result = func(*args, **kwargs)
+                    end_time = time.perf_counter()
                     self.log.opt(depth=depth).log(
                         Logger._FUNC_OUTPUT_LVL_NAME,
                         Logger._FUNC_OUTPUT_LVL_MSG,
                         class_name=self.__class__.__name__,
                         func_name=func.__name__,
+                        elapsed_time=f"{(end_time - start_time):.4f}s",
                         func_result=textwrap.indent(
                             env.repr(
                                 func_result,

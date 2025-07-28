@@ -7,7 +7,6 @@ import redis.asyncio as aredis
 import rich.pretty
 from pydantic import ConfigDict, Field, computed_field
 
-from src.core import Logger
 from src.core.data_core import DataCore
 from src.core.util import multiline, randalnu
 

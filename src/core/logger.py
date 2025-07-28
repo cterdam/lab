@@ -215,7 +215,6 @@ class Logger:
         kwargs.setdefault("level", Logger._LOG_LEVEL)
         kwargs.setdefault("format", Logger._LOG_FORMAT)
         kwargs["enqueue"] = True
-
         return Logger._base_logger().add(sink, *args, **kwargs)
 
     @staticmethod

@@ -21,7 +21,7 @@ async def test_race_async():
         counter = temp + 1
 
     await asyncio.gather(*(incr() for _ in range(num_incrs)))
-    assert counter < num_incrs, f"Race condition NOT observed"
+    assert counter < num_incrs
 
 
 def test_race_thread():
@@ -41,7 +41,7 @@ def test_race_thread():
     for t in threads:
         t.join()
 
-    assert counter < num_incrs, f"Race condition NOT observed"
+    assert counter < num_incrs
 
 
 def process_incr(counter):
@@ -61,4 +61,4 @@ def test_race_process():
         p.start()
     for p in processes:
         p.join()
-    assert counter.value < num_incrs, f"Race condition NOT observed"
+    assert counter.value < num_incrs

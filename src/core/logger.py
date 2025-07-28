@@ -1,10 +1,7 @@
-import asyncio
-import atexit
 import inspect
 import os
 import textwrap
 from functools import cache, wraps
-from threading import Thread
 from typing import final
 
 import loguru
@@ -39,9 +36,6 @@ class Logger:
 
     # Each descendant class can add a layer in its log dir path by overriding
     namespace_part: str | None = None
-
-    # Event loop to manage all logging async sinks, run in a separate thread.
-    _log_event_loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
 
     # Allow all logs for downstream sinks
     _LOG_LEVEL = 0
@@ -209,23 +203,7 @@ class Logger:
                     icon="",
                 )
 
-        # Start logging event loop in daemon thread
-        Thread(target=Logger._log_event_loop.run_forever, daemon=True).start()
-
         return logger
-
-    @staticmethod
-    @atexit.register
-    def _flush_logs():
-        """Flush all logs enqueued at async sinks upon program exit."""
-
-        async def _await_logger_complete():
-            await Logger._base_logger().complete()
-
-        asyncio.run_coroutine_threadsafe(
-            _await_logger_complete(), Logger._log_event_loop
-        ).result()
-        Logger._log_event_loop.call_soon_threadsafe(Logger._log_event_loop.stop)
 
     @staticmethod
     def add_sink(sink, *args, **kwargs) -> int:
@@ -237,8 +215,6 @@ class Logger:
         kwargs.setdefault("level", Logger._LOG_LEVEL)
         kwargs.setdefault("format", Logger._LOG_FORMAT)
         kwargs["enqueue"] = True
-        if inspect.iscoroutinefunction(sink):
-            kwargs["loop"] = Logger._log_event_loop
 
         return Logger._base_logger().add(sink, *args, **kwargs)
 

@@ -22,6 +22,11 @@ make run
 - Run
   - `python -m src`
 
+### View data during run
+
+- Navigate to `localhost:5540`.
+- Add a database using the URL `redis:6379`.
+
 ## Configure
 
 - Place API keys in `.env`.

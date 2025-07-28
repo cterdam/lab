@@ -7,13 +7,27 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-    command: redis-server --save "" --port 6379
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command:
+      redis-server --save ""
+        --port 6379
+        --appendonly yes
+        --appendfsync always
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    ports:
+      - "5540:5540"
 
   app:
     build: .
     image: gpt
     depends_on:
       - redis
+      - redisinsight
     tty: true
     stdin_open: true
     env_file: .env
@@ -30,9 +44,13 @@ services:
     image: gpt
     depends_on:
       - redis
+      - redisinsight
     tty: true
     stdin_open: true
     env_file: .env
     environment:
       REDIS_URL: redis://redis:6379/0
     command: pytest -n auto
+
+volumes:
+  redis-data:

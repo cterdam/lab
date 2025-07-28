@@ -42,7 +42,7 @@ class Arguments(BaseSettings, DataCore):  # pyright: ignore
     )
 
     REDIS_URL: RedisDsn = Field(
-        default=None,  # pyright:ignore
+        default="redis://redis:6379/0",  # pyright:ignore
         description=multiline(
             """
             URL for redis server.

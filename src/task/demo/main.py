@@ -17,6 +17,7 @@ def run_sync(n_tasks: int, wb: WordBank, model: OpenaiLm):
         prompt = f"In 10 words, what is {wb.pick_word()}"
         result = model.gentxt(OpenaiLmGentxtParams(prompt=prompt))
         log.info(f"Sync [{i+1}/{n_tasks}] {result.output!r}")
+        log.incr("sync_success")
     duration = time.time() - start
 
     log.success(f"Sync run took {duration:.2f}s")
@@ -33,6 +34,7 @@ async def run_async(n_tasks: int, wb: WordBank, model: OpenaiLm):
 
     for i, res in enumerate(results, 1):
         log.info(f"Async [{i}/{n_tasks}] {res.output!r}")
+        log.incr("async_success")
 
     log.success(f"Async run took {duration:.2f}s")
 

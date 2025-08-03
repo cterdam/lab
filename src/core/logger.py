@@ -72,6 +72,11 @@ class Logger:
         """,
         oneline=False,
     )
+    _COUNTER_LVL_MSG = multiline(
+        """
+        {log_id}['{counter_key}'] += ({incr_val})
+        """
+    )
     # (lvl_name, lvl_no, lvl_fg, lvl_is_builtin) for each lvl
     _LOG_LVLS = [
         ("TRACE", 5, "#505050", True),
@@ -226,6 +231,22 @@ class Logger:
             sink_id (int): The integer handle returned by `add_sink`.
         """
         Logger._base_logger().remove(sink_id)
+
+    # COUNTER ##################################################################
+
+    def incr(self, key: str, val: int = 1) -> int:
+        from src import env
+
+        result = env.r.hincrby(self.logid, key, val)
+        self.log.log(
+            Logger._COUNTER_LVL_NAME,
+            Logger._COUNTER_LVL_MSG,
+            log_id=self.logid,
+            counter_key=key,
+            incr_val=val,
+        )
+
+        return result  # pyright:ignore
 
     # DECORATORS ###############################################################
 

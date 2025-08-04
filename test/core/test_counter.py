@@ -60,7 +60,6 @@ def test_counter_thread():
 
 
 def process_incr_count(key: str, num_incrs_per_attempt: int, val_per_incr: int):
-
     for _ in range(num_incrs_per_attempt):
         log.incr(key, val_per_incr)
         time.sleep(random.uniform(0, 0.001))
@@ -116,6 +115,15 @@ def test_counter_absent_incr():
 
 def test_counter_set_val():
     key = "test_counter_set_val"
-    val = 10
-    log.set(key, val)
-    assert log.get(key) == val
+    init_val = 10
+    set_val_1 = 20
+    set_val_2 = 30
+
+    log.set(key, init_val)
+    assert log.get(key) == init_val
+
+    log.set(key, set_val_1)
+    assert log.get(key) == set_val_1
+
+    log.set(key, set_val_2)
+    assert log.get(key) == set_val_2

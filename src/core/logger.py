@@ -261,6 +261,13 @@ class Logger:
         result = env.r.hget(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key)
         return int(result) if result is not None else None  # pyright:ignore
 
+    def set(self, key: str, val):
+        """Set a counter value under this logger, regardless of prior value."""
+        from src import env
+
+        result = env.r.hset(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key, val)
+        return result
+
     @atexit.register
     @staticmethod
     def _dump_counters():

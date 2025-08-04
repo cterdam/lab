@@ -87,7 +87,7 @@ class Environment(DataCore):
         """Synchronous redis client."""
         from src import arg
 
-        return redis.from_url(str(arg.REDIS_URL))
+        return redis.from_url(str(arg.REDIS_URL), decode_responses=True)
 
     @cached_property
     def ar(self) -> aredis.Redis:
@@ -101,6 +101,25 @@ class Environment(DataCore):
         description=multiline(
             """
             Redis key to retrieve the set of all loggers.
+            """
+        ),
+    )
+
+    COUNTER_KEY_SUFFIX: str = Field(
+        default="counters",
+        description=multiline(
+            """
+            To prepend to log_id to form a logger's hash key for counters in
+            Redis.
+            """
+        ),
+    )
+
+    COUNTER_DUMP_LOCK_KEY: str = Field(
+        default="counter_dump_lock",
+        description=multiline(
+            """
+            Redis key to act as a lock for the final counter dump.
             """
         ),
     )

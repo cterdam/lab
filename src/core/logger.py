@@ -1,3 +1,4 @@
+import atexit
 import inspect
 import os
 import textwrap
@@ -24,9 +25,13 @@ class Logger:
         - warning
         - error
         - critical
+    - counter methods:
+        - incr
 
-    Example use of logging methods:
+    Example use:
     >>> player.info(msg)
+    >>> player.incr("win")
+
 
     This class also provides three decorators:
     - input
@@ -74,7 +79,7 @@ class Logger:
     )
     _COUNTER_LVL_MSG = multiline(
         """
-        {log_id}['{counter_key}'] += ({incr_val})
+        # [{counter_key}] += ({incr_val})
         """
     )
     # (lvl_name, lvl_no, lvl_fg, lvl_is_builtin) for each lvl
@@ -95,31 +100,31 @@ class Logger:
 
     @final
     def trace(self, *args, **kwargs):
-        self.log.opt(depth=1).trace(*args, **kwargs)
+        self._log.opt(depth=1).trace(*args, **kwargs)
 
     @final
     def debug(self, *args, **kwargs):
-        self.log.opt(depth=1).debug(*args, **kwargs)
+        self._log.opt(depth=1).debug(*args, **kwargs)
 
     @final
     def info(self, *args, **kwargs):
-        self.log.opt(depth=1).info(*args, **kwargs)
+        self._log.opt(depth=1).info(*args, **kwargs)
 
     @final
     def success(self, *args, **kwargs):
-        self.log.opt(depth=1).success(*args, **kwargs)
+        self._log.opt(depth=1).success(*args, **kwargs)
 
     @final
     def warning(self, *args, **kwargs):
-        self.log.opt(depth=1).warning(*args, **kwargs)
+        self._log.opt(depth=1).warning(*args, **kwargs)
 
     @final
     def error(self, *args, **kwargs):
-        self.log.opt(depth=1).error(*args, **kwargs)
+        self._log.opt(depth=1).error(*args, **kwargs)
 
     @final
     def critical(self, *args, **kwargs):
-        self.log.opt(depth=1).critical(*args, **kwargs)
+        self._log.opt(depth=1).critical(*args, **kwargs)
 
     # SETUP & TEARDOWN #########################################################
 
@@ -146,22 +151,22 @@ class Logger:
         existent = env.r.sadd(env.LOGGERS_SET_KEY, self.logid) == 0
         if self.logid != env.ROOT_LOGID and existent:
             raise ValueError(f"Duplicate logid: {self.logid}")
-        self.log = Logger._base_logger().bind(logid=self.logid)
+        self._log = Logger._base_logger().bind(logid=self.logid)
 
         # Add file sinks
-        _namespace_dir = env.log_dir.joinpath(*_namespace)
+        self.namespace_dir = env.log_dir.joinpath(*_namespace)
         only_self = lambda record: record["extra"]["logid"] == self.logid
         Logger.add_sink(
-            _namespace_dir / f"{logname}.txt",
+            self.namespace_dir / f"{logname}.txt",
             filter=only_self,
         )
         Logger.add_sink(
-            _namespace_dir / f"{logname}.colo.txt",
+            self.namespace_dir / f"{logname}.colo.txt",
             filter=only_self,
             colorize=True,
         )
         Logger.add_sink(
-            _namespace_dir / f"{logname}.jsonl",
+            self.namespace_dir / f"{logname}.jsonl",
             filter=only_self,
             serialize=True,
         )
@@ -237,16 +242,52 @@ class Logger:
     def incr(self, key: str, val: int = 1) -> int:
         from src import env
 
-        result = env.r.hincrby(self.logid, key, val)
-        self.log.log(
+        result = env.r.hincrby(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key, val)
+
+        self._log.opt(depth=1).log(
             Logger._COUNTER_LVL_NAME,
             Logger._COUNTER_LVL_MSG,
-            log_id=self.logid,
             counter_key=key,
             incr_val=val,
         )
 
         return result  # pyright:ignore
+
+    @atexit.register
+    @staticmethod
+    def _dump_counters():
+        """Dump all loggers' counters from this run in logs and JSON files."""
+        from src import env
+
+        if not env.r.set(env.COUNTER_DUMP_LOCK_KEY, os.getpid(), nx=True):
+            # Ensure only one process does this
+            return
+
+        try:
+            logids = list(env.r.smembers(env.LOGGERS_SET_KEY))  # pyright:ignore
+            with env.r.pipeline() as pipe:
+                for logid in logids:
+                    pipe.hgetall(f"{logid}/{env.COUNTER_KEY_SUFFIX}")
+                counter_collections = pipe.execute()
+
+            for logid, counters in zip(logids, counter_collections):
+                if not counters:
+                    continue
+                counters_repr = env.repr({k: int(v) for k, v in counters.items()})
+
+                # Send log entry
+                Logger._base_logger().bind(logid=logid).log(
+                    Logger._COUNTER_LVL_NAME,
+                    counters_repr,
+                )
+
+                # Dump to file
+                namespace_dir = env.log_dir.joinpath(*logid.split(".")[:-1])
+                namespace_dir.mkdir(parents=True, exist_ok=True)
+                (namespace_dir / f"{logid}_counters.json").write_text(counters_repr)
+
+        finally:
+            env.r.delete(env.COUNTER_DUMP_LOCK_KEY)
 
     # DECORATORS ###############################################################
 
@@ -305,7 +346,7 @@ class Logger:
                         k: v for k, v in bound_args.arguments.items() if k != "self"
                     }
                     if not is_init:
-                        self.log.opt(depth=depth + Logger._get_async_pad()).log(
+                        self._log.opt(depth=depth + Logger._get_async_pad()).log(
                             Logger._FUNC_INPUT_LVL_NAME,
                             Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
@@ -314,7 +355,7 @@ class Logger:
                         )
                     func_result = await func(*args, **kwargs)
                     if is_init:
-                        self.log.opt(depth=depth + Logger._get_async_pad()).log(
+                        self._log.opt(depth=depth + Logger._get_async_pad()).log(
                             Logger._FUNC_INPUT_LVL_NAME,
                             Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
@@ -336,7 +377,7 @@ class Logger:
                         k: v for k, v in bound_args.arguments.items() if k != "self"
                     }
                     if not is_init:
-                        self.log.opt(depth=depth).log(
+                        self._log.opt(depth=depth).log(
                             Logger._FUNC_INPUT_LVL_NAME,
                             Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
@@ -345,7 +386,7 @@ class Logger:
                         )
                     func_result = func(*args, **kwargs)
                     if is_init:
-                        self.log.opt(depth=depth).log(
+                        self._log.opt(depth=depth).log(
                             Logger._FUNC_INPUT_LVL_NAME,
                             Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
@@ -386,7 +427,7 @@ class Logger:
                     func_result = await func(*args, **kwargs)
                     end_time = time.perf_counter()
                     # +1 to achieve parity with input line num for coroutines
-                    self.log.opt(depth=depth + Logger._get_async_pad() + 1).log(
+                    self._log.opt(depth=depth + Logger._get_async_pad() + 1).log(
                         Logger._FUNC_OUTPUT_LVL_NAME,
                         Logger._FUNC_OUTPUT_LVL_MSG,
                         class_name=self.__class__.__name__,
@@ -413,7 +454,7 @@ class Logger:
                     start_time = time.perf_counter()
                     func_result = func(*args, **kwargs)
                     end_time = time.perf_counter()
-                    self.log.opt(depth=depth).log(
+                    self._log.opt(depth=depth).log(
                         Logger._FUNC_OUTPUT_LVL_NAME,
                         Logger._FUNC_OUTPUT_LVL_MSG,
                         class_name=self.__class__.__name__,

@@ -68,7 +68,7 @@ def process_create_logger(logname: str):
 def test_race_process():
     dup_name = "dup_process"
     assert dup_name != env.ROOT_LOGID
-    num_attempts = 20
+    num_attempts = 30
 
     with Pool(processes=num_attempts) as pool:
         results = pool.map(process_create_logger, [dup_name] * num_attempts)

@@ -96,8 +96,17 @@ def test_counter_negative():
     assert log.get(key) == num_incrs * val_per_incr
 
 
-def test_counter_absent_key():
-    key = "test_counter_absent_key"
+def test_counter_absent_set():
+    key = "test_counter_absent_set"
+    set_val = 10
+    assert log.get(key) is None
+
+    log.set(key, set_val)
+    assert log.get(key) == set_val
+
+
+def test_counter_absent_incr():
+    key = "test_counter_absent_get"
     incr_val = 10
     assert log.get(key) is None
 

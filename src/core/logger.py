@@ -15,7 +15,8 @@ class Logger:
     """Overall base class for any entity that keeps its own log file.
 
     Descendants own:
-    - logid (str): A string ID for this instance for the purpose of logging.
+    - logid (str):
+        A string ID for this instance for the purpose of logging.
         This is unique across this run.
     - logging methods:
         - trace
@@ -26,6 +27,8 @@ class Logger:
         - error
         - critical
     - counter methods:
+        - get
+        - set
         - incr
 
     Example use:
@@ -239,6 +242,20 @@ class Logger:
 
     # COUNTER ##################################################################
 
+    def get(self, key: str) -> int | None:
+        """Get a counter value under this logger, or None if key absent."""
+        from src import env
+
+        result = env.r.hget(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key)
+        return int(result) if result is not None else None  # pyright:ignore
+
+    def set(self, key: str, val):
+        """Set a counter value under this logger, regardless of prior value."""
+        from src import env
+
+        result = env.r.hset(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key, val)
+        return result
+
     def incr(self, key: str, val: int = 1) -> int:
         """Increment a counter under this logger."""
         from src import env
@@ -253,20 +270,6 @@ class Logger:
         )
 
         return result  # pyright:ignore
-
-    def get(self, key: str) -> int | None:
-        """Get a counter value under this logger, or None if key absent."""
-        from src import env
-
-        result = env.r.hget(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key)
-        return int(result) if result is not None else None  # pyright:ignore
-
-    def set(self, key: str, val):
-        """Set a counter value under this logger, regardless of prior value."""
-        from src import env
-
-        result = env.r.hset(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key, val)
-        return result
 
     @atexit.register
     @staticmethod

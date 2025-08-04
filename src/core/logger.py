@@ -8,7 +8,7 @@ from typing import final
 
 import loguru
 
-from src.core.util import multiline
+from src.core.util import logid2logname, logid2ns, multiline
 
 
 class Logger:
@@ -27,8 +27,8 @@ class Logger:
         - error
         - critical
     - counter methods:
-        - get
-        - set
+        - iget
+        - iset
         - incr
 
     Example use:
@@ -242,14 +242,14 @@ class Logger:
 
     # COUNTER ##################################################################
 
-    def get(self, key: str) -> int | None:
+    def iget(self, key: str) -> int | None:
         """Get a counter value under this logger, or None if key absent."""
         from src import env
 
         result = env.r.hget(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key)
         return int(result) if result is not None else None  # pyright:ignore
 
-    def set(self, key: str, val):
+    def iset(self, key: str, val):
         """Set a counter value under this logger, regardless of prior value."""
         from src import env
 
@@ -300,9 +300,11 @@ class Logger:
                 )
 
                 # Dump to file
-                namespace_dir = env.log_dir.joinpath(*logid.split(".")[:-1])
+                namespace_dir = env.log_dir.joinpath(*logid2ns(logid))
                 namespace_dir.mkdir(parents=True, exist_ok=True)
-                (namespace_dir / f"{logid}_counters.json").write_text(counters_repr)
+                (namespace_dir / f"{logid2logname(logid)}_counters.json").write_text(
+                    counters_repr
+                )
 
         finally:
             env.r.delete(env.COUNTER_DUMP_LOCK_KEY)

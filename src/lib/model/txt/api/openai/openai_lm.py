@@ -2,7 +2,7 @@ from functools import cached_property
 
 import openai
 
-from src import log
+from src import env, log
 from src.core.util import as_filename
 from src.lib.model.txt import LmBasis
 from src.lib.model.txt.api.openai.openai_lm_gentxt_params import OpenaiLmGentxtParams
@@ -37,6 +37,7 @@ class OpenaiLm(LmBasis):
 
     @log.io()
     def gentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
+
         response = self._client.responses.create(
             input=params.prompt,
             model=self._model_name,
@@ -45,15 +46,25 @@ class OpenaiLm(LmBasis):
             temperature=params.temperature,
             top_p=params.top_p,
         )
+
         result = OpenaiLmGentxtResult(
             output=response.output_text,
             input_tokens=response.usage.input_tokens,  # pyright:ignore
             output_tokens=response.usage.output_tokens,  # pyright:ignore
         )
+
+        self.incr(env.GENTXT_INVOC_CK)
+        self.incr(env.INPUT_TOKEN_CK, result.input_tokens)
+        self.incr(env.OUTPUT_TOKEN_CK, result.output_tokens)
+        log.incr(env.GENTXT_INVOC_CK)
+        log.incr(env.INPUT_TOKEN_CK, result.input_tokens)
+        log.incr(env.OUTPUT_TOKEN_CK, result.output_tokens)
+
         return result
 
     @log.io()
     async def agentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
+
         response = await self._aclient.responses.create(
             input=params.prompt,
             model=self._model_name,
@@ -62,9 +73,18 @@ class OpenaiLm(LmBasis):
             temperature=params.temperature,
             top_p=params.top_p,
         )
+
         result = OpenaiLmGentxtResult(
             output=response.output_text,
             input_tokens=response.usage.input_tokens,  # pyright:ignore
             output_tokens=response.usage.output_tokens,  # pyright:ignore
         )
+
+        self.incr(env.AGENTXT_INVOC_CK)
+        self.incr(env.INPUT_TOKEN_CK, result.input_tokens)
+        self.incr(env.OUTPUT_TOKEN_CK, result.output_tokens)
+        log.incr(env.AGENTXT_INVOC_CK)
+        log.incr(env.INPUT_TOKEN_CK, result.input_tokens)
+        log.incr(env.OUTPUT_TOKEN_CK, result.output_tokens)
+
         return result

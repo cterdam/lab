@@ -124,6 +124,42 @@ class Environment(DataCore):
         ),
     )
 
+    INPUT_TOKEN_CK: str = Field(
+        default="input_tokens",
+        description=multiline(
+            """
+            Counter key to tally all input tokens for language models.
+            """
+        ),
+    )
+
+    OUTPUT_TOKEN_CK: str = Field(
+        default="output_tokens",
+        description=multiline(
+            """
+            Counter key to tally all output tokens from language models.
+            """
+        ),
+    )
+
+    GENTXT_INVOC_CK: str = Field(
+        default="gentxt_invoc",
+        description=multiline(
+            """
+            Counter key to tally invocations of language model text gen.
+            """
+        ),
+    )
+
+    AGENTXT_INVOC_CK: str = Field(
+        default="agentxt_invoc",
+        description=multiline(
+            """
+            Counter key to tally invocations of language model async text gen.
+            """
+        ),
+    )
+
     INDENT: int = Field(
         default=4,
         description=multiline(

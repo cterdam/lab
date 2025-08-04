@@ -240,6 +240,7 @@ class Logger:
     # COUNTER ##################################################################
 
     def incr(self, key: str, val: int = 1) -> int:
+        """Increment a counter under this logger."""
         from src import env
 
         result = env.r.hincrby(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key, val)
@@ -252,6 +253,13 @@ class Logger:
         )
 
         return result  # pyright:ignore
+
+    def get(self, key: str) -> int | None:
+        """Get a counter value under this logger, or None if key absent."""
+        from src import env
+
+        result = env.r.hget(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key)
+        return int(result) if result is not None else None  # pyright:ignore
 
     @atexit.register
     @staticmethod

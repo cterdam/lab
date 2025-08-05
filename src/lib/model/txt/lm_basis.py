@@ -7,7 +7,7 @@ from src.lib.model.txt.lm_gentxt_result import LmGentxtResult
 class LmBasis(ABC, ModelBasis):
     """Base class for language models."""
 
-    namespace_part = "txt"
+    logspace_part = "txt"
 
     @abstractmethod
     def gentxt(self, *args, **kwargs) -> LmGentxtResult: ...

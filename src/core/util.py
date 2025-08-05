@@ -60,18 +60,3 @@ def as_filename(s: str) -> str:
 def randalnu(length: int = 4) -> str:
     """Return a randomized alphanumeric string of the given length."""
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
-
-
-def logid2ns(logid: str) -> list[str]:
-    """Given a logid, return the namespace of the logger in a list."""
-    if ":" in logid:
-        return logid.split(":")[0].split(".")
-    else:
-        return []
-
-
-def logid2logname(logid: str) -> str:
-    if ":" in logid:
-        return logid.split(":")[-1]
-    else:
-        return logid

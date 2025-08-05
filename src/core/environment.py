@@ -73,7 +73,27 @@ class Environment(DataCore):
         """Dir to hold all logs of the run."""
         return self.out_dir / "log"
 
-    ROOT_LOGID: str = Field(
+    LOGSPACE_DELIMITER: str = Field(
+        default=".",
+        description=multiline(
+            """
+            Str delimiter between different parts of a logger's logspace when
+            representing them in a logid.
+            """
+        ),
+    )
+
+    LOGSPACE_LOGNAME_SEPARATOR: str = Field(
+        default=":",
+        description=multiline(
+            """
+            Str connector between a logger's logspace and logname when
+            representing them in a logid.
+            """
+        ),
+    )
+
+    ROOT_LOGNAME: str = Field(
         default="root",
         description=multiline(
             """
@@ -81,6 +101,26 @@ class Environment(DataCore):
             """
         ),
     )
+
+    def logid2logspace(self, logid: str) -> list[str]:
+        """Given a logid, return the logspace of the logger as a list."""
+        return logid.split(self.LOGSPACE_LOGNAME_SEPARATOR)[0].split(
+            self.LOGSPACE_DELIMITER
+        )
+
+    def logid2logname(self, logid: str) -> str:
+        """Given a logid, return the logname of the logger."""
+        return logid.split(self.LOGSPACE_LOGNAME_SEPARATOR)[-1]
+
+    def produce_logid(self, logspace: list[str], logname: str) -> str:
+        """Given a logspace and a logname, return the logid of the logger."""
+        return multiline(
+            f"""
+            {self.LOGSPACE_DELIMITER.join(logspace)}
+            {self.LOGSPACE_LOGNAME_SEPARATOR}
+            {logname}
+            """
+        )
 
     @cached_property
     def r(self) -> redis.Redis:

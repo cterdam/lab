@@ -12,7 +12,7 @@ from src.core import Logger
 
 def test_duplicate_logger_no_concurrency():
     dup_name = "dup_noconcur"
-    assert dup_name != env.ROOT_LOGID
+    assert dup_name != env.ROOT_LOGNAME
     _ = Logger(logname=dup_name)
     with pytest.raises(ValueError):
         Logger(logname=dup_name)
@@ -21,7 +21,7 @@ def test_duplicate_logger_no_concurrency():
 @pytest.mark.asyncio
 async def test_duplicate_logger_async():
     dup_name = "dup_async"
-    assert dup_name != env.ROOT_LOGID
+    assert dup_name != env.ROOT_LOGNAME
     num_attempts = 100
 
     async def create_logger():
@@ -39,7 +39,7 @@ async def test_duplicate_logger_async():
 
 def test_duplicate_logger_thread():
     dup_name = "dup_thread"
-    assert dup_name != env.ROOT_LOGID
+    assert dup_name != env.ROOT_LOGNAME
     num_attempts = 100
 
     def create_logger():
@@ -67,7 +67,7 @@ def process_create_logger(logname: str):
 
 def test_race_process():
     dup_name = "dup_process"
-    assert dup_name != env.ROOT_LOGID
+    assert dup_name != env.ROOT_LOGNAME
     num_attempts = 30
 
     with Pool(processes=num_attempts) as pool:

@@ -8,16 +8,23 @@ from typing import final
 
 import loguru
 
-from src.core.util import logid2logname, logid2ns, multiline
+from src.core.util import multiline
 
 
 class Logger:
     """Overall base class for any entity that keeps its own log file.
 
     Descendants own:
-    - logid (str):
-        A string ID for this instance for the purpose of logging.
-        This is unique across this run.
+    - attributes:
+        - logspace (list[str]):
+            A list representing all names passed on to this logger from ancestor
+            classes.
+        - logname (str):
+            Name of this logger, unique in the logspace.
+        - logid (str):
+            A string ID for this instance for the purpose of logging.
+            This is produced from ths logspace and logname.
+            This is unique across this run.
     - logging methods:
         - trace
         - debug
@@ -44,7 +51,7 @@ class Logger:
     """
 
     # Each descendant class can add a layer in its log dir path by overriding
-    namespace_part: str | None = None
+    logspace_part: str | None = None
 
     # Allow all logs for downstream sinks
     _LOG_LEVEL = 0
@@ -136,40 +143,41 @@ class Logger:
 
         Args:
             logname (str): Name for this instance’s log files. Should be unique
-                in this instance's namespace.
+                in this instance's logspace.
         """
 
         # Lazy import to avoid circular import problem
         from src import env
 
-        # Build up namespace from class hierarchy
-        _namespace = [
-            namespace_part
+        # Build up logspace from class hierarchy
+        self.logname = logname
+        self.logspace = [
+            logspace_part
             for cls in reversed(self.__class__.__mro__)
-            if (namespace_part := cls.__dict__.get("namespace_part"))
+            if (logspace_part := cls.__dict__.get("logspace_part"))
         ]
 
         # Bind unique logid and logger for this instance
-        self.logid = f"{'.'.join(_namespace)}:{logname}" if _namespace else logname
+        self.logid = env.produce_logid(self.logspace, self.logname)
         existent = env.r.sadd(env.LOGGERS_SET_KEY, self.logid) == 0
-        if self.logid != env.ROOT_LOGID and existent:
+        if existent and self.logid != env.produce_logid([], env.ROOT_LOGNAME):
             raise ValueError(f"Duplicate logid: {self.logid}")
         self._log = Logger._base_logger().bind(logid=self.logid)
 
         # Add file sinks
-        self.namespace_dir = env.log_dir.joinpath(*_namespace)
+        self.logspace_dir = env.log_dir.joinpath(*self.logspace)
         only_self = lambda record: record["extra"]["logid"] == self.logid
         Logger.add_sink(
-            self.namespace_dir / f"{logname}.txt",
+            self.logspace_dir / f"{logname}.txt",
             filter=only_self,
         )
         Logger.add_sink(
-            self.namespace_dir / f"{logname}.colo.txt",
+            self.logspace_dir / f"{logname}.colo.txt",
             filter=only_self,
             colorize=True,
         )
         Logger.add_sink(
-            self.namespace_dir / f"{logname}.jsonl",
+            self.logspace_dir / f"{logname}.jsonl",
             filter=only_self,
             serialize=True,
         )
@@ -300,9 +308,9 @@ class Logger:
                 )
 
                 # Dump to file
-                namespace_dir = env.log_dir.joinpath(*logid2ns(logid))
-                namespace_dir.mkdir(parents=True, exist_ok=True)
-                (namespace_dir / f"{logid2logname(logid)}_counters.json").write_text(
+                logspace_dir = env.log_dir.joinpath(*env.logid2logspace(logid))
+                logspace_dir.mkdir(parents=True, exist_ok=True)
+                (logspace_dir / f"{env.logid2logname(logid)}_counters.json").write_text(
                     counters_repr
                 )
 

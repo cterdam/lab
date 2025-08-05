@@ -124,7 +124,17 @@ class Environment(DataCore):
         ),
     )
 
-    COUNTER_KEY_SUFFIX: str = Field(
+    LOGID_CSKS_SEPARATOR: str = Field(
+        default="/",
+        description=multiline(
+            """
+            Str connector between a logger's logid and the counter set key
+            suffix when producing the counter key.
+            """
+        ),
+    )
+
+    CSK_SUFFIX: str = Field(
         default="counters",
         description=multiline(
             """

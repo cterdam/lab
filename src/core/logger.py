@@ -254,22 +254,25 @@ class Logger:
     def iget(self, key: str) -> int | None:
         """Get a counter value under this logger, or None if key absent."""
         from src import env
+        from src.core.dutil import logid2csk
 
-        result = env.r.hget(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key)
+        result = env.r.hget(logid2csk(self.logid), key)
         return int(result) if result is not None else None  # pyright:ignore
 
     def iset(self, key: str, val):
         """Set a counter value under this logger, regardless of prior value."""
         from src import env
+        from src.core.dutil import logid2csk
 
-        result = env.r.hset(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key, val)
+        result = env.r.hset(logid2csk(self.logid), key, val)
         return result
 
     def incr(self, key: str, val: int = 1) -> int:
         """Increment a counter under this logger."""
         from src import env
+        from src.core.dutil import logid2csk
 
-        result = env.r.hincrby(f"{self.logid}/{env.COUNTER_KEY_SUFFIX}", key, val)
+        result = env.r.hincrby(logid2csk(self.logid), key, val)
 
         self._log.opt(depth=1).log(
             Logger._COUNTER_LVL_NAME,
@@ -285,7 +288,7 @@ class Logger:
     def _dump_counters():
         """Dump all loggers' counters from this run in logs and JSON files."""
         from src import env
-        from src.core.dutil import logid2logname, logid2logspace, prepr
+        from src.core.dutil import logid2csk, logid2logname, logid2logspace, prepr
 
         if not env.r.set(env.COUNTER_DUMP_LOCK_KEY, os.getpid(), nx=True):
             # Ensure only one process does this
@@ -295,13 +298,13 @@ class Logger:
             logids = list(env.r.smembers(env.LOGID_SET_KEY))  # pyright:ignore
             with env.r.pipeline() as pipe:
                 for logid in logids:
-                    pipe.hgetall(f"{logid}/{env.COUNTER_KEY_SUFFIX}")
+                    pipe.hgetall(logid2csk(logid))
                 counter_collections = pipe.execute()
 
-            for logid, counters in zip(logids, counter_collections):
-                if not counters:
+            for logid, counter_kvs in zip(logids, counter_collections):
+                if not counter_kvs:
                     continue
-                counters_repr = prepr({ck: int(cv) for ck, cv in counters.items()})
+                counters_repr = prepr({ck: int(cv) for ck, cv in counter_kvs.items()})
 
                 # Send log entry
                 Logger._base_logger().bind(logid=logid).log(

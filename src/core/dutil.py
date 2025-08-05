@@ -6,6 +6,21 @@ from src import env
 from src.core.util import multiline
 
 
+def prepr(
+    obj,
+    *,
+    max_width: int | None = None,
+    indent: int | None = None,
+):
+    """Pretty repr an arbitrary object for str output, using env defaults."""
+    return rich.pretty.pretty_repr(
+        obj,
+        max_width=max_width or env.MAX_LINELEN,
+        indent_size=indent or env.INDENT,
+        expand_all=True,
+    )
+
+
 def logid2logspace(logid: str) -> list[str]:
     """Given a logid, return the logspace of the logger as a list."""
     return logid.split(env.LOGSPACE_LOGNAME_SEPARATOR)[0].split(env.LOGSPACE_DELIMITER)
@@ -28,16 +43,6 @@ def produce_logid(logspace: list[str], logname: str) -> str:
     )
 
 
-def prepr(
-    obj,
-    *,
-    max_width: int | None = None,
-    indent: int | None = None,
-):
-    """Pretty repr an arbitrary object for str output, using env defaults."""
-    return rich.pretty.pretty_repr(
-        obj,
-        max_width=max_width or env.MAX_LINELEN,
-        indent_size=indent or env.INDENT,
-        expand_all=True,
-    )
+def logid2csk(logid: str) -> str:
+    """Given a logid, return its corresponding counter set key."""
+    return f"{logid}{env.LOGID_CSKS_SEPARATOR}{env.CSK_SUFFIX}"

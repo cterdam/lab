@@ -16,6 +16,8 @@ class Environment(DataCore):
     # For pydantic to allow non-Pydantic fields
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    # REPO #####################################################################
+
     @computed_field
     @cached_property
     def repo_root(self) -> Path:
@@ -72,6 +74,28 @@ class Environment(DataCore):
         """Dir to hold all logs of the run."""
         return self.out_dir / "log"
 
+    # FORMAT ###################################################################
+
+    INDENT: int = Field(
+        default=4,
+        description=multiline(
+            """
+            Default indentation for string formatting.
+            """
+        ),
+    )
+
+    MAX_LINELEN: int = Field(
+        default=80,
+        description=multiline(
+            """
+            Maximum line length for string formatting.
+            """
+        ),
+    )
+
+    # LOG ######################################################################
+
     LOGSPACE_DELIMITER: str = Field(
         default=".",
         description=multiline(
@@ -100,6 +124,8 @@ class Environment(DataCore):
             """
         ),
     )
+
+    # REDIS ####################################################################
 
     @cached_property
     def r(self) -> redis.Redis:
@@ -185,24 +211,6 @@ class Environment(DataCore):
         description=multiline(
             """
             Counter key to tally invocations of language model async text gen.
-            """
-        ),
-    )
-
-    INDENT: int = Field(
-        default=4,
-        description=multiline(
-            """
-            Default indentation for string formatting.
-            """
-        ),
-    )
-
-    MAX_LINELEN: int = Field(
-        default=80,
-        description=multiline(
-            """
-            Maximum line length for string formatting.
             """
         ),
     )

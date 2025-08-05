@@ -3,7 +3,6 @@ import sys
 from src.core import Logger
 from src.core.arguments import Arguments
 from src.core.environment import Environment
-from src.core.util import multiline
 
 
 def set_logger() -> Logger:
@@ -23,18 +22,7 @@ def set_logger() -> Logger:
 
 def setup_msg() -> None:
     """Emit setup msgs as logs."""
-
-    log.success(
-        multiline(
-            """
-            Finished setup with args:
-            {arg}
-            """,
-            oneline=False,
-        ),
-        arg=arg,
-    )
-
+    log.success(arg)
     if not arg.run_name:
         log.warning(f"Run name is randomly initialized to {env.run_name}")
 

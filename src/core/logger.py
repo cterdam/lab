@@ -160,7 +160,7 @@ class Logger:
 
         # Bind unique logid and logger for this instance
         self.logid = produce_logid(self.logspace, self.logname)
-        existent = env.r.sadd(env.LOGGERS_SET_KEY, self.logid) == 0
+        existent = env.r.sadd(env.LOGID_SET_KEY, self.logid) == 0
         if existent and self.logid != produce_logid([], env.ROOT_LOGNAME):
             raise ValueError(f"Duplicate logid: {self.logid}")
         self._log = Logger._base_logger().bind(logid=self.logid)
@@ -292,7 +292,7 @@ class Logger:
             return
 
         try:
-            logids = list(env.r.smembers(env.LOGGERS_SET_KEY))  # pyright:ignore
+            logids = list(env.r.smembers(env.LOGID_SET_KEY))  # pyright:ignore
             with env.r.pipeline() as pipe:
                 for logid in logids:
                     pipe.hgetall(f"{logid}/{env.COUNTER_KEY_SUFFIX}")
@@ -301,7 +301,7 @@ class Logger:
             for logid, counters in zip(logids, counter_collections):
                 if not counters:
                     continue
-                counters_repr = prepr({k: int(v) for k, v in counters.items()})
+                counters_repr = prepr({ck: int(cv) for ck, cv in counters.items()})
 
                 # Send log entry
                 Logger._base_logger().bind(logid=logid).log(

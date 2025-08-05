@@ -115,11 +115,11 @@ class Environment(DataCore):
 
         return aredis.from_url(str(arg.REDIS_URL))
 
-    LOGGERS_SET_KEY: str = Field(
-        default="loggers",
+    LOGID_SET_KEY: str = Field(
+        default="logids",
         description=multiline(
             """
-            Redis key to retrieve the set of all loggers.
+            Redis key to retrieve the set of all logids.
             """
         ),
     )

@@ -148,6 +148,7 @@ class Logger:
 
         # Lazy import to avoid circular import problem
         from src import env
+        from src.core.dutil import produce_logid
 
         # Build up logspace from class hierarchy
         self.logname = logname
@@ -158,9 +159,9 @@ class Logger:
         ]
 
         # Bind unique logid and logger for this instance
-        self.logid = env.produce_logid(self.logspace, self.logname)
+        self.logid = produce_logid(self.logspace, self.logname)
         existent = env.r.sadd(env.LOGGERS_SET_KEY, self.logid) == 0
-        if existent and self.logid != env.produce_logid([], env.ROOT_LOGNAME):
+        if existent and self.logid != produce_logid([], env.ROOT_LOGNAME):
             raise ValueError(f"Duplicate logid: {self.logid}")
         self._log = Logger._base_logger().bind(logid=self.logid)
 
@@ -284,6 +285,7 @@ class Logger:
     def _dump_counters():
         """Dump all loggers' counters from this run in logs and JSON files."""
         from src import env
+        from src.core.dutil import logid2logname, logid2logspace, prepr
 
         if not env.r.set(env.COUNTER_DUMP_LOCK_KEY, os.getpid(), nx=True):
             # Ensure only one process does this
@@ -299,7 +301,7 @@ class Logger:
             for logid, counters in zip(logids, counter_collections):
                 if not counters:
                     continue
-                counters_repr = env.repr({k: int(v) for k, v in counters.items()})
+                counters_repr = prepr({k: int(v) for k, v in counters.items()})
 
                 # Send log entry
                 Logger._base_logger().bind(logid=logid).log(
@@ -308,9 +310,9 @@ class Logger:
                 )
 
                 # Dump to file
-                logspace_dir = env.log_dir.joinpath(*env.logid2logspace(logid))
+                logspace_dir = env.log_dir.joinpath(*logid2logspace(logid))
                 logspace_dir.mkdir(parents=True, exist_ok=True)
-                (logspace_dir / f"{env.logid2logname(logid)}_counters.json").write_text(
+                (logspace_dir / f"{logid2logname(logid)}_counters.json").write_text(
                     counters_repr
                 )
 
@@ -355,7 +357,7 @@ class Logger:
             depth: The number of stack frames to skip when attributing the log.
                 Useful when nested inside other decorators.
         """
-        from src import env
+        from src.core.dutil import prepr
 
         def decorator(func):
 
@@ -379,7 +381,7 @@ class Logger:
                             Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
-                            func_args=env.repr(func_args),
+                            func_args=prepr(func_args),
                         )
                     func_result = await func(*args, **kwargs)
                     if is_init:
@@ -388,7 +390,7 @@ class Logger:
                             Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
-                            func_args=env.repr(func_args),
+                            func_args=prepr(func_args),
                         )
                     return func_result
 
@@ -410,7 +412,7 @@ class Logger:
                             Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
-                            func_args=env.repr(func_args),
+                            func_args=prepr(func_args),
                         )
                     func_result = func(*args, **kwargs)
                     if is_init:
@@ -419,7 +421,7 @@ class Logger:
                             Logger._FUNC_INPUT_LVL_MSG,
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
-                            func_args=env.repr(func_args),
+                            func_args=prepr(func_args),
                         )
                     return func_result
 
@@ -441,6 +443,7 @@ class Logger:
                 Useful when nested inside other decorators.
         """
         from src import env
+        from src.core.dutil import prepr
 
         def decorator(func):
 
@@ -462,7 +465,7 @@ class Logger:
                         func_name=func.__name__,
                         elapsed_time=f"{(end_time - start_time):.4f}s",
                         func_result=textwrap.indent(
-                            env.repr(
+                            prepr(
                                 func_result,
                                 max_width=env.MAX_LINELEN - env.INDENT,
                                 indent=env.INDENT,
@@ -489,7 +492,7 @@ class Logger:
                         func_name=func.__name__,
                         elapsed_time=f"{(end_time - start_time):.4f}s",
                         func_result=textwrap.indent(
-                            env.repr(
+                            prepr(
                                 func_result,
                                 max_width=env.MAX_LINELEN - env.INDENT,
                                 indent=env.INDENT,

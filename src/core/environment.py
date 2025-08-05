@@ -4,7 +4,6 @@ from pathlib import Path
 
 import redis
 import redis.asyncio as aredis
-import rich.pretty
 from pydantic import ConfigDict, Field, computed_field
 
 from src.core.data_core import DataCore
@@ -102,26 +101,6 @@ class Environment(DataCore):
         ),
     )
 
-    def logid2logspace(self, logid: str) -> list[str]:
-        """Given a logid, return the logspace of the logger as a list."""
-        return logid.split(self.LOGSPACE_LOGNAME_SEPARATOR)[0].split(
-            self.LOGSPACE_DELIMITER
-        )
-
-    def logid2logname(self, logid: str) -> str:
-        """Given a logid, return the logname of the logger."""
-        return logid.split(self.LOGSPACE_LOGNAME_SEPARATOR)[-1]
-
-    def produce_logid(self, logspace: list[str], logname: str) -> str:
-        """Given a logspace and a logname, return the logid of the logger."""
-        return multiline(
-            f"""
-            {self.LOGSPACE_DELIMITER.join(logspace)}
-            {self.LOGSPACE_LOGNAME_SEPARATOR}
-            {logname}
-            """
-        )
-
     @cached_property
     def r(self) -> redis.Redis:
         """Synchronous redis client."""
@@ -217,18 +196,3 @@ class Environment(DataCore):
             """
         ),
     )
-
-    def repr(
-        self,
-        obj,
-        *,
-        max_width: int | None = None,
-        indent: int | None = None,
-    ):
-        """Format an arbitrary object for str output, using env defaults."""
-        return rich.pretty.pretty_repr(
-            obj,
-            max_width=max_width or self.MAX_LINELEN,
-            indent_size=indent or self.INDENT,
-            expand_all=True,
-        )

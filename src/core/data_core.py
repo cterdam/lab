@@ -11,6 +11,6 @@ class DataCore(BaseModel):
     )
 
     def __str__(self) -> str:
-        from src import env
+        from src.core.dutil import prepr
 
-        return env.repr(self)
+        return prepr(self)

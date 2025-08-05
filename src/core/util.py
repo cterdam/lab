@@ -1,16 +1,18 @@
+"""Independent util funcs that do not have dependencies in src."""
+
 import random
 import re
 import string
 import textwrap
 
 
-def multiline(s: str, oneline: bool = True, is_url: bool = False) -> str:
+def multiline(s: str, oneline: bool = True, continuous: bool = False) -> str:
     """Correctly connect a multiline string.
 
     Args:
         s (str): A string, usually formed with three double quotes.
         oneline (bool): Whether to remove all line breaks in the result.
-        is_url (bool): Whether to delete spaces formed at line connections.
+        continuous (bool): Whether to delete spaces formed at line connections.
 
     Returns:
         A string formed by removing all common whitespaces near the start of
@@ -28,13 +30,13 @@ def multiline(s: str, oneline: bool = True, is_url: bool = False) -> str:
         ...     some/very/long/
         ...     path
         ... \"\"\"
-        >>> multiline(long_url, is_url=True)
+        >>> multiline(long_url, continuous=True)
         'https://example.com/some/very/long/path'
     """
     result = textwrap.dedent(s)
     if oneline:
         result = result.replace("\n", " ")
-    if is_url:
+    if continuous:
         result = result.replace(" ", "")
     return result.strip()
 

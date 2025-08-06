@@ -51,7 +51,7 @@ def process_incr(counter):
 
 
 def test_race_process():
-    num_incrs = 20
+    num_incrs = 30
     counter = Value("i", 0, lock=False)
 
     processes = [

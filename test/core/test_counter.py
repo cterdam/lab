@@ -127,3 +127,70 @@ def test_counter_set_val():
 
     log.iset(key, set_val_2)
     assert log.iget(key) == set_val_2
+
+
+def test_iset_return_new_vs_overwrite():
+    key = "test_iset_return_new_vs_overwrite"
+
+    # Brand-new hash field → Redis HSET returns 1
+    assert log.iset(key, 111) == 1
+    assert log.iget(key) == 111
+
+    # Overwrite existing field → returns 0
+    assert log.iset(key, 222) == 0
+    assert log.iget(key) == 222
+
+
+def test_biset_all_new_and_biget_fetch():
+    mapping = {
+        "test_biset_many_key_0": 0,
+        "test_biset_many_key_1": 1,
+        "test_biset_many_key_2": 2,
+        "test_biset_many_key_3": 3,
+        "test_biset_many_key_4": 4,
+    }
+
+    added = log.biset(mapping)
+    assert added == len(mapping)  # every key was new
+
+    assert log.biget(list(mapping)) == list(mapping.values())
+
+
+def test_biset_mixed_and_biget_preserves_order():
+    k_existing = "test_biset_mixed_existing"
+    k_new = "test_biset_mixed_new"
+
+    log.iset(k_existing, 7)  # pre-populate existing field
+
+    added = log.biset({k_existing: 70, k_new: 80})
+    assert added == 1  # only k_new added
+
+    # Query in reverse order; output order must match input order
+    assert log.biget([k_new, k_existing]) == [80, 70]
+
+
+def test_biset_all_existing_returns_zero():
+    k1, k2 = "test_biset_exist_1", "test_biset_exist_2"
+    log.biset({k1: 1, k2: 2})  # first insert → adds 2 fields
+
+    added = log.biset({k1: 10, k2: 20})  # overwrite both
+    assert added == 0  # no new fields added
+    assert log.biget([k1, k2]) == [10, 20]
+
+
+def test_biget_mixed_present_and_absent():
+    k1, k2, k3 = (
+        "test_biget_mix_present",
+        "test_biget_mix_absent",
+        "test_biget_mix_present2",
+    )
+    log.iset(k1, 11)
+    log.iset(k3, 33)
+
+    res: list[int | None] = log.biget([k1, k2, k3])
+    assert res == [11, None, 33]
+
+
+def test_biget_all_absent_returns_none_list():
+    k1, k2 = "test_biget_all_absent_1", "test_biget_all_absent_2"
+    assert log.biget([k1, k2]) == [None, None]

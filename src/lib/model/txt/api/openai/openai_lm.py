@@ -60,7 +60,6 @@ class OpenaiLm(LmBasis):
             log.incr(lm_coke.GENTXT_INVOC, p=p)
             log.incr(lm_coke.INPUT_TOKEN, result.input_tokens, p=p)
             log.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens, p=p)
-            p.execute()
 
         return result
 

@@ -86,7 +86,7 @@ class Environment(DataCore):
         ),
     )
 
-    MAX_WIDTH: int = Field(
+    MAX_LINELEN: int = Field(
         default=80,
         gt=0,
         description=multiline(

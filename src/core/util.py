@@ -75,7 +75,7 @@ def prepr(
 
     return rich.pretty.pretty_repr(
         obj,
-        max_width=max_width or env.MAX_LINELEN,
+        max_width=max_width or env.MAX_WIDTH,
         indent_size=indent or env.INDENT,
         expand_all=True,
     )

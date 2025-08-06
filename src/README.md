@@ -8,17 +8,18 @@
 - The root logger is accessible with `from src import log`. Use it with
   `log.info(msg)`.
 
-## Redis
-
-- The codebase uses Redis as a single source of truth.
-- The collection of all loggers is under `env.LOGGERS_SET_KEY`.
-- The counters of a logger with `logid` are collected under
-  `f{logid}/{env.COUNTER_KEY_SUFFIX}`.
-
 ## Logging
 
 - When trying to print something, use logging.
 - When trying to printing an object, use `env.repr()` to format it.
+- Each logger can also keep concurrency-safe counters.
+
+## Redis
+
+- The codebase uses Redis as a single source of truth.
+- The collection of all loggers is under `env.LOGID_SET_KEY`.
+- The counters of each logger are collected under its own hash.
+- Each module inclues a `coke.py` file which contains its relevant COunter KEys.
 
 ## Extend
 

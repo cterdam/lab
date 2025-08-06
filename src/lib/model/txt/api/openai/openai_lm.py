@@ -2,9 +2,9 @@ from functools import cached_property
 
 import openai
 
-from src import env, log
+from src import log
 from src.core.util import as_filename
-from src.lib.model.txt import LmBasis
+from src.lib.model.txt import LmBasis, lm_coke
 from src.lib.model.txt.api.openai.openai_lm_gentxt_params import OpenaiLmGentxtParams
 from src.lib.model.txt.api.openai.openai_lm_gentxt_result import OpenaiLmGentxtResult
 from src.lib.model.txt.api.openai.openai_lm_init_params import OpenaiLmInitParams
@@ -53,12 +53,12 @@ class OpenaiLm(LmBasis):
             output_tokens=response.usage.output_tokens,  # pyright:ignore
         )
 
-        self.incr(env.GENTXT_INVOC_CK)
-        self.incr(env.INPUT_TOKEN_CK, result.input_tokens)
-        self.incr(env.OUTPUT_TOKEN_CK, result.output_tokens)
-        log.incr(env.GENTXT_INVOC_CK)
-        log.incr(env.INPUT_TOKEN_CK, result.input_tokens)
-        log.incr(env.OUTPUT_TOKEN_CK, result.output_tokens)
+        self.incr(lm_coke.GENTXT_INVOC)
+        self.incr(lm_coke.INPUT_TOKEN, result.input_tokens)
+        self.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens)
+        log.incr(lm_coke.GENTXT_INVOC)
+        log.incr(lm_coke.INPUT_TOKEN, result.input_tokens)
+        log.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens)
 
         return result
 
@@ -80,11 +80,11 @@ class OpenaiLm(LmBasis):
             output_tokens=response.usage.output_tokens,  # pyright:ignore
         )
 
-        self.incr(env.AGENTXT_INVOC_CK)
-        self.incr(env.INPUT_TOKEN_CK, result.input_tokens)
-        self.incr(env.OUTPUT_TOKEN_CK, result.output_tokens)
-        log.incr(env.AGENTXT_INVOC_CK)
-        log.incr(env.INPUT_TOKEN_CK, result.input_tokens)
-        log.incr(env.OUTPUT_TOKEN_CK, result.output_tokens)
+        self.incr(lm_coke.AGENTXT_INVOC)
+        self.incr(lm_coke.INPUT_TOKEN, result.input_tokens)
+        self.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens)
+        log.incr(lm_coke.AGENTXT_INVOC)
+        log.incr(lm_coke.INPUT_TOKEN, result.input_tokens)
+        log.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens)
 
         return result

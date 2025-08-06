@@ -1,6 +1,10 @@
-# GPT
+# **G**eneral Ra**p**id Proto**t**yping
 
-**G**eneral Ra**p**id Proto**t**yping.
+## You should use a monorepo
+
+This is the repo for all of your prototyping experiments.
+
+A monorepo solves the diamond dependency problem. A good codebase is reusable.
 
 ## Quickstart
 

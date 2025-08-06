@@ -543,7 +543,7 @@ class Logger:
                         func_result=textwrap.indent(
                             prepr(
                                 func_result,
-                                max_width=env.MAX_LINELEN - env.INDENT,
+                                max_width=env.MAX_WIDTH - env.INDENT,
                                 indent=env.INDENT,
                             ),
                             prefix=" " * env.INDENT,
@@ -570,7 +570,7 @@ class Logger:
                         func_result=textwrap.indent(
                             prepr(
                                 func_result,
-                                max_width=env.MAX_LINELEN - env.INDENT,
+                                max_width=env.MAX_WIDTH - env.INDENT,
                                 indent=env.INDENT,
                             ),
                             prefix=" " * env.INDENT,

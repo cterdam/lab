@@ -280,7 +280,7 @@ class Logger:
         """Given a logid, return its corresponding counter hash name."""
         from src import env
 
-        return f"{logid}{env.LOGID_CSKS_SEPARATOR}{env.CSK_SUFFIX}"
+        return f"{logid}{env.LOGID_CHNS_SEPARATOR}{env.CHN_SUFFIX}"
 
     def iget(self, key: str) -> int | None:
         """Int get.

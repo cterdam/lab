@@ -150,22 +150,22 @@ class Environment(DataCore):
         ),
     )
 
-    LOGID_CSKS_SEPARATOR: str = Field(
+    LOGID_CHNS_SEPARATOR: str = Field(
         default="/",
         description=multiline(
             """
-            Str connector between a logger's logid and the counter set key
+            Str connector between a logger's logid and the counter hash name
             suffix when producing the counter key.
             """
         ),
     )
 
-    CSK_SUFFIX: str = Field(
+    CHN_SUFFIX: str = Field(
         default="counters",
         description=multiline(
             """
-            To prepend to log_id to form a logger's hash key for counters in
-            Redis.
+            Counter hash name suffix. String suffix to prepend to a logger's
+            logid to form its counter hash name in Redis.
             """
         ),
     )

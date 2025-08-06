@@ -15,6 +15,7 @@ class Logger:
     """Overall base class for any entity that keeps its own log file.
 
     Descendants own:
+
     - attributes:
         - logspace (list[str]):
             A list representing all names passed on to this logger from ancestor
@@ -25,6 +26,7 @@ class Logger:
             A string ID for this instance for the purpose of logging.
             This is produced from ths logspace and logname.
             This is unique across this run.
+
     - logging methods:
         - trace
         - debug
@@ -33,6 +35,7 @@ class Logger:
         - warning
         - error
         - critical
+
     - counter methods:
         - iget
         - iset
@@ -42,11 +45,11 @@ class Logger:
     >>> player.info(msg)
     >>> player.incr("win")
 
-
     This class also provides three decorators:
     - input
     - output
     - io
+
     These can be used to capture a function's input and output.
     """
 
@@ -252,23 +255,69 @@ class Logger:
     # COUNTER ##################################################################
 
     def iget(self, key: str) -> int | None:
-        """Get a counter value under this logger, or None if key absent."""
+        """Int get.
+
+        Get a counter value by key under this logger, or None if key absent.
+        """
         from src import env
         from src.core.dutil import logid2csk
 
-        result = env.r.hget(logid2csk(self.logid), key)
+        result = env.r.hget(
+            name=logid2csk(self.logid),
+            key=key,
+        )
         return int(result) if result is not None else None  # pyright:ignore
 
-    def iset(self, key: str, val):
-        """Set a counter value under this logger, regardless of prior value."""
+    def biget(self, keys: list[str]) -> list[int | None]:
+        """Batch int get.
+
+        Get a list of counter values by keys under this logger, or None for each
+        absent key.
+        """
         from src import env
         from src.core.dutil import logid2csk
 
-        result = env.r.hset(logid2csk(self.logid), key, val)
-        return result
+        result = env.r.hmget(
+            name=logid2csk(self.logid),
+            keys=keys,
+        )
+        return [int(v) if v is not None else None for v in result]  # pyright:ignore
+
+    def iset(self, key: str, val) -> int:
+        """Int set.
+
+        Set a counter value under this logger by key, regardless of prior value.
+        """
+        from src import env
+        from src.core.dutil import logid2csk
+
+        result = env.r.hset(
+            name=logid2csk(self.logid),
+            key=key,
+            value=val,
+        )
+        return result  # pyright:ignore
+
+    def biset(self, mapping: dict[str, int]) -> int:
+        """Batch int set.
+
+        Set a list of counter values under this logger by keys, regardless of
+        prior values.
+        """
+        from src import env
+        from src.core.dutil import logid2csk
+
+        result = env.r.hset(
+            name=logid2csk(self.logid),
+            mapping=mapping,
+        )
+        return result  # pyright:ignore
 
     def incr(self, key: str, val: int = 1) -> int:
-        """Increment a counter under this logger."""
+        """Int increment.
+
+        Increment a counter by key under this logger.
+        """
         from src import env
         from src.core.dutil import logid2csk
 

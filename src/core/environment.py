@@ -1,9 +1,9 @@
 import importlib.util
+from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
 
 import redis
-import redis.asyncio as aredis
 from pydantic import ConfigDict, Field, computed_field
 
 from src.core.data_core import DataCore
@@ -159,6 +159,28 @@ class Environment(DataCore):
         client.set_response_callback("HMGET", lambda r: [str2int(v) for v in r])
 
         return client
+
+    @contextmanager
+    def coup(self, *, transaction: bool = False):
+        """COunter UPdates.
+
+        Context manager to send a batch of counter updates to Redis.
+
+        Example use:
+        >>> from src import env, log
+        >>> with env.coup() as p:
+        ...     log.incr("k1", v, p=p)
+        ...     log.incr("k2", v, p=p)
+
+        """
+
+        p = self.cr.pipeline(transaction=transaction)
+        try:
+            yield p
+            if p.command_stack:
+                p.execute()  # Flush any leftover cmds at context exit
+        finally:
+            p.reset()
 
     LOGID_SET_KEY: str = Field(
         default="logids",

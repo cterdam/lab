@@ -389,10 +389,10 @@ class Logger:
 
         try:
             logids = list(env.r.smembers(env.LOGID_SET_KEY))  # pyright:ignore
-            with env.cr.pipeline() as pipe:
+            with env.coup() as p:
                 for logid in logids:
-                    pipe.hgetall(Logger.logid2chn(logid))
-                counter_hashes = pipe.execute()
+                    p.hgetall(Logger.logid2chn(logid))
+                counter_hashes = p.execute()
 
             for logid, counter_kvs in zip(logids, counter_hashes):
                 if not counter_kvs:

@@ -1,9 +1,9 @@
-"""Independent util funcs that do not have dependencies in src."""
-
 import random
 import re
 import string
 import textwrap
+
+import rich.pretty
 
 
 def multiline(s: str, oneline: bool = True, continuous: bool = False) -> str:
@@ -62,3 +62,20 @@ def as_filename(s: str) -> str:
 def randalnu(length: int = 4) -> str:
     """Return a randomized alphanumeric string of the given length."""
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
+
+
+def prepr(
+    obj,
+    *,
+    max_width: int | None = None,
+    indent: int | None = None,
+):
+    """Pretty repr an arbitrary object for str output, using env defaults."""
+    from src import env
+
+    return rich.pretty.pretty_repr(
+        obj,
+        max_width=max_width or env.MAX_LINELEN,
+        indent_size=indent or env.INDENT,
+        expand_all=True,
+    )

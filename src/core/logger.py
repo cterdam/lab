@@ -3,12 +3,13 @@ import inspect
 import os
 import textwrap
 import time
-from functools import cache, wraps
+from functools import cache, cached_property, wraps
+from pathlib import Path
 from typing import final
 
 import loguru
 
-from src.core.util import multiline
+from src.core.util import multiline, prepr
 
 
 class Logger:
@@ -141,6 +142,35 @@ class Logger:
 
     # SETUP & TEARDOWN #########################################################
 
+    @cached_property
+    def logspace(self) -> list[str]:
+        """The list of names passed down from ancestor classes."""
+        return [
+            logspace_part
+            for cls in reversed(self.__class__.__mro__)
+            if (logspace_part := cls.__dict__.get("logspace_part"))
+        ]
+
+    @cached_property
+    def logspace_dir(self) -> Path:
+        from src import env
+
+        return env.log_dir.joinpath(*self.logspace)
+
+    @cached_property
+    def logid(self) -> str:
+        """A unique identifier of the logger."""
+        from src import env
+
+        return multiline(
+            f"""
+            {env.LOGSPACE_DELIMITER.join(self.logspace)}
+            {env.LOGSPACE_LOGNAME_SEPARATOR}
+            {self.logname}
+            """,
+            continuous=True,
+        )
+
     def __init__(self, *args, logname: str, **kwargs):
         """Initialize this instance’s logger.
 
@@ -148,28 +178,16 @@ class Logger:
             logname (str): Name for this instance’s log files. Should be unique
                 in this instance's logspace.
         """
-
-        # Lazy import to avoid circular import problem
+        super().__init__(*args, **kwargs)
         from src import env
-        from src.core.dutil import produce_logid
 
-        # Build up logspace from class hierarchy
+        # Bind logger for this instance
         self.logname = logname
-        self.logspace = [
-            logspace_part
-            for cls in reversed(self.__class__.__mro__)
-            if (logspace_part := cls.__dict__.get("logspace_part"))
-        ]
-
-        # Bind unique logid and logger for this instance
-        self.logid = produce_logid(self.logspace, self.logname)
-        existent = env.r.sadd(env.LOGID_SET_KEY, self.logid) == 0
-        if existent and self.logid != produce_logid([], env.ROOT_LOGNAME):
-            raise ValueError(f"Duplicate logid: {self.logid}")
+        if env.r.sadd(env.LOGID_SET_KEY, self.logid) == 0:
+            Logger._base_logger().warning(f"Duplicate logid: {self.logid}")
         self._log = Logger._base_logger().bind(logid=self.logid)
 
         # Add file sinks
-        self.logspace_dir = env.log_dir.joinpath(*self.logspace)
         only_self = lambda record: record["extra"]["logid"] == self.logid
         Logger.add_sink(
             self.logspace_dir / f"{logname}.txt",
@@ -185,8 +203,6 @@ class Logger:
             filter=only_self,
             serialize=True,
         )
-
-        super().__init__(*args, **kwargs)
 
     @staticmethod
     @cache
@@ -254,16 +270,27 @@ class Logger:
 
     # COUNTER ##################################################################
 
+    @cached_property
+    def chn(self) -> str:
+        """Counter hash name. Name of the logger's counter hash in Redis."""
+        return Logger.logid2chn(self.logid)
+
+    @staticmethod
+    def logid2chn(logid: str) -> str:
+        """Given a logid, return its corresponding counter hash name."""
+        from src import env
+
+        return f"{logid}{env.LOGID_CSKS_SEPARATOR}{env.CSK_SUFFIX}"
+
     def iget(self, key: str) -> int | None:
         """Int get.
 
         Get a counter value by key under this logger, or None if key absent.
         """
         from src import env
-        from src.core.dutil import logid2csk
 
         result = env.r.hget(
-            name=logid2csk(self.logid),
+            name=self.chn,
             key=key,
         )
         return int(result) if result is not None else None  # pyright:ignore
@@ -275,10 +302,9 @@ class Logger:
         absent key.
         """
         from src import env
-        from src.core.dutil import logid2csk
 
         result = env.r.hmget(
-            name=logid2csk(self.logid),
+            name=self.chn,
             keys=keys,
         )
         return [int(v) if v is not None else None for v in result]  # pyright:ignore
@@ -289,10 +315,9 @@ class Logger:
         Set a counter value under this logger by key, regardless of prior value.
         """
         from src import env
-        from src.core.dutil import logid2csk
 
         result = env.r.hset(
-            name=logid2csk(self.logid),
+            name=self.chn,
             key=key,
             value=val,
         )
@@ -305,10 +330,9 @@ class Logger:
         prior values.
         """
         from src import env
-        from src.core.dutil import logid2csk
 
         result = env.r.hset(
-            name=logid2csk(self.logid),
+            name=self.chn,
             mapping=mapping,
         )
         return result  # pyright:ignore
@@ -319,9 +343,8 @@ class Logger:
         Increment a counter by key under this logger.
         """
         from src import env
-        from src.core.dutil import logid2csk
 
-        result = env.r.hincrby(logid2csk(self.logid), key, val)
+        result = env.r.hincrby(self.chn, key, val)
 
         self._log.opt(depth=1).log(
             Logger._COUNTER_LVL_NAME,
@@ -337,7 +360,6 @@ class Logger:
     def _dump_counters():
         """Dump all loggers' counters from this run in logs and JSON files."""
         from src import env
-        from src.core.dutil import logid2csk, logid2logname, logid2logspace, prepr
 
         if not env.r.set(env.COUNTER_DUMP_LOCK_KEY, os.getpid(), nx=True):
             # Ensure only one process does this
@@ -347,7 +369,7 @@ class Logger:
             logids = list(env.r.smembers(env.LOGID_SET_KEY))  # pyright:ignore
             with env.r.pipeline() as pipe:
                 for logid in logids:
-                    pipe.hgetall(logid2csk(logid))
+                    pipe.hgetall(Logger.logid2chn(logid))
                 counter_collections = pipe.execute()
 
             for logid, counter_kvs in zip(logids, counter_collections):
@@ -362,16 +384,18 @@ class Logger:
                 )
 
                 # Dump to file
-                logspace_dir = env.log_dir.joinpath(*logid2logspace(logid))
-                logspace_dir.mkdir(parents=True, exist_ok=True)
-                (logspace_dir / f"{logid2logname(logid)}_counters.json").write_text(
-                    counters_repr
+                logspace = logid.split(env.LOGSPACE_LOGNAME_SEPARATOR)[0].split(
+                    env.LOGSPACE_DELIMITER
                 )
+                logspace_dir = env.log_dir.joinpath(*logspace)
+                logspace_dir.mkdir(parents=True, exist_ok=True)
+                logname = logid.split(env.LOGSPACE_LOGNAME_SEPARATOR)[-1]
+                (logspace_dir / f"{logname}_counters.json").write_text(counters_repr)
 
         finally:
             env.r.delete(env.COUNTER_DUMP_LOCK_KEY)
 
-    # DECORATORS ###############################################################
+    # FUNC CALL DECORATORS #####################################################
 
     @staticmethod
     def _get_async_pad() -> int:
@@ -409,7 +433,7 @@ class Logger:
             depth: The number of stack frames to skip when attributing the log.
                 Useful when nested inside other decorators.
         """
-        from src.core.dutil import prepr
+        from src.core.util import prepr
 
         def decorator(func):
 
@@ -495,7 +519,7 @@ class Logger:
                 Useful when nested inside other decorators.
         """
         from src import env
-        from src.core.dutil import prepr
+        from src.core.util import prepr
 
         def decorator(func):
 

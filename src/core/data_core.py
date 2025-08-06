@@ -11,6 +11,6 @@ class DataCore(BaseModel):
     )
 
     def __str__(self) -> str:
-        from src.core.dutil import prepr
+        from src.core.util import prepr
 
         return prepr(self)

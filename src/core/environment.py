@@ -78,6 +78,7 @@ class Environment(DataCore):
 
     INDENT: int = Field(
         default=4,
+        gt=0,
         description=multiline(
             """
             Default indentation for string formatting.
@@ -87,6 +88,7 @@ class Environment(DataCore):
 
     MAX_LINELEN: int = Field(
         default=80,
+        gt=0,
         description=multiline(
             """
             Maximum line length for string formatting.
@@ -98,6 +100,7 @@ class Environment(DataCore):
 
     LOGSPACE_DELIMITER: str = Field(
         default=".",
+        min_length=1,
         description=multiline(
             """
             Str delimiter between different parts of a logger's logspace when
@@ -108,6 +111,7 @@ class Environment(DataCore):
 
     LOGSPACE_LOGNAME_SEPARATOR: str = Field(
         default=":",
+        min_length=1,
         description=multiline(
             """
             Str connector between a logger's logspace and logname when
@@ -118,6 +122,7 @@ class Environment(DataCore):
 
     ROOT_LOGNAME: str = Field(
         default="root",
+        min_length=1,
         description=multiline(
             """
             logid for the root logger available as src.log
@@ -143,6 +148,7 @@ class Environment(DataCore):
 
     LOGID_SET_KEY: str = Field(
         default="logids",
+        min_length=1,
         description=multiline(
             """
             Redis key to retrieve the set of all logids.
@@ -152,6 +158,7 @@ class Environment(DataCore):
 
     LOGID_CHNS_SEPARATOR: str = Field(
         default="/",
+        min_length=1,
         description=multiline(
             """
             Str connector between a logger's logid and the counter hash name
@@ -162,6 +169,7 @@ class Environment(DataCore):
 
     CHN_SUFFIX: str = Field(
         default="counters",
+        min_length=1,
         description=multiline(
             """
             Counter hash name suffix. String suffix to prepend to a logger's
@@ -172,6 +180,7 @@ class Environment(DataCore):
 
     COUNTER_DUMP_LOCK_KEY: str = Field(
         default="counter_dump_lock",
+        min_length=1,
         description=multiline(
             """
             Redis key to act as a lock for the final counter dump.

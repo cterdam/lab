@@ -33,6 +33,7 @@ class Arguments(BaseSettings, DataCore):  # pyright: ignore
 
     run_name: str = Field(
         default=None,  # pyright:ignore
+        min_length=1,
         description=multiline(
             """
             Name of the current run which will also used as output dir under

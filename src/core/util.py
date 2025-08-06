@@ -79,3 +79,8 @@ def prepr(
         indent_size=indent or env.INDENT,
         expand_all=True,
     )
+
+
+def str2int(s: str | None) -> int | None:
+    """Post-process a Redis HGET / HMGET result into int."""
+    return int(s) if s is not None else None

@@ -2,7 +2,7 @@ from functools import cached_property
 
 import openai
 
-from src import log
+from src import log, env
 from src.core.util import as_filename
 from src.lib.model.txt import LmBasis, lm_coke
 from src.lib.model.txt.api.openai.openai_lm_gentxt_params import OpenaiLmGentxtParams
@@ -53,12 +53,16 @@ class OpenaiLm(LmBasis):
             output_tokens=response.usage.output_tokens,  # pyright:ignore
         )
 
-        self.incr(lm_coke.GENTXT_INVOC)
-        self.incr(lm_coke.INPUT_TOKEN, result.input_tokens)
-        self.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens)
-        log.incr(lm_coke.GENTXT_INVOC)
-        log.incr(lm_coke.INPUT_TOKEN, result.input_tokens)
-        log.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens)
+        with env.cr.pipeline(transaction=False) as p:
+
+            self.incr(lm_coke.GENTXT_INVOC, p=p)
+            self.incr(lm_coke.INPUT_TOKEN, result.input_tokens, p=p)
+            self.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens, p=p)
+            log.incr(lm_coke.GENTXT_INVOC, p=p)
+            log.incr(lm_coke.INPUT_TOKEN, result.input_tokens, p=p)
+            log.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens, p=p)
+
+            p.execute()
 
         return result
 
@@ -80,11 +84,15 @@ class OpenaiLm(LmBasis):
             output_tokens=response.usage.output_tokens,  # pyright:ignore
         )
 
-        self.incr(lm_coke.AGENTXT_INVOC)
-        self.incr(lm_coke.INPUT_TOKEN, result.input_tokens)
-        self.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens)
-        log.incr(lm_coke.AGENTXT_INVOC)
-        log.incr(lm_coke.INPUT_TOKEN, result.input_tokens)
-        log.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens)
+        with env.cr.pipeline(transaction=False) as p:
+
+            self.incr(lm_coke.AGENTXT_INVOC)
+            self.incr(lm_coke.INPUT_TOKEN, result.input_tokens)
+            self.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens)
+            log.incr(lm_coke.AGENTXT_INVOC)
+            log.incr(lm_coke.INPUT_TOKEN, result.input_tokens)
+            log.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens)
+
+            p.execute()
 
         return result

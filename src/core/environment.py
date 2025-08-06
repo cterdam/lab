@@ -7,7 +7,7 @@ import redis.asyncio as aredis
 from pydantic import ConfigDict, Field, computed_field
 
 from src.core.data_core import DataCore
-from src.core.util import multiline, randalnu
+from src.core.util import multiline, randalnu, str2int
 
 
 class Environment(DataCore):
@@ -133,18 +133,32 @@ class Environment(DataCore):
     # REDIS ####################################################################
 
     @cached_property
-    def r(self) -> redis.Redis:
-        """Synchronous redis client."""
+    def r_pool(self) -> redis.ConnectionPool:
+        """Shared connection pool for redis clients."""
         from src import arg
 
-        return redis.from_url(str(arg.REDIS_URL), decode_responses=True)
+        return redis.ConnectionPool.from_url(
+            url=str(arg.REDIS_URL), decode_responses=True
+        )
 
     @cached_property
-    def ar(self) -> aredis.Redis:
-        """Asynchronous redis client."""
-        from src import arg
+    def r(self) -> redis.Redis:
+        """Synchronous default redis client."""
 
-        return aredis.from_url(str(arg.REDIS_URL))
+        client = redis.Redis(connection_pool=self.r_pool)
+        return client
+
+    @cached_property
+    def cr(self) -> redis.Redis:
+        """Synchronous redis client for counters."""
+
+        client = redis.Redis(connection_pool=self.r_pool)
+
+        # Convert string results to int for counter gets.
+        client.set_response_callback("HGET", str2int)
+        client.set_response_callback("HMGET", lambda r: [str2int(v) for v in r])
+
+        return client
 
     LOGID_SET_KEY: str = Field(
         default="logids",

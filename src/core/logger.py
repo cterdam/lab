@@ -8,8 +8,9 @@ from pathlib import Path
 from typing import final
 
 import loguru
+from redis.client import Pipeline
 
-from src.core.util import multiline, prepr
+from src.core.util import multiline, prepr, str2int
 
 
 class Logger:
@@ -91,7 +92,7 @@ class Logger:
         """,
         oneline=False,
     )
-    _COUNTER_LVL_MSG = multiline(
+    _COUNTER_LVL_INCR_MSG = multiline(
         """
         # [{counter_key}] += ({incr_val})
         """
@@ -282,75 +283,96 @@ class Logger:
 
         return f"{logid}{env.LOGID_CHNS_SEPARATOR}{env.CHN_SUFFIX}"
 
-    def iget(self, key: str) -> int | None:
+    def iget(self, k: str, *, p: Pipeline | None = None) -> int | None:
         """Int get.
 
         Get a counter value by key under this logger, or None if key absent.
+
+        If a pipeline is provided, includes the command as part of the pipeline.
+        Note that in this case, the caller is responsible for executing the
+        pipeline.
         """
         from src import env
 
-        result = env.r.hget(
+        target = p if p is not None else env.cr
+        result = target.hget(
             name=self.chn,
-            key=key,
+            key=k,
         )
-        return int(result) if result is not None else None  # pyright:ignore
+        return result  # pyright:ignore
 
-    def biget(self, keys: list[str]) -> list[int | None]:
+    def biget(self, ks: list[str], *, p: Pipeline | None = None) -> list[int | None]:
         """Batch int get.
 
         Get a list of counter values by keys under this logger, or None for each
         absent key.
+        If a pipeline is provided, executes the command as part of the pipeline.
+        Note that in this case, the caller is responsible for executing the
+        pipeline, and additionally converting the result to int.
         """
         from src import env
 
-        result = env.r.hmget(
+        target = p if p is not None else env.cr
+        result = target.hmget(
             name=self.chn,
-            keys=keys,
-        )
-        return [int(v) if v is not None else None for v in result]  # pyright:ignore
-
-    def iset(self, key: str, val) -> int:
-        """Int set.
-
-        Set a counter value under this logger by key, regardless of prior value.
-        """
-        from src import env
-
-        result = env.r.hset(
-            name=self.chn,
-            key=key,
-            value=val,
+            keys=ks,
         )
         return result  # pyright:ignore
 
-    def biset(self, mapping: dict[str, int]) -> int:
+    def iset(self, k: str, v: int | float, *, p: Pipeline | None = None) -> int:
+        """Int set.
+
+        Set a counter value under this logger by key, regardless of prior value.
+        If a pipeline is provided, executes the command as part of the pipeline.
+        Note that in this case, the caller is responsible for executing the
+        pipeline.
+        """
+        from src import env
+
+        target = p if p is not None else env.cr
+        result = target.hset(
+            name=self.chn,
+            key=k,
+            value=v,  # pyright:ignore
+        )
+        return result  # pyright:ignore
+
+    def biset(self, mapping: dict[str, int], *, p: Pipeline | None = None) -> int:
         """Batch int set.
 
         Set a list of counter values under this logger by keys, regardless of
         prior values.
+        If a pipeline is provided, executes the command as part of the pipeline.
+        Note that in this case, the caller is responsible for executing the
+        pipeline.
         """
         from src import env
 
-        result = env.r.hset(
+        target = p if p is not None else env.cr
+        result = target.hset(
             name=self.chn,
             mapping=mapping,
         )
         return result  # pyright:ignore
 
-    def incr(self, key: str, val: int = 1) -> int:
+    def incr(self, k: str, v: int = 1, *, p: Pipeline | None = None) -> int:
         """Int increment.
 
         Increment a counter by key under this logger.
+        If a pipeline is provided, executes the command as part of the pipeline.
+        Note that in this case, the caller is responsible for executing the
+        pipeline.
         """
         from src import env
 
-        result = env.r.hincrby(self.chn, key, val)
+        target = p if p is not None else env.cr
+        result = target.hincrby(self.chn, k, v)
 
         self._log.opt(depth=1).log(
             Logger._COUNTER_LVL_NAME,
-            Logger._COUNTER_LVL_MSG,
-            counter_key=key,
-            incr_val=val,
+            Logger._COUNTER_LVL_INCR_MSG,
+            counter_key=k,
+            incr_val=v,
         )
 
         return result  # pyright:ignore
@@ -361,21 +383,23 @@ class Logger:
         """Dump all loggers' counters from this run in logs and JSON files."""
         from src import env
 
-        if not env.r.set(env.COUNTER_DUMP_LOCK_KEY, os.getpid(), nx=True):
+        if not env.cr.set(env.COUNTER_DUMP_LOCK_KEY, os.getpid(), nx=True):
             # Ensure only one process does this
             return
 
         try:
             logids = list(env.r.smembers(env.LOGID_SET_KEY))  # pyright:ignore
-            with env.r.pipeline() as pipe:
+            with env.cr.pipeline() as pipe:
                 for logid in logids:
                     pipe.hgetall(Logger.logid2chn(logid))
-                counter_collections = pipe.execute()
+                counter_hashes = pipe.execute()
 
-            for logid, counter_kvs in zip(logids, counter_collections):
+            for logid, counter_kvs in zip(logids, counter_hashes):
                 if not counter_kvs:
                     continue
-                counters_repr = prepr({ck: int(cv) for ck, cv in counter_kvs.items()})
+                counters_repr = prepr(
+                    {ck: str2int(cv) for ck, cv in counter_kvs.items()}
+                )
 
                 # Send log entry
                 Logger._base_logger().bind(logid=logid).log(
@@ -393,7 +417,7 @@ class Logger:
                 (logspace_dir / f"{logname}_counters.json").write_text(counters_repr)
 
         finally:
-            env.r.delete(env.COUNTER_DUMP_LOCK_KEY)
+            env.cr.delete(env.COUNTER_DUMP_LOCK_KEY)
 
     # FUNC CALL DECORATORS #####################################################
 

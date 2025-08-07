@@ -1,14 +1,14 @@
 # Data
-redis==6.2.0
-pydantic==2.10.6
-pydantic-settings==2.8.1
+redis
+pydantic
+pydantic-settings
 
 # Model
-openai==1.77.0
+openai
 
 # Log
-loguru==0.7.3
-rich==14.0.0
+loguru
+rich
 
 # Devtools
 black

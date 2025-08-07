@@ -165,6 +165,9 @@ class Environment(DataCore):
         """COunter UPdates.
 
         Context manager to send a batch of counter updates to Redis.
+        When using this context manager, executing this pipeline is optional,
+        because any remaining commands will be executed at context exit.
+        This is different from when using a redis pipeline by itself.
 
         Example use:
         >>> from src import env, log

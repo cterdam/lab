@@ -6,7 +6,7 @@ from multiprocessing import Pool
 
 import pytest
 
-from src import log
+from src import env, log
 
 
 def test_counter_no_concurrency():
@@ -194,3 +194,64 @@ def test_biget_mixed_present_and_absent():
 def test_biget_all_absent_returns_none_list():
     k1, k2 = "test_biget_all_absent_1", "test_biget_all_absent_2"
     assert log.biget([k1, k2]) == [None, None]
+
+
+def test_pipeline_iget():
+    k, v = "test_pipeline_iget", 123
+    log.iset(k, v)
+    with env.coup() as p:
+        log.iget(k, p=p)
+        result = p.execute()
+    assert result == [v]
+
+
+def test_pipeline_biget():
+    k1, k2 = "test_pipeline_biget_1", "test_pipeline_biget_2"
+    v1, v2 = 10, 20
+    log.biset({k1: v1, k2: v2})
+    with env.coup() as p:
+        log.biget([k1, k2], p=p)
+        result = p.execute()
+    assert result == [[v1, v2]]
+
+
+def test_pipeline_iset():
+    k, v = "test_pipeline_iset", 456
+    with env.coup() as p:
+        log.iset(k, v, p=p)
+    assert log.iget(k) == v
+
+
+def test_pipeline_biset():
+    mapping = {"test_pipeline_biset_1": 1, "test_pipeline_biset_2": 2}
+    with env.coup() as p:
+        log.biset(mapping, p=p)
+    assert log.biget(list(mapping.keys())) == list(mapping.values())
+
+
+def test_pipeline_incr():
+    k, v = "test_pipeline_incr", 789
+    log.iset(k, v)
+    with env.coup() as p:
+        log.incr(k, p=p)
+        result = p.execute()
+    assert result == [v + 1]
+    assert log.iget(k) == v + 1
+
+
+def test_pipeline_multiple_commands():
+    k1, k2, k3 = "multi_1", "multi_2", "multi_3"
+    v1, v2 = 10, 20
+    log.iset(k1, v1)
+
+    with env.coup() as p:
+        log.incr(k1, p=p)
+        log.iset(k2, v2, p=p)
+        log.iget(k1, p=p)
+        log.biget([k1, k2, k3], p=p)
+        results = p.execute()
+
+    assert results == [v1 + 1, 1, v1 + 1, [v1 + 1, v2, None]]
+    assert log.iget(k1) == v1 + 1
+    assert log.iget(k2) == v2
+    assert log.iget(k3) is None

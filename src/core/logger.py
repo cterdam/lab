@@ -394,7 +394,7 @@ class Logger:
         from src import env
 
         target = p if p is not None else env.acr
-        result = await target.hget(
+        result = await target.hget(  # pyright:ignore
             name=self.chn,
             key=k,
         )
@@ -414,7 +414,7 @@ class Logger:
         from src import env
 
         target = p if p is not None else env.acr
-        result = await target.hmget(
+        result = await target.hmget(  # pyright:ignore
             name=self.chn,
             keys=ks,
         )
@@ -454,7 +454,7 @@ class Logger:
         from src import env
 
         target = p if p is not None else env.acr
-        result = await target.hset(
+        result = await target.hset(  # pyright:ignore
             name=self.chn,
             mapping=mapping,
         )
@@ -471,7 +471,7 @@ class Logger:
         from src import env
 
         target = p if p is not None else env.acr
-        result = await target.hincrby(self.chn, k, v)
+        result = await target.hincrby(self.chn, k, v)  # pyright:ignore
 
         self._log.opt(depth=1).log(
             Logger._COUNTER_LVL_NAME,

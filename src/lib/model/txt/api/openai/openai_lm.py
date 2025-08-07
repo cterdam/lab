@@ -81,12 +81,12 @@ class OpenaiLm(LmBasis):
             output_tokens=response.usage.output_tokens,  # pyright:ignore
         )
 
-        with env.coup() as p:
-            self.incr(lm_coke.AGENTXT_INVOC, p=p)
-            self.incr(lm_coke.INPUT_TOKEN, result.input_tokens, p=p)
-            self.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens, p=p)
-            log.incr(lm_coke.AGENTXT_INVOC, p=p)
-            log.incr(lm_coke.INPUT_TOKEN, result.input_tokens, p=p)
-            log.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens, p=p)
+        async with env.acoup() as p:
+            await self.aincr(lm_coke.AGENTXT_INVOC, p=p)
+            await self.aincr(lm_coke.INPUT_TOKEN, result.input_tokens, p=p)
+            await self.aincr(lm_coke.OUTPUT_TOKEN, result.output_tokens, p=p)
+            await log.aincr(lm_coke.AGENTXT_INVOC, p=p)
+            await log.aincr(lm_coke.INPUT_TOKEN, result.input_tokens, p=p)
+            await log.aincr(lm_coke.OUTPUT_TOKEN, result.output_tokens, p=p)
 
         return result

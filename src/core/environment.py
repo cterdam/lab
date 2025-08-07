@@ -213,8 +213,10 @@ class Environment(DataCore):
         client = redis.asyncio.Redis(connection_pool=self.ar_pool)
 
         # Convert string results to int for counter gets.
-        client.set_response_callback("HGET", str2int)
-        client.set_response_callback("HMGET", lambda r: [str2int(v) for v in r])
+        client.set_response_callback("HGET", str2int)  # pyright:ignore
+        client.set_response_callback(
+            "HMGET", lambda r: [str2int(v) for v in r]  # pyright:ignore
+        )
 
         return client
 

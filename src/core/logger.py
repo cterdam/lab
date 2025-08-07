@@ -40,9 +40,9 @@ class Logger:
         - critical
 
     - counter methods:
-        - iget
-        - iset
-        - incr
+        - (a)(b)iget
+        - (a)(b)iset
+        - (a)incr
 
     Example use:
     >>> player.info(msg)

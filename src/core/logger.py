@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import final
 
 import loguru
+from redis.asyncio.client import Pipeline as AsyncPipeline
 from redis.client import Pipeline
 
 from src.core.util import multiline, prepr, str2int
@@ -283,6 +284,8 @@ class Logger:
 
         return f"{logid}{env.LOGID_CHNS_SEPARATOR}{env.CHN_SUFFIX}"
 
+    # - SYNCHRONOUS --------------------------------------------------------------
+
     def iget(self, k: str, *, p: Pipeline | None = None) -> int | None:
         """Int get.
 
@@ -376,6 +379,110 @@ class Logger:
         )
 
         return result  # pyright:ignore
+
+    # - ASYNCHRONOUS -------------------------------------------------------------
+
+    async def aiget(self, k: str, *, p: AsyncPipeline | None = None) -> int | None:
+        """Async int get.
+
+        Get a counter value by key under this logger, or None if key absent.
+
+        If a pipeline is provided, includes the command as part of the pipeline.
+        Note that in this case, the caller is responsible for executing the
+        pipeline.
+        """
+        from src import env
+
+        target = p if p is not None else env.acr
+        result = await target.hget(
+            name=self.chn,
+            key=k,
+        )
+        return result  # pyright:ignore
+
+    async def abiget(
+        self, ks: list[str], *, p: AsyncPipeline | None = None
+    ) -> list[int | None]:
+        """Async batch int get.
+
+        Get a list of counter values by keys under this logger, or None for each
+        absent key.
+        If a pipeline is provided, executes the command as part of the pipeline.
+        Note that in this case, the caller is responsible for executing the
+        pipeline, and additionally converting the result to int.
+        """
+        from src import env
+
+        target = p if p is not None else env.acr
+        result = await target.hmget(
+            name=self.chn,
+            keys=ks,
+        )
+        return result  # pyright:ignore
+
+    async def aiset(
+        self, k: str, v: int | float, *, p: AsyncPipeline | None = None
+    ) -> int:
+        """Async int set.
+
+        Set a counter value under this logger by key, regardless of prior value.
+        If a pipeline is provided, executes the command as part of the pipeline.
+        Note that in this case, the caller is responsible for executing the
+        pipeline.
+        """
+        from src import env
+
+        target = p if p is not None else env.acr
+        result = await target.hset(
+            name=self.chn,
+            key=k,
+            value=v,  # pyright:ignore
+        )
+        return result  # pyright:ignore
+
+    async def abiset(
+        self, mapping: dict[str, int], *, p: AsyncPipeline | None = None
+    ) -> int:
+        """Async batch int set.
+
+        Set a list of counter values under this logger by keys, regardless of
+        prior values.
+        If a pipeline is provided, executes the command as part of the pipeline.
+        Note that in this case, the caller is responsible for executing the
+        pipeline.
+        """
+        from src import env
+
+        target = p if p is not None else env.acr
+        result = await target.hset(
+            name=self.chn,
+            mapping=mapping,
+        )
+        return result  # pyright:ignore
+
+    async def aincr(self, k: str, v: int = 1, *, p: AsyncPipeline | None = None) -> int:
+        """Async int increment.
+
+        Increment a counter by key under this logger.
+        If a pipeline is provided, executes the command as part of the pipeline.
+        Note that in this case, the caller is responsible for executing the
+        pipeline.
+        """
+        from src import env
+
+        target = p if p is not None else env.acr
+        result = await target.hincrby(self.chn, k, v)
+
+        self._log.opt(depth=1).log(
+            Logger._COUNTER_LVL_NAME,
+            Logger._COUNTER_LVL_INCR_MSG,
+            counter_key=k,
+            incr_val=v,
+        )
+
+        return result  # pyright:ignore
+
+    # - OTHERS -------------------------------------------------------------------
 
     @atexit.register
     @staticmethod

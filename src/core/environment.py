@@ -1,9 +1,10 @@
 import importlib.util
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from functools import cached_property
 from pathlib import Path
 
 import redis
+import redis.asyncio
 from pydantic import ConfigDict, Field, computed_field
 
 from src.core.data_core import DataCore
@@ -132,6 +133,8 @@ class Environment(DataCore):
 
     # REDIS ####################################################################
 
+    # - SYNCHRONOUS --------------------------------------------------------------
+
     @cached_property
     def r_pool(self) -> redis.ConnectionPool:
         """Shared connection pool for redis clients."""
@@ -184,6 +187,63 @@ class Environment(DataCore):
                 p.execute()  # Flush any leftover cmds at context exit
         finally:
             p.reset()
+
+    # - ASYNCHRONOUS -------------------------------------------------------------
+
+    @cached_property
+    def ar_pool(self) -> redis.asyncio.ConnectionPool:
+        """Shared connection pool for async redis clients."""
+        from src import arg
+
+        return redis.asyncio.ConnectionPool.from_url(
+            url=str(arg.REDIS_URL), decode_responses=True
+        )
+
+    @cached_property
+    def ar(self) -> redis.asyncio.Redis:
+        """Asynchronous default redis client."""
+
+        client = redis.asyncio.Redis(connection_pool=self.ar_pool)
+        return client
+
+    @cached_property
+    def acr(self) -> redis.asyncio.Redis:
+        """Asynchronous redis client for counters."""
+
+        client = redis.asyncio.Redis(connection_pool=self.ar_pool)
+
+        # Convert string results to int for counter gets.
+        client.set_response_callback("HGET", str2int)
+        client.set_response_callback("HMGET", lambda r: [str2int(v) for v in r])
+
+        return client
+
+    @asynccontextmanager
+    async def acoup(self, *, transaction: bool = False):
+        """Async COunter UPdates.
+
+        Context manager to send a batch of counter updates to Redis.
+        When using this context manager, executing this pipeline is optional,
+        because any remaining commands will be executed at context exit.
+        This is different from when using a redis pipeline by itself.
+
+        Example use:
+        >>> from src import env, log
+        >>> async with env.acoup() as p:
+        ...     await log.aincr("k1", v, p=p)
+        ...     await log.aincr("k2", v, p=p)
+
+        """
+
+        p = self.acr.pipeline(transaction=transaction)
+        try:
+            yield p
+            if p.command_stack:
+                await p.execute()
+        finally:
+            await p.reset()
+
+    # - OTHERS -------------------------------------------------------------------
 
     LOGID_SET_KEY: str = Field(
         default="logids",

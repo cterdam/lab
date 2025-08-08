@@ -24,11 +24,10 @@ class Logger:
             A list representing all names passed on to this logger from ancestor
             classes.
         - logname (str):
-            Name of this logger, unique in the logspace.
+            Name of this logger, unique in its logspace.
         - logid (str):
-            A string ID for this instance for the purpose of logging.
-            This is produced from ths logspace and logname.
-            This is unique across this run.
+            A string ID for this instance for the purpose of logging, produced
+            from its logspace and logname and unique across this run.
 
     - logging methods:
         - trace
@@ -48,12 +47,11 @@ class Logger:
     >>> player.info(msg)
     >>> player.incr("win")
 
-    This class also provides three decorators:
+    This class also provides three decorators, which can be used to capture a
+    function's input and output:
     - input
     - output
     - io
-
-    These can be used to capture a function's input and output.
     """
 
     # Each descendant class can add a layer in its log dir path by overriding

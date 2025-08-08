@@ -285,7 +285,7 @@ class Logger:
     # - SYNCHRONOUS --------------------------------------------------------------
 
     def iget(self, k: str, *, p: Pipeline | None = None) -> int | None:
-        """Int get.
+        """Int GET.
 
         Get a counter value by key under this logger, or None if key absent.
 
@@ -295,7 +295,7 @@ class Logger:
         """
         from src import env
 
-        target = p if p is not None else env.cr
+        target = p or env.cr
         result = target.hget(
             name=self.chn,
             key=k,
@@ -303,7 +303,7 @@ class Logger:
         return result  # pyright:ignore
 
     def biget(self, ks: list[str], *, p: Pipeline | None = None) -> list[int | None]:
-        """Batch int get.
+        """Batch Int GET.
 
         Get a list of counter values by keys under this logger, or None for each
         absent key.
@@ -313,7 +313,7 @@ class Logger:
         """
         from src import env
 
-        target = p if p is not None else env.cr
+        target = p or env.cr
         result = target.hmget(
             name=self.chn,
             keys=ks,
@@ -321,7 +321,7 @@ class Logger:
         return result  # pyright:ignore
 
     def iset(self, k: str, v: int | float, *, p: Pipeline | None = None) -> int:
-        """Int set.
+        """Int SET.
 
         Set a counter value under this logger by key, regardless of prior value.
         If a pipeline is provided, executes the command as part of the pipeline.
@@ -330,7 +330,7 @@ class Logger:
         """
         from src import env
 
-        target = p if p is not None else env.cr
+        target = p or env.cr
         result = target.hset(
             name=self.chn,
             key=k,
@@ -339,7 +339,7 @@ class Logger:
         return result  # pyright:ignore
 
     def biset(self, mapping: dict[str, int], *, p: Pipeline | None = None) -> int:
-        """Batch int set.
+        """Batch Int SET.
 
         Set a list of counter values under this logger by keys, regardless of
         prior values.
@@ -349,7 +349,7 @@ class Logger:
         """
         from src import env
 
-        target = p if p is not None else env.cr
+        target = p or env.cr
         result = target.hset(
             name=self.chn,
             mapping=mapping,
@@ -357,7 +357,7 @@ class Logger:
         return result  # pyright:ignore
 
     def incr(self, k: str, v: int = 1, *, p: Pipeline | None = None) -> int:
-        """Int increment.
+        """Int iNCRement.
 
         Increment a counter by key under this logger.
         If a pipeline is provided, executes the command as part of the pipeline.
@@ -366,7 +366,7 @@ class Logger:
         """
         from src import env
 
-        target = p if p is not None else env.cr
+        target = p or env.cr
         result = target.hincrby(self.chn, k, v)
 
         self._log.opt(depth=1).log(
@@ -381,7 +381,7 @@ class Logger:
     # - ASYNCHRONOUS -------------------------------------------------------------
 
     async def aiget(self, k: str, *, p: AsyncPipeline | None = None) -> int | None:
-        """Async int get.
+        """Async Int GET.
 
         Get a counter value by key under this logger, or None if key absent.
 
@@ -391,7 +391,7 @@ class Logger:
         """
         from src import env
 
-        target = p if p is not None else env.acr
+        target = p or env.acr
         result = await target.hget(  # pyright:ignore
             name=self.chn,
             key=k,
@@ -401,7 +401,7 @@ class Logger:
     async def abiget(
         self, ks: list[str], *, p: AsyncPipeline | None = None
     ) -> list[int | None]:
-        """Async batch int get.
+        """Async Batch Int GET.
 
         Get a list of counter values by keys under this logger, or None for each
         absent key.
@@ -411,7 +411,7 @@ class Logger:
         """
         from src import env
 
-        target = p if p is not None else env.acr
+        target = p or env.acr
         result = await target.hmget(  # pyright:ignore
             name=self.chn,
             keys=ks,
@@ -421,7 +421,7 @@ class Logger:
     async def aiset(
         self, k: str, v: int | float, *, p: AsyncPipeline | None = None
     ) -> int:
-        """Async int set.
+        """Async Int SET.
 
         Set a counter value under this logger by key, regardless of prior value.
         If a pipeline is provided, executes the command as part of the pipeline.
@@ -430,7 +430,7 @@ class Logger:
         """
         from src import env
 
-        target = p if p is not None else env.acr
+        target = p or env.acr
         result = await target.hset(
             name=self.chn,
             key=k,
@@ -441,7 +441,7 @@ class Logger:
     async def abiset(
         self, mapping: dict[str, int], *, p: AsyncPipeline | None = None
     ) -> int:
-        """Async batch int set.
+        """Async Batch Int SET.
 
         Set a list of counter values under this logger by keys, regardless of
         prior values.
@@ -451,7 +451,7 @@ class Logger:
         """
         from src import env
 
-        target = p if p is not None else env.acr
+        target = p or env.acr
         result = await target.hset(  # pyright:ignore
             name=self.chn,
             mapping=mapping,
@@ -459,7 +459,7 @@ class Logger:
         return result  # pyright:ignore
 
     async def aincr(self, k: str, v: int = 1, *, p: AsyncPipeline | None = None) -> int:
-        """Async int increment.
+        """Async Int iNCRement.
 
         Increment a counter by key under this logger.
         If a pipeline is provided, executes the command as part of the pipeline.
@@ -468,7 +468,7 @@ class Logger:
         """
         from src import env
 
-        target = p if p is not None else env.acr
+        target = p or env.acr
         result = await target.hincrby(self.chn, k, v)  # pyright:ignore
 
         self._log.opt(depth=1).log(

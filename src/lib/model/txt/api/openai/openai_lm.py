@@ -2,9 +2,9 @@ from functools import cached_property
 
 import openai
 
-from src import env, log
+from src import log
 from src.core.util import as_filename
-from src.lib.model.txt import Lm, lm_coke
+from src.lib.model.txt import Lm
 from src.lib.model.txt.api.openai.openai_lm_gentxt_params import OpenaiLmGentxtParams
 from src.lib.model.txt.api.openai.openai_lm_gentxt_result import OpenaiLmGentxtResult
 from src.lib.model.txt.api.openai.openai_lm_init_params import OpenaiLmInitParams
@@ -17,7 +17,6 @@ class OpenaiLm(Lm):
     Pricing: https://platform.openai.com/docs/pricing
     """
 
-    @log.input()
     def __init__(
         self,
         params: OpenaiLmInitParams,
@@ -36,7 +35,7 @@ class OpenaiLm(Lm):
         return openai.AsyncOpenAI(api_key=self._api_key.get_secret_value())
 
     @log.io()
-    def gentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
+    def _do_gentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
 
         response = self._client.responses.create(
             input=params.prompt,
@@ -53,18 +52,10 @@ class OpenaiLm(Lm):
             output_tokens=response.usage.output_tokens,  # pyright:ignore
         )
 
-        with env.coup() as p:
-            self.incr(lm_coke.GENTXT_INVOC, p=p)
-            self.incr(lm_coke.INPUT_TOKEN, result.input_tokens, p=p)
-            self.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens, p=p)
-            log.incr(lm_coke.GENTXT_INVOC, p=p)
-            log.incr(lm_coke.INPUT_TOKEN, result.input_tokens, p=p)
-            log.incr(lm_coke.OUTPUT_TOKEN, result.output_tokens, p=p)
-
         return result
 
     @log.io()
-    async def agentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
+    async def _do_agentxt(self, params: OpenaiLmGentxtParams) -> OpenaiLmGentxtResult:
 
         response = await self._aclient.responses.create(
             input=params.prompt,
@@ -80,13 +71,5 @@ class OpenaiLm(Lm):
             input_tokens=response.usage.input_tokens,  # pyright:ignore
             output_tokens=response.usage.output_tokens,  # pyright:ignore
         )
-
-        async with env.acoup() as p:
-            await self.aincr(lm_coke.AGENTXT_INVOC, p=p)
-            await self.aincr(lm_coke.INPUT_TOKEN, result.input_tokens, p=p)
-            await self.aincr(lm_coke.OUTPUT_TOKEN, result.output_tokens, p=p)
-            await log.aincr(lm_coke.AGENTXT_INVOC, p=p)
-            await log.aincr(lm_coke.INPUT_TOKEN, result.input_tokens, p=p)
-            await log.aincr(lm_coke.OUTPUT_TOKEN, result.output_tokens, p=p)
 
         return result

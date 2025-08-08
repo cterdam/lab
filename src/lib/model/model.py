@@ -1,7 +1,7 @@
 from src.core import Logger
 
 
-class ModelBasis(Logger):
+class Model(Logger):
     """Base class for models."""
 
     logspace_part = "model"

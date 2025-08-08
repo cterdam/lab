@@ -1,1 +1,1 @@
-from src.lib.model.model_basis import ModelBasis
+from src.lib.model.model import Model

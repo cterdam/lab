@@ -4,13 +4,13 @@ import openai
 
 from src import env, log
 from src.core.util import as_filename
-from src.lib.model.txt import LmBasis, lm_coke
+from src.lib.model.txt import Lm, lm_coke
 from src.lib.model.txt.api.openai.openai_lm_gentxt_params import OpenaiLmGentxtParams
 from src.lib.model.txt.api.openai.openai_lm_gentxt_result import OpenaiLmGentxtResult
 from src.lib.model.txt.api.openai.openai_lm_init_params import OpenaiLmInitParams
 
 
-class OpenaiLm(LmBasis):
+class OpenaiLm(Lm):
     """OpenAI LM.
 
     Models: https://platform.openai.com/docs/models

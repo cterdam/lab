@@ -2,10 +2,10 @@ import os
 
 from openai import OpenAI
 
-from src.lib.model.txt import LmBasis
+from src.lib.model.txt import Lm
 
 
-class DeepseekLm(LmBasis):
+class DeepseekLm(Lm):
     """DeepSeek LM.
 
     Models & Pricing: https://api-docs.deepseek.com/quick_start/pricing

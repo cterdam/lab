@@ -2,10 +2,10 @@ import random
 from pathlib import Path
 
 from src import log
-from src.lib.data import DataBasis
+from src.lib.data import Data
 
 
-class WordBank(DataBasis):
+class WordBank(Data):
     """A simple bank of words."""
 
     @log.input()

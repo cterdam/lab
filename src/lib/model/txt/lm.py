@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 
-from src.lib.model import ModelBasis
+from src.lib.model import Model
 from src.lib.model.txt.lm_gentxt_result import LmGentxtResult
 
 
-class LmBasis(ABC, ModelBasis):
+class Lm(ABC, Model):
     """Base class for language models."""
 
     logspace_part = "txt"

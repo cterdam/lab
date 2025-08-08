@@ -1,1 +1,1 @@
-from src.lib.data.data_basis import DataBasis
+from src.lib.data.data import Data

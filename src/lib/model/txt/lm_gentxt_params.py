@@ -1,10 +1,10 @@
 from pydantic import Field
 
-from src.core import DataCore
+from src.core import Dataclass
 from src.core.util import multiline
 
 
-class LmGentxtParams(DataCore):
+class LmGentxtParams(Dataclass):
     """Parameters for language model generation."""
 
     system_prompt: str | None = Field(

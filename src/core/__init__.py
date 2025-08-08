@@ -1,2 +1,2 @@
-from src.core.data_core import DataCore
+from src.core.dataclass import Dataclass
 from src.core.logger import Logger

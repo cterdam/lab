@@ -1,11 +1,11 @@
 from pydantic import Field, SecretStr
 
 from src import arg
-from src.core import DataCore
+from src.core import Dataclass
 from src.core.util import multiline
 
 
-class OpenaiLmInitParams(DataCore):
+class OpenaiLmInitParams(Dataclass):
 
     model_name: str = Field(
         description=multiline(

@@ -1,10 +1,10 @@
 from pydantic import Field
 
-from src.core import DataCore
+from src.core import Dataclass
 from src.core.util import multiline
 
 
-class LmGentxtResult(DataCore):
+class LmGentxtResult(Dataclass):
     """Result from language model generation."""
 
     output: str = Field(

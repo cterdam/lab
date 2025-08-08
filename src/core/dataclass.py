@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
 
-class DataCore(BaseModel):
+class Dataclass(BaseModel):
     """Base dataclass with strict guarantees and handy properties."""
 
     model_config = ConfigDict(

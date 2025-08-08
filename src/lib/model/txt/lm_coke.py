@@ -1,10 +1,10 @@
 from pydantic import Field
 
-from src.core import DataCore
+from src.core import Dataclass
 from src.core.util import multiline
 
 
-class LmCoke(DataCore):
+class LmCoke(Dataclass):
     """COunter KEys related to language models."""
 
     INPUT_TOKEN: str = Field(

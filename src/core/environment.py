@@ -7,11 +7,11 @@ import redis
 import redis.asyncio
 from pydantic import ConfigDict, Field, computed_field
 
-from src.core.data_core import DataCore
+from src.core.dataclass import Dataclass
 from src.core.util import multiline, randalnu, str2int
 
 
-class Environment(DataCore):
+class Environment(Dataclass):
     """Context info about the run which are not set by the user."""
 
     # For pydantic to allow non-Pydantic fields

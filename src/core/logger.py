@@ -15,7 +15,7 @@ from src.core.util import multiline, prepr, str2int
 
 
 class Logger:
-    """Overall base class for any entity that keeps its own log file.
+    """Overall base class for any traceable entity.
 
     Descendants own:
 
@@ -47,12 +47,18 @@ class Logger:
     >>> player.info(msg)
     >>> player.incr("win")
 
+    Logs and counters will be saved in files unique to the instance.
+
     This class also provides three decorators, which can be used to capture a
     function's input and output:
     - input
     - output
     - io
     """
+
+    # To be supplied by the instance during init
+    logname: str
+    _log: loguru.Logger
 
     # Each descendant class can add a layer in its log dir path by overriding
     logspace_part: str | None = None
@@ -142,6 +148,7 @@ class Logger:
 
     # SETUP & TEARDOWN #########################################################
 
+    @final
     @cached_property
     def logspace(self) -> list[str]:
         """The list of names passed down from ancestor classes."""
@@ -151,12 +158,14 @@ class Logger:
             if (logspace_part := cls.__dict__.get("logspace_part"))
         ]
 
+    @final
     @cached_property
     def logspace_dir(self) -> Path:
         from src import env
 
         return env.log_dir.joinpath(*self.logspace)
 
+    @final
     @cached_property
     def logid(self) -> str:
         """A unique identifier of the logger."""
@@ -204,8 +213,9 @@ class Logger:
             serialize=True,
         )
 
-    @staticmethod
+    @final
     @cache
+    @staticmethod
     def _base_logger():
         """Set up and return the base logger.
 
@@ -247,6 +257,7 @@ class Logger:
 
         return logger
 
+    @final
     @staticmethod
     def add_sink(sink, *args, **kwargs) -> int:
         """Attach a sink to the underlying shared Loguru logger.
@@ -259,6 +270,7 @@ class Logger:
         kwargs["enqueue"] = True
         return Logger._base_logger().add(sink, *args, **kwargs)
 
+    @final
     @staticmethod
     def remove_sink(sink_id: int) -> None:
         """Remove a previously added sink from the shared logger.
@@ -270,11 +282,13 @@ class Logger:
 
     # COUNTER ##################################################################
 
+    @final
     @cached_property
     def chn(self) -> str:
         """Counter hash name. Name of the logger's counter hash in Redis."""
         return Logger.logid2chn(self.logid)
 
+    @final
     @staticmethod
     def logid2chn(logid: str) -> str:
         """Given a logid, return its corresponding counter hash name."""
@@ -284,6 +298,7 @@ class Logger:
 
     # - SYNCHRONOUS --------------------------------------------------------------
 
+    @final
     def iget(self, k: str, *, p: Pipeline | None = None) -> int | None:
         """Int GET.
 
@@ -302,6 +317,7 @@ class Logger:
         )
         return result  # pyright:ignore
 
+    @final
     def biget(self, ks: list[str], *, p: Pipeline | None = None) -> list[int | None]:
         """Batch Int GET.
 
@@ -320,6 +336,7 @@ class Logger:
         )
         return result  # pyright:ignore
 
+    @final
     def iset(self, k: str, v: int | float, *, p: Pipeline | None = None) -> int:
         """Int SET.
 
@@ -338,6 +355,7 @@ class Logger:
         )
         return result  # pyright:ignore
 
+    @final
     def biset(self, mapping: dict[str, int], *, p: Pipeline | None = None) -> int:
         """Batch Int SET.
 
@@ -356,6 +374,7 @@ class Logger:
         )
         return result  # pyright:ignore
 
+    @final
     def incr(self, k: str, v: int = 1, *, p: Pipeline | None = None) -> int:
         """Int iNCRement.
 
@@ -380,6 +399,7 @@ class Logger:
 
     # - ASYNCHRONOUS -------------------------------------------------------------
 
+    @final
     async def aiget(self, k: str, *, p: AsyncPipeline | None = None) -> int | None:
         """Async Int GET.
 
@@ -398,6 +418,7 @@ class Logger:
         )
         return result  # pyright:ignore
 
+    @final
     async def abiget(
         self, ks: list[str], *, p: AsyncPipeline | None = None
     ) -> list[int | None]:
@@ -418,6 +439,7 @@ class Logger:
         )
         return result  # pyright:ignore
 
+    @final
     async def aiset(
         self, k: str, v: int | float, *, p: AsyncPipeline | None = None
     ) -> int:
@@ -438,6 +460,7 @@ class Logger:
         )
         return result  # pyright:ignore
 
+    @final
     async def abiset(
         self, mapping: dict[str, int], *, p: AsyncPipeline | None = None
     ) -> int:
@@ -458,6 +481,7 @@ class Logger:
         )
         return result  # pyright:ignore
 
+    @final
     async def aincr(self, k: str, v: int = 1, *, p: AsyncPipeline | None = None) -> int:
         """Async Int iNCRement.
 
@@ -482,8 +506,9 @@ class Logger:
 
     # - OTHERS -------------------------------------------------------------------
 
-    @atexit.register
+    @final
     @staticmethod
+    @atexit.register
     def _dump_counters():
         """Dump all loggers' counters from this run in logs and JSON files."""
         from src import env
@@ -526,6 +551,7 @@ class Logger:
 
     # FUNC CALL DECORATORS #####################################################
 
+    @final
     @staticmethod
     def _get_async_pad() -> int:
         """Helper for func input output decorators to find depth pad number.
@@ -544,6 +570,7 @@ class Logger:
                 break
         return pad
 
+    @final
     @staticmethod
     def input(depth: int = 1):
         """
@@ -634,6 +661,7 @@ class Logger:
 
         return decorator
 
+    @final
     @staticmethod
     def output(depth: int = 1):
         """
@@ -711,6 +739,7 @@ class Logger:
 
         return decorator
 
+    @final
     @staticmethod
     def io(depth: int = 1):
         """

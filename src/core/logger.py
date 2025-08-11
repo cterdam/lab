@@ -74,7 +74,7 @@ class Logger:
             <dim><green>{time:YYYY-MM-DD HH:mm:ss!UTC}</></>
             <level>[{level:^8}]</>
             <dim><cyan>{extra[logid]}</></> |
-            <dim><yellow>{extra[relpath]}:{line}</></>
+            <dim><yellow>{extra[relpath]}:{line} <{function}></></>
             """
         )
         + "\n{message}"

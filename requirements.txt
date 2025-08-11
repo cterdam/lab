@@ -5,6 +5,7 @@ pydantic-settings
 
 # Model
 openai
+transitions
 
 # Log
 loguru

@@ -5,7 +5,7 @@ import textwrap
 import time
 from functools import cache, cached_property, wraps
 from pathlib import Path
-from typing import Any, final
+from typing import final
 
 import loguru
 from redis.asyncio.client import Pipeline as AsyncPipeline
@@ -58,9 +58,6 @@ class Logger:
 
     # To be supplied by the instance during init
     logname: str
-
-    # Underlying loguru logger
-    _log: Any
 
     # Each descendant class can add a layer in its log dir path by overriding
     logspace_part: str | None = None

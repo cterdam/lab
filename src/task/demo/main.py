@@ -47,3 +47,6 @@ def main():
 
     run_sync(n_tasks, wb, model)
     asyncio.run(run_async(n_tasks, wb, model))
+
+    log.biset({"abc": 1, "def": 2, "ghi": 30})
+    log.incr("abc")

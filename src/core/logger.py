@@ -56,6 +56,8 @@ class Logger:
     - io
     """
 
+    # GENERAL ATTRIBUTES #######################################################
+
     # To be supplied by the instance during init
     logname: str
 
@@ -78,10 +80,10 @@ class Logger:
         + "\n{message}"
     )
 
-    # Params for configuring log levels and colorschemes
+    # Params for configuring log levels and colorschemes -----------------------
+
+    # Function input logging
     _FUNC_INPUT_LVL_NAME = "FINP <-"
-    _FUNC_OUTPUT_LVL_NAME = "FOUT ->"
-    _COUNTER_LVL_NAME = "COUNT"
     _FUNC_INPUT_LVL_MSG = multiline(
         """
         {class_name}.{func_name}(...) <-
@@ -89,6 +91,9 @@ class Logger:
         """,
         oneline=False,
     )
+
+    # Function output logging
+    _FUNC_OUTPUT_LVL_NAME = "FOUT ->"
     _FUNC_OUTPUT_LVL_MSG = multiline(
         """
         {class_name}.{func_name}(...) -> {elapsed_time} ->
@@ -96,11 +101,20 @@ class Logger:
         """,
         oneline=False,
     )
+
+    # Counter logging
+    _COUNTER_LVL_NAME = "COUNT"
+    _COUNTER_LVL_SET_MSG = multiline(
+        """
+        # [{counter_key}] <- ({set_val})
+        """
+    )
     _COUNTER_LVL_INCR_MSG = multiline(
         """
         # [{counter_key}] += ({incr_val})
         """
     )
+
     # (lvl_name, lvl_no, lvl_fg, lvl_is_builtin) for each lvl
     _LOG_LVLS = [
         ("TRACE", 5, "#505050", True),
@@ -295,7 +309,7 @@ class Logger:
 
         return f"{logid}{env.LOGID_CHNS_SEPARATOR}{env.CHN_SUFFIX}"
 
-    # - SYNCHRONOUS --------------------------------------------------------------
+    # - SYNCHRONOUS ------------------------------------------------------------
 
     @final
     def iget(self, k: str, *, p: Pipeline | None = None) -> int | None:
@@ -352,6 +366,15 @@ class Logger:
             key=k,
             value=v,  # pyright:ignore
         )
+
+        self._log.opt(depth=1).log(
+            Logger._COUNTER_LVL_NAME,
+            Logger._COUNTER_LVL_SET_MSG.format(
+                counter_key=k,
+                set_val=v,
+            ),
+        )
+
         return result  # pyright:ignore
 
     @final
@@ -371,6 +394,17 @@ class Logger:
             name=self.chn,
             mapping=mapping,
         )
+
+        self._log.opt(depth=1).log(
+            Logger._COUNTER_LVL_NAME,
+            "\n".join(
+                [
+                    Logger._COUNTER_LVL_SET_MSG.format(counter_key=k, set_val=v)
+                    for k, v in mapping.items()
+                ]
+            ),
+        )
+
         return result  # pyright:ignore
 
     @final
@@ -389,14 +423,15 @@ class Logger:
 
         self._log.opt(depth=1).log(
             Logger._COUNTER_LVL_NAME,
-            Logger._COUNTER_LVL_INCR_MSG,
-            counter_key=k,
-            incr_val=v,
+            Logger._COUNTER_LVL_INCR_MSG.format(
+                counter_key=k,
+                incr_val=v,
+            ),
         )
 
         return result  # pyright:ignore
 
-    # - ASYNCHRONOUS -------------------------------------------------------------
+    # - ASYNCHRONOUS -----------------------------------------------------------
 
     @final
     async def aiget(self, k: str, *, p: AsyncPipeline | None = None) -> int | None:
@@ -496,14 +531,15 @@ class Logger:
 
         self._log.opt(depth=1).log(
             Logger._COUNTER_LVL_NAME,
-            Logger._COUNTER_LVL_INCR_MSG,
-            counter_key=k,
-            incr_val=v,
+            Logger._COUNTER_LVL_INCR_MSG.format(
+                counter_key=k,
+                incr_val=v,
+            ),
         )
 
         return result  # pyright:ignore
 
-    # - OTHERS -------------------------------------------------------------------
+    # - OTHERS -----------------------------------------------------------------
 
     @final
     @staticmethod
@@ -609,19 +645,21 @@ class Logger:
                     if not is_init:
                         self._log.opt(depth=depth + Logger._get_async_pad()).log(
                             Logger._FUNC_INPUT_LVL_NAME,
-                            Logger._FUNC_INPUT_LVL_MSG,
-                            class_name=self.__class__.__name__,
-                            func_name=func.__name__,
-                            func_args=prepr(func_args),
+                            Logger._FUNC_INPUT_LVL_MSG.format(
+                                class_name=self.__class__.__name__,
+                                func_name=func.__name__,
+                                func_args=prepr(func_args),
+                            ),
                         )
                     func_result = await func(*args, **kwargs)
                     if is_init:
                         self._log.opt(depth=depth + Logger._get_async_pad()).log(
                             Logger._FUNC_INPUT_LVL_NAME,
-                            Logger._FUNC_INPUT_LVL_MSG,
-                            class_name=self.__class__.__name__,
-                            func_name=func.__name__,
-                            func_args=prepr(func_args),
+                            Logger._FUNC_INPUT_LVL_MSG.format(
+                                class_name=self.__class__.__name__,
+                                func_name=func.__name__,
+                                func_args=prepr(func_args),
+                            ),
                         )
                     return func_result
 
@@ -640,19 +678,21 @@ class Logger:
                     if not is_init:
                         self._log.opt(depth=depth).log(
                             Logger._FUNC_INPUT_LVL_NAME,
-                            Logger._FUNC_INPUT_LVL_MSG,
-                            class_name=self.__class__.__name__,
-                            func_name=func.__name__,
-                            func_args=prepr(func_args),
+                            Logger._FUNC_INPUT_LVL_MSG.format(
+                                class_name=self.__class__.__name__,
+                                func_name=func.__name__,
+                                func_args=prepr(func_args),
+                            ),
                         )
                     func_result = func(*args, **kwargs)
                     if is_init:
                         self._log.opt(depth=depth).log(
                             Logger._FUNC_INPUT_LVL_NAME,
-                            Logger._FUNC_INPUT_LVL_MSG,
-                            class_name=self.__class__.__name__,
-                            func_name=func.__name__,
-                            func_args=prepr(func_args),
+                            Logger._FUNC_INPUT_LVL_MSG.format(
+                                class_name=self.__class__.__name__,
+                                func_name=func.__name__,
+                                func_args=prepr(func_args),
+                            ),
                         )
                     return func_result
 
@@ -692,17 +732,18 @@ class Logger:
                     # +1 to achieve parity with input line num for coroutines
                     self._log.opt(depth=depth + Logger._get_async_pad() + 1).log(
                         Logger._FUNC_OUTPUT_LVL_NAME,
-                        Logger._FUNC_OUTPUT_LVL_MSG,
-                        class_name=self.__class__.__name__,
-                        func_name=func.__name__,
-                        elapsed_time=f"{(end_time - start_time):.4f}s",
-                        func_result=textwrap.indent(
-                            prepr(
-                                func_result,
-                                max_width=env.MAX_WIDTH - env.INDENT,
-                                indent=env.INDENT,
+                        Logger._FUNC_OUTPUT_LVL_MSG.format(
+                            class_name=self.__class__.__name__,
+                            func_name=func.__name__,
+                            elapsed_time=f"{(end_time - start_time):.4f}s",
+                            func_result=textwrap.indent(
+                                prepr(
+                                    func_result,
+                                    max_width=env.MAX_WIDTH - env.INDENT,
+                                    indent=env.INDENT,
+                                ),
+                                prefix=" " * env.INDENT,
                             ),
-                            prefix=" " * env.INDENT,
                         ),
                     )
                     return func_result
@@ -719,17 +760,18 @@ class Logger:
                     end_time = time.perf_counter()
                     self._log.opt(depth=depth).log(
                         Logger._FUNC_OUTPUT_LVL_NAME,
-                        Logger._FUNC_OUTPUT_LVL_MSG,
-                        class_name=self.__class__.__name__,
-                        func_name=func.__name__,
-                        elapsed_time=f"{(end_time - start_time):.4f}s",
-                        func_result=textwrap.indent(
-                            prepr(
-                                func_result,
-                                max_width=env.MAX_WIDTH - env.INDENT,
-                                indent=env.INDENT,
+                        Logger._FUNC_OUTPUT_LVL_MSG.format(
+                            class_name=self.__class__.__name__,
+                            func_name=func.__name__,
+                            elapsed_time=f"{(end_time - start_time):.4f}s",
+                            func_result=textwrap.indent(
+                                prepr(
+                                    func_result,
+                                    max_width=env.MAX_WIDTH - env.INDENT,
+                                    indent=env.INDENT,
+                                ),
+                                prefix=" " * env.INDENT,
                             ),
-                            prefix=" " * env.INDENT,
                         ),
                     )
                     return func_result

@@ -4,18 +4,18 @@ import time
 from src import log
 from src.lib.data.word_bank import WordBank
 from src.lib.model.txt.api.openai import (
-    OpenaiLm,
-    OpenaiLmGentxtParams,
-    OpenaiLmInitParams,
+    OpenAILM,
+    OpenAILMGentxtParams,
+    OpenAILMInitParams,
 )
 
 
-def run_sync(n_tasks: int, wb: WordBank, model: OpenaiLm):
+def run_sync(n_tasks: int, wb: WordBank, model: OpenAILM):
 
     start = time.time()
     for i in range(n_tasks):
         prompt = f"In 10 words, what is {wb.pick_word()}"
-        result = model.gentxt(OpenaiLmGentxtParams(prompt=prompt))
+        result = model.gentxt(OpenAILMGentxtParams(prompt=prompt))
         log.info(f"Sync [{i+1}/{n_tasks}] {result.output!r}")
         log.incr("sync_success")
     duration = time.time() - start
@@ -23,11 +23,11 @@ def run_sync(n_tasks: int, wb: WordBank, model: OpenaiLm):
     log.success(f"Sync run took {duration:.2f}s")
 
 
-async def run_async(n_tasks: int, wb: WordBank, model: OpenaiLm):
+async def run_async(n_tasks: int, wb: WordBank, model: OpenAILM):
     tasks = []
     for i in range(n_tasks):
         prompt = f"In 10 words, what is {wb.pick_word()}"
-        tasks.append(model.agentxt(OpenaiLmGentxtParams(prompt=prompt)))
+        tasks.append(model.agentxt(OpenAILMGentxtParams(prompt=prompt)))
     start = time.time()
     results = await asyncio.gather(*tasks)
     duration = time.time() - start
@@ -43,7 +43,7 @@ def main():
 
     n_tasks = 3
     wb = WordBank()
-    model = OpenaiLm(params=OpenaiLmInitParams(model_name="gpt-4.1"))
+    model = OpenAILM(params=OpenAILMInitParams(model_name="gpt-4.1"))
 
     run_sync(n_tasks, wb, model)
     asyncio.run(run_async(n_tasks, wb, model))

@@ -4,7 +4,7 @@ from src.core import Dataclass
 from src.core.util import multiline
 
 
-class LmCoke(Dataclass):
+class LMCoke(Dataclass):
     """COunter KEys related to language models."""
 
     INPUT_TOKEN: str = Field(

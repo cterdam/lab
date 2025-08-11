@@ -4,7 +4,7 @@ from src.core import Dataclass
 from src.core.util import multiline
 
 
-class LmGentxtResult(Dataclass):
+class LMGentxtResult(Dataclass):
     """Result from language model generation."""
 
     output: str = Field(

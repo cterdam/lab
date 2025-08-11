@@ -5,7 +5,7 @@ from src.core import Dataclass
 from src.core.util import multiline
 
 
-class OpenaiLmInitParams(Dataclass):
+class OpenAILMInitParams(Dataclass):
 
     model_name: str = Field(
         description=multiline(

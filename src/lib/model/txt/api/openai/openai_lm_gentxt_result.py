@@ -1,5 +1,5 @@
-from src.lib.model.txt import LmGentxtResult
+from src.lib.model.txt import LMGentxtResult
 
 
-class OpenaiLmGentxtResult(LmGentxtResult):
+class OpenAILMGentxtResult(LMGentxtResult):
     pass

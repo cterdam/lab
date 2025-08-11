@@ -1,5 +1,5 @@
-from src.lib.model.txt import LmGentxtParams
+from src.lib.model.txt import LMGentxtParams
 
 
-class OpenaiLmGentxtParams(LmGentxtParams):
+class OpenAILMGentxtParams(LMGentxtParams):
     pass

@@ -4,7 +4,7 @@ from src.core import Dataclass
 from src.core.util import multiline
 
 
-class LmGentxtParams(Dataclass):
+class LMGentxtParams(Dataclass):
     """Parameters for language model generation."""
 
     system_prompt: str | None = Field(

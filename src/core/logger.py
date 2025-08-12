@@ -205,9 +205,9 @@ class Logger:
 
         # Bind logger for this instance
         self.logname = logname
-        if env.r.sadd(env.LOGID_SET_KEY, self.logid) == 0:
-            Logger._base_logger().warning(f"Duplicate logid: {self.logid}")
         self._log = Logger._base_logger().bind(logid=self.logid)
+        if env.r.sadd(env.LOGID_SET_KEY, self.logid) == 0:
+            self._log.warning(f"Duplicate logid: {self.logid}")
 
         # Add file sinks
         only_self = lambda record: record["extra"]["logid"] == self.logid

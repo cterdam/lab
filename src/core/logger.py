@@ -44,16 +44,24 @@ class Logger:
         - (a)incr
 
     Example use:
-    >>> player.info(msg)
-    >>> player.incr("win")
+        >>> player.info(msg)
+        >>> player.incr("win")
 
-    Logs and counters will be saved in files unique to the instance.
+    Logging functionalities are implemented with a loguru logger in `self._log`.
+    Logs and counter info will be saved in files unique to the instance.
 
     This class also provides three decorators, which can be used to capture a
     function's input and output:
     - input
     - output
     - io
+
+    When subclassing this class:
+    - If providing a class attr `logspace_part`, logs of instances of the
+      subclass will be stored down one hierarchy determined by this attr.
+    - If overriding `def _logid_ctx()`, logs of instances of the subclass will
+      display short contextual info alongside the logid for log entries emitted
+      with a non-empty return value for this func.
     """
 
     # GENERAL ATTRIBUTES #######################################################
@@ -73,7 +81,7 @@ class Logger:
             """
             <dim><green>{time:YYYY-MM-DD HH:mm:ss!UTC}</></>
             <level>[{level:^8}]</>
-            <dim><cyan>{extra[logid]}</></> |
+            <dim><cyan>{extra[logid]}{extra[logid_ctx]}</></> |
             <dim><yellow>{extra[relpath]}:{line} <{function}></></>
             """
         )
@@ -193,6 +201,14 @@ class Logger:
             continuous=True,
         )
 
+    @property
+    def _logid_ctx(self) -> str | None:
+        """Return any contextual info for logging alongside the logid.
+
+        If returning None, no contextual info will be displayed.
+        """
+        return None
+
     def __init__(self, *args, logname: str, **kwargs):
         """Initialize this instance’s logger.
 
@@ -206,6 +222,13 @@ class Logger:
         # Bind logger for this instance
         self.logname = logname
         self._log = Logger._base_logger().bind(logid=self.logid)
+        self._log = self._log.patch(
+            lambda record: record["extra"].update(
+                logid_ctx=f" [{self._logid_ctx}]" if self._logid_ctx else ""
+            )
+        )
+
+        # Check for duplicate logid
         if env.r.sadd(env.LOGID_SET_KEY, self.logid) == 0:
             self._log.warning(f"Duplicate logid: {self.logid}")
 
@@ -567,7 +590,7 @@ class Logger:
                 )
 
                 # Send log entry
-                Logger._base_logger().bind(logid=logid).log(
+                Logger._base_logger().bind(logid=logid, logid_ctx="").log(
                     Logger._COUNTER_LVL_NAME,
                     counters_repr,
                 )

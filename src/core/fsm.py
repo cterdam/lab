@@ -24,6 +24,11 @@ class FSM(ABC, Logger):
             ignore_invalid_triggers=False,
         )
 
+    @property
+    def _logid_ctx(self) -> str:
+        """Always display the current state alongside logid in logs."""
+        return self._fsm.state
+
     @cached_property
     @abstractmethod
     def _fsm_states(self) -> Sequence:

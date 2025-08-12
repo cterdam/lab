@@ -3,6 +3,7 @@ import time
 
 from src import log
 from src.lib.data.word_bank import WordBank
+from src.lib.game.game import Game
 from src.lib.model.txt.api.openai import (
     OpenAILM,
     OpenAILMGentxtParams,
@@ -40,6 +41,11 @@ async def run_async(n_tasks: int, wb: WordBank, model: OpenAILM):
 
 
 def main():
+
+    g = Game(logname="sample_game")
+    g.info("Hi!")
+    g._fsm.trigger("normal")
+    g.info("Hi again!")
 
     n_tasks = 3
     wb = WordBank()

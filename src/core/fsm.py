@@ -25,7 +25,7 @@ class FSM(ABC, Logger):
         )
 
     @property
-    def _logid_ctx(self) -> str:
+    def _logtag(self) -> str:
         """Always display the current state alongside logid in logs."""
         return self._fsm.state
 

@@ -59,7 +59,7 @@ class Logger:
     When subclassing this class:
     - If providing a class attr `logspace_part`, logs of instances of the
       subclass will be stored down one hierarchy determined by this attr.
-    - If overriding `def _logid_ctx()`, logs of instances of the subclass will
+    - If overriding `def _logtag()`, logs of instances of the subclass will
       display short contextual info alongside the logid for log entries emitted
       with a non-empty return value for this func.
     """
@@ -81,7 +81,7 @@ class Logger:
             """
             <dim><green>{time:YYYY-MM-DD HH:mm:ss!UTC}</></>
             <level>[{level:^8}]</>
-            <dim><cyan>{extra[logid]}{extra[logid_ctx]}</></> |
+            <dim><cyan>{extra[logid]}{extra[logtag]}</></> |
             <dim><yellow>{extra[relpath]}:{line} <{function}></></>
             """
         )
@@ -202,7 +202,7 @@ class Logger:
         )
 
     @property
-    def _logid_ctx(self) -> str | None:
+    def _logtag(self) -> str | None:
         """Return any contextual info for logging alongside the logid.
 
         If returning None, no contextual info will be displayed.
@@ -224,7 +224,7 @@ class Logger:
         self._log = Logger._base_logger().bind(logid=self.logid)
         self._log = self._log.patch(
             lambda record: record["extra"].update(
-                logid_ctx=f" [{self._logid_ctx}]" if self._logid_ctx else ""
+                logtag=f" [{self._logtag}]" if self._logtag else ""
             )
         )
 
@@ -590,7 +590,7 @@ class Logger:
                 )
 
                 # Send log entry
-                Logger._base_logger().bind(logid=logid, logid_ctx="").log(
+                Logger._base_logger().bind(logid=logid, logtag="").log(
                     Logger._COUNTER_LVL_NAME,
                     counters_repr,
                 )

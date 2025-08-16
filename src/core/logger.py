@@ -28,6 +28,8 @@ class Logger:
         - logid (str):
             A string ID for this instance for the purpose of logging, produced
             from its logspace and logname and unique across this run.
+        - _log (loguru Logger):
+            Underlying logger that logs with the instance's logid.
 
     - logging methods:
         - trace
@@ -47,7 +49,6 @@ class Logger:
         >>> player.info(msg)
         >>> player.incr("win")
 
-    Logging functionalities are implemented with a loguru logger in `self._log`.
     Logs and counter info will be saved in files unique to the instance.
 
     This class also provides three decorators, which can be used to capture a
@@ -56,7 +57,7 @@ class Logger:
     - output
     - io
 
-    When subclassing this class:
+    When subclassing:
     - If providing a class attr `logspace_part`, logs of instances of the
       subclass will be stored down one hierarchy determined by this attr.
     - If overriding `def _logtag()`, logs of instances of the subclass will

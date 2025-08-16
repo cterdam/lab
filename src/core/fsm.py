@@ -12,14 +12,26 @@ from src.core.util import multiline
 class FSM(ABC, Logger):
     """Base class for finite-state machines.
 
-    Descendants need to implement `_fsm_state` and `_fsm_transitions` before
-    init, so the `_fsm` controller can be initialized with the correct
-    structure.
+    Descendants own:
 
-    Descendants will automatically log a state graph and every state transition.
+    - attributes:
+        - _fsm (transitions HierarchicalGraphMachine):
+            Underlying FSM controlling states and transitions.
+
+    - methods:
+        - trig
+            Trigger a transition.
+
+    Descendants will automatically log a state graph upon init and every state
+    change upon calling triggers.
+
+    When subclassing:
+    - Implement `_fsm_state` and `_fsm_transitions` before init, so the `_fsm`
+      controller can be initialized with the correct structure.
     """
 
-    # FSM log level
+
+    # FSM logging
     _FSM_LVL_NAME = "FSM"
     _FSM_LVL_NO = 6
     _FSM_LVL_COLOR = "#4A90E2"

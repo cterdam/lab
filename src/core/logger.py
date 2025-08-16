@@ -62,6 +62,8 @@ class Logger:
     - If overriding `def _logtag()`, logs of instances of the subclass will
       display short contextual info alongside the logid for log entries emitted
       with a non-empty return value for this func.
+    - If having a custom logging level, it can be registered by calling
+      `Logger.register_log_level`.
     """
 
     # GENERAL ATTRIBUTES #######################################################
@@ -112,16 +114,8 @@ class Logger:
 
     # Counter logging
     _COUNTER_LVL_NAME = "COUNT"
-    _COUNTER_LVL_SET_MSG = multiline(
-        """
-        # [{counter_key}] <- ({set_val})
-        """
-    )
-    _COUNTER_LVL_INCR_MSG = multiline(
-        """
-        # [{counter_key}] += ({incr_val})
-        """
-    )
+    _COUNTER_LVL_SET_MSG = "# [{counter_key}] <- ({set_val})"
+    _COUNTER_LVL_INCR_MSG = "# [{counter_key}] += ({incr_val})"
 
     # (lvl_name, lvl_no, lvl_fg, lvl_is_builtin) for each lvl
     _LOG_LVLS = [
@@ -315,6 +309,13 @@ class Logger:
             sink_id (int): The integer handle returned by `add_sink`.
         """
         Logger._base_logger().remove(sink_id)
+
+    @final
+    @staticmethod
+    def register_log_level(name: str, no: int, color: str) -> None:
+        """For a subcalss to register a custom log level."""
+        logger = Logger._base_logger()
+        logger.level(name=name, no=no, color=f"<bold><fg {color}>", icon="")
 
     # COUNTER ##################################################################
 

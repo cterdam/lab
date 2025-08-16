@@ -44,8 +44,10 @@ def main():
 
     g = Game(logname="sample_game")
     g.info("Hi!")
-    g._fsm.trigger("normal")
+    g.trig("normal")
     g.info("Hi again!")
+    g.trig("again")
+    g.success("Back!")
 
     n_tasks = 3
     wb = WordBank()

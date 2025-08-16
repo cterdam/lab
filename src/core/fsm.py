@@ -5,6 +5,7 @@ from typing import Sequence
 from transitions.extensions.diagrams import HierarchicalGraphMachine
 
 from src.core.logger import Logger
+from src.core.util import multiline
 
 
 class FSM(ABC, Logger):
@@ -22,6 +23,17 @@ class FSM(ABC, Logger):
             auto_transitions=False,
             ordered_transitions=False,
             ignore_invalid_triggers=False,
+        )
+        self.info(
+            multiline(
+                """
+                FSM created. Paste this block in Markdown to see the graph.
+                ```mermaid
+                {graphtxt}
+                ```
+                """,
+                oneline=False,
+            ).format(graphtxt=self._fsm.get_graph().draw(None))
         )
 
     @property

@@ -30,7 +30,6 @@ class FSM(ABC, Logger):
       controller can be initialized with the correct structure.
     """
 
-
     # FSM logging
     _FSM_LVL_NAME = "FSM"
     _FSM_LVL_NO = 6
@@ -84,7 +83,8 @@ class FSM(ABC, Logger):
 
     def _log_state_change(self, event: EventData) -> None:
         """Automatically log state changes."""
-        self._log.log(
+        # Add depth to skip all transitions internals
+        self._log.opt(depth=12).log(
             FSM._FSM_LVL_NAME,
             FSM._FSM_STATE_CHANGE_MSG.format(
                 source=event.transition.source,  # pyright:ignore

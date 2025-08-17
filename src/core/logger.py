@@ -584,14 +584,20 @@ class Logger:
             for logid, counter_kvs in zip(logids, counter_hashes):
                 if not counter_kvs:
                     continue
-                counters_repr = prepr(
-                    {ck: str2int(cv) for ck, cv in counter_kvs.items()}
+                msg = multiline(
+                    """
+                    Shutting down; Tallying counters.
+                    {counters}
+                    """,
+                    oneline=False,
+                ).format(
+                    counters=prepr({ck: str2int(cv) for ck, cv in counter_kvs.items()})
                 )
 
                 # Send log entry
                 Logger._base_logger().bind(logid=logid, logtag="").log(
                     Logger._counter_lvl.name,
-                    counters_repr,
+                    msg,
                 )
 
                 # Dump to file
@@ -601,7 +607,7 @@ class Logger:
                 logspace_dir = env.log_dir.joinpath(*logspace)
                 logspace_dir.mkdir(parents=True, exist_ok=True)
                 logname = logid.split(env.LOGSPACE_LOGNAME_SEPARATOR)[-1]
-                (logspace_dir / f"{logname}_counters.json").write_text(counters_repr)
+                (logspace_dir / f"{logname}_counters.json").write_text(msg)
 
         finally:
             env.cr.delete(env.COUNTER_DUMP_LOCK_KEY)

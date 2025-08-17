@@ -1,8 +1,8 @@
 from abc import abstractmethod
+from enum import StrEnum
 
 from src import env, log
 from src.lib.model import Model
-from src.lib.model.txt.lm_coke import LMCoke
 from src.lib.model.txt.lm_gentxt_result import LMGentxtResult
 
 
@@ -10,7 +10,12 @@ class LM(Model):
     """Base class for language models."""
 
     logspace_part = "txt"
-    coke: LMCoke = LMCoke()
+
+    class coke(StrEnum):
+        GENTXT_INVOC = "gentxt_invoc"
+        AGENTXT_INVOC = "agentxt_invoc"
+        INPUT_TOKEN = "input_tokens"
+        OUTPUT_TOKEN = "output_tokens"
 
     @log.io()
     def gentxt(self, *args, **kwargs) -> LMGentxtResult:

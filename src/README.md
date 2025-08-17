@@ -19,7 +19,7 @@
 - The codebase uses Redis as a single source of truth.
 - The collection of all loggers is under `env.LOGID_SET_KEY`.
 - The counters of each logger are collected under its own hash.
-- Each module inclues a `coke.py` file which contains its relevant COunter KEys.
+- Each module might include a `coke` module which contains its COunter KEys.
 
 ## Extend
 

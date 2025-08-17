@@ -135,6 +135,13 @@ class Logger:
     # Counter logging
     _COUNTER_SET_MSG = "# [{counter_key}] <- ({set_val})"
     _COUNTER_INCR_MSG = "# [{counter_key}] += ({incr_val})"
+    _COUNTER_TALLY_MSG = multiline(
+        """
+        Shutting down; Tallying counters.
+        {counters}
+        """,
+        oneline=False,
+    )
 
     # LOGGING METHODS ##########################################################
 
@@ -584,13 +591,7 @@ class Logger:
             for logid, counter_kvs in zip(logids, counter_hashes):
                 if not counter_kvs:
                     continue
-                msg = multiline(
-                    """
-                    Shutting down; Tallying counters.
-                    {counters}
-                    """,
-                    oneline=False,
-                ).format(
+                msg = Logger._COUNTER_TALLY_MSG.format(
                     counters=prepr({ck: str2int(cv) for ck, cv in counter_kvs.items()})
                 )
 

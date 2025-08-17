@@ -32,8 +32,11 @@ class FSM(ABC, Logger):
       controller can be initialized with the correct structure.
     """
 
-    # FSM logging
+    # FSM logging level
     _fsm_lvl = LogLevel(name="FSM", no=6, color="#4A90E2")  # pyright:ignore
+
+    # Add depth to skip all transitions internals when logging
+    _FSM_LOG_DEPTH_PAD = 12
 
     class logmsg(StrEnum):  # pyright: ignore
 
@@ -79,8 +82,7 @@ class FSM(ABC, Logger):
 
     def _log_state_change(self, event: EventData) -> None:
         """Automatically log state changes."""
-        # Add depth to skip all transitions internals
-        self._log.opt(depth=12).log(
+        self._log.opt(depth=FSM._FSM_LOG_DEPTH_PAD).log(
             FSM._fsm_lvl.name,
             FSM.logmsg.FSM_STATE_CHANGE.format(
                 source=event.transition.source,  # pyright:ignore

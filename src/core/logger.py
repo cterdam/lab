@@ -3,6 +3,7 @@ import inspect
 import os
 import textwrap
 import time
+from enum import StrEnum
 from functools import cache, cached_property, wraps
 from pathlib import Path
 from typing import final
@@ -117,34 +118,36 @@ class Logger:
 
     # Special messages ---------------------------------------------------------
 
-    # Function input logging
-    _FUNC_INPUT_MSG = multiline(
-        """
-        {class_name}.{func_name}(...) <-
-        {func_args}
-        """,
-        oneline=False,
-    )
+    class logmsg(StrEnum):
 
-    # Function output logging
-    _FUNC_OUTPUT_MSG = multiline(
-        """
-        {class_name}.{func_name}(...) -> {elapsed_time} ->
-        {func_result}
-        """,
-        oneline=False,
-    )
+        # Function input logging
+        FUNC_INPUT = multiline(
+            """
+            {class_name}.{func_name}(...) <-
+            {func_args}
+            """,
+            oneline=False,
+        )
 
-    # Counter logging
-    _COUNTER_SET_MSG = "# [{counter_key}] <- ({set_val})"
-    _COUNTER_INCR_MSG = "# [{counter_key}] += ({incr_val})"
-    _COUNTER_TALLY_MSG = multiline(
-        """
-        Shutting down; Tallying counters.
-        {counters}
-        """,
-        oneline=False,
-    )
+        # Function output logging
+        FUNC_OUTPUT = multiline(
+            """
+            {class_name}.{func_name}(...) -> {elapsed_time} ->
+            {func_result}
+            """,
+            oneline=False,
+        )
+
+        # Counter logging
+        COUNT_SET = "# [{counter_key}] <- ({set_val})"
+        COUNT_INCR = "# [{counter_key}] += ({incr_val})"
+        COUNT_TALLY = multiline(
+            """
+            Shutting down; Tallying counters.
+            {counters}
+            """,
+            oneline=False,
+        )
 
     # LOGGING METHODS ##########################################################
 
@@ -401,7 +404,7 @@ class Logger:
 
         self._log.opt(depth=1).log(
             Logger._counter_lvl.name,
-            Logger._COUNTER_SET_MSG.format(
+            Logger.logmsg.COUNT_SET.format(
                 counter_key=k,
                 set_val=v,
             ),
@@ -431,7 +434,7 @@ class Logger:
             Logger._counter_lvl.name,
             "\n".join(
                 [
-                    Logger._COUNTER_SET_MSG.format(counter_key=k, set_val=v)
+                    Logger.logmsg.COUNT_SET.format(counter_key=k, set_val=v)
                     for k, v in mapping.items()
                 ]
             ),
@@ -455,7 +458,7 @@ class Logger:
 
         self._log.opt(depth=1).log(
             Logger._counter_lvl.name,
-            Logger._COUNTER_INCR_MSG.format(
+            Logger.logmsg.COUNT_INCR.format(
                 counter_key=k,
                 incr_val=v,
             ),
@@ -563,7 +566,7 @@ class Logger:
 
         self._log.opt(depth=1).log(
             Logger._counter_lvl.name,
-            Logger._COUNTER_INCR_MSG.format(
+            Logger.logmsg.COUNT_INCR.format(
                 counter_key=k,
                 incr_val=v,
             ),
@@ -594,7 +597,7 @@ class Logger:
             for logid, counter_kvs in zip(logids, counter_hashes):
                 if not counter_kvs:
                     continue
-                msg = Logger._COUNTER_TALLY_MSG.format(
+                msg = Logger.logmsg.COUNT_TALLY.format(
                     counters=prepr({ck: str2int(cv) for ck, cv in counter_kvs.items()})
                 )
 
@@ -658,7 +661,7 @@ class Logger:
                     if not is_init:
                         self._log.opt(depth=depth + Logger._LOG_ASYNC_PAD).log(
                             Logger._func_input_lvl.name,
-                            Logger._FUNC_INPUT_MSG.format(
+                            Logger.logmsg.FUNC_INPUT.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -668,7 +671,7 @@ class Logger:
                     if is_init:
                         self._log.opt(depth=depth + Logger._LOG_ASYNC_PAD).log(
                             Logger._func_input_lvl.name,
-                            Logger._FUNC_INPUT_MSG.format(
+                            Logger.logmsg.FUNC_INPUT.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -691,7 +694,7 @@ class Logger:
                     if not is_init:
                         self._log.opt(depth=depth).log(
                             Logger._func_input_lvl.name,
-                            Logger._FUNC_INPUT_MSG.format(
+                            Logger.logmsg.FUNC_INPUT.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -701,7 +704,7 @@ class Logger:
                     if is_init:
                         self._log.opt(depth=depth).log(
                             Logger._func_input_lvl.name,
-                            Logger._FUNC_INPUT_MSG.format(
+                            Logger.logmsg.FUNC_INPUT.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -744,7 +747,7 @@ class Logger:
                     end_time = time.perf_counter()
                     self._log.opt(depth=depth + Logger._LOG_ASYNC_PAD).log(
                         Logger._func_output_lvl.name,
-                        Logger._FUNC_OUTPUT_MSG.format(
+                        Logger.logmsg.FUNC_OUTPUT.format(
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             elapsed_time=f"{(end_time - start_time):.4f}s",
@@ -772,7 +775,7 @@ class Logger:
                     end_time = time.perf_counter()
                     self._log.opt(depth=depth).log(
                         Logger._func_output_lvl.name,
-                        Logger._FUNC_OUTPUT_MSG.format(
+                        Logger.logmsg.FUNC_OUTPUT.format(
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             elapsed_time=f"{(end_time - start_time):.4f}s",

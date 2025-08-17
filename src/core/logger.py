@@ -66,7 +66,10 @@ class Logger:
       display short contextual info alongside the logid for log entries emitted
       with a non-empty return value for this func.
     - If having a custom logging level, it can be registered by calling
-      `Logger.register_log_level`.
+      `Logger.add_lvl`.
+    - If having custom counter keys, these can be contained in a `coke` module.
+    - If having custom logging msgs, these can be contained in a `logmsg`
+      module.
     """
 
     # GENERAL ATTRIBUTES #######################################################

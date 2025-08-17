@@ -50,7 +50,7 @@ def main():
     g.success("Back!")
     g2 = Game(logname="sample_game_2")
 
-    n_tasks = 3
+    n_tasks = 1
     wb = WordBank()
     model = OpenAILM(params=OpenAILMInitParams(model_name="gpt-4.1"))
 

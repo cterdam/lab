@@ -92,6 +92,9 @@ class Logger:
         + "\n{message}"
     )
 
+    # Add pad to stack trace depth for async func decorators
+    _LOG_ASYNC_PAD = 6
+
     # Params for configuring log levels ----------------------------------------
 
     _func_input_lvl = LogLevel(name="FINP <-", no=7, color="38758A")  # pyright:ignore
@@ -653,7 +656,7 @@ class Logger:
                         k: v for k, v in bound_args.arguments.items() if k != "self"
                     }
                     if not is_init:
-                        self._log.opt(depth=depth).log(
+                        self._log.opt(depth=depth + Logger._LOG_ASYNC_PAD).log(
                             Logger._func_input_lvl.name,
                             Logger._FUNC_INPUT_MSG.format(
                                 class_name=self.__class__.__name__,
@@ -663,7 +666,7 @@ class Logger:
                         )
                     func_result = await func(*args, **kwargs)
                     if is_init:
-                        self._log.opt(depth=depth).log(
+                        self._log.opt(depth=depth + Logger._LOG_ASYNC_PAD).log(
                             Logger._func_input_lvl.name,
                             Logger._FUNC_INPUT_MSG.format(
                                 class_name=self.__class__.__name__,
@@ -739,7 +742,7 @@ class Logger:
                     start_time = time.perf_counter()
                     func_result = await func(*args, **kwargs)
                     end_time = time.perf_counter()
-                    self._log.opt(depth=depth + 1).log(
+                    self._log.opt(depth=depth + Logger._LOG_ASYNC_PAD).log(
                         Logger._func_output_lvl.name,
                         Logger._FUNC_OUTPUT_MSG.format(
                             class_name=self.__class__.__name__,

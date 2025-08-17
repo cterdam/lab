@@ -617,25 +617,6 @@ class Logger:
 
     @final
     @staticmethod
-    def _get_async_pad() -> int:
-        """Helper for func input output decorators to find depth pad number.
-
-        Inspect the current call stack and, beyond the decorator wrapper itself,
-        skip over any asyncio internals so that logs attribute correctly to the
-        user’s call site for a coroutine.
-        """
-        stack = inspect.stack()
-        pad = 0
-        while True:
-            filename = stack[pad].filename
-            if "asyncio" in filename or os.path.basename(filename) == "logger.py":
-                pad += 1
-            else:
-                break
-        return pad
-
-    @final
-    @staticmethod
     def input(depth: int = 1):
         """
         Decorator to log the inputs passed into a function or coroutine.
@@ -672,7 +653,7 @@ class Logger:
                         k: v for k, v in bound_args.arguments.items() if k != "self"
                     }
                     if not is_init:
-                        self._log.opt(depth=depth + Logger._get_async_pad()).log(
+                        self._log.opt(depth=depth).log(
                             Logger._func_input_lvl.name,
                             Logger._FUNC_INPUT_MSG.format(
                                 class_name=self.__class__.__name__,
@@ -682,7 +663,7 @@ class Logger:
                         )
                     func_result = await func(*args, **kwargs)
                     if is_init:
-                        self._log.opt(depth=depth + Logger._get_async_pad()).log(
+                        self._log.opt(depth=depth).log(
                             Logger._func_input_lvl.name,
                             Logger._FUNC_INPUT_MSG.format(
                                 class_name=self.__class__.__name__,
@@ -758,8 +739,7 @@ class Logger:
                     start_time = time.perf_counter()
                     func_result = await func(*args, **kwargs)
                     end_time = time.perf_counter()
-                    # +1 to achieve parity with input line num for coroutines
-                    self._log.opt(depth=depth + Logger._get_async_pad() + 1).log(
+                    self._log.opt(depth=depth + 1).log(
                         Logger._func_output_lvl.name,
                         Logger._FUNC_OUTPUT_MSG.format(
                             class_name=self.__class__.__name__,

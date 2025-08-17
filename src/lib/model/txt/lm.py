@@ -12,6 +12,7 @@ class LM(Model):
     logspace_part = "txt"
     coke: LMCoke = LMCoke()
 
+    @log.io()
     def gentxt(self, *args, **kwargs) -> LMGentxtResult:
 
         result = self._do_gentxt(*args, **kwargs)
@@ -31,6 +32,7 @@ class LM(Model):
     @abstractmethod
     def _do_gentxt(self, *args, **kwargs) -> LMGentxtResult: ...
 
+    @log.io()
     async def agentxt(self, *args, **kwargs) -> LMGentxtResult:
 
         result = await self._do_agentxt(*args, **kwargs)

@@ -2,7 +2,6 @@ from functools import cached_property
 
 import openai
 
-from src import log
 from src.core.util import as_filename
 from src.lib.model.txt import LM
 from src.lib.model.txt.api.openai.openai_lm_gentxt_params import OpenAILMGentxtParams
@@ -34,7 +33,6 @@ class OpenAILM(LM):
     def _aclient(self) -> openai.AsyncOpenAI:
         return openai.AsyncOpenAI(api_key=self._api_key.get_secret_value())
 
-    @log.io()
     def _do_gentxt(self, params: OpenAILMGentxtParams) -> OpenAILMGentxtResult:
 
         response = self._client.responses.create(
@@ -54,7 +52,6 @@ class OpenAILM(LM):
 
         return result
 
-    @log.io()
     async def _do_agentxt(self, params: OpenAILMGentxtParams) -> OpenAILMGentxtResult:
 
         response = await self._aclient.responses.create(

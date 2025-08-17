@@ -11,6 +11,7 @@ import loguru
 from redis.asyncio.client import Pipeline as AsyncPipeline
 from redis.client import Pipeline
 
+from src.core.log_level import LogLevel
 from src.core.util import multiline, prepr, str2int
 
 
@@ -91,11 +92,30 @@ class Logger:
         + "\n{message}"
     )
 
-    # Params for configuring log levels and colorschemes -----------------------
+    # Params for configuring log levels ----------------------------------------
+
+    _func_input_lvl = LogLevel(name="FINP <-", no=7, color="38758A")  # pyright:ignore
+    _func_output_lvl = LogLevel(name="FOUT ->", no=7, color="4A6FA5")  # pyright:ignore
+    _counter_lvl = LogLevel(name="COUNT", no=9, color="DAA520")  # pyright:ignore
+
+    # (lvl_name, lvl_no, lvl_fg, lvl_is_builtin) for each lvl
+    _LOG_LVLS = [
+        LogLevel(name="TRACE", no=5, color="#505050"),  # pyright:ignore
+        _func_input_lvl,
+        _func_output_lvl,
+        _counter_lvl,
+        LogLevel(name="DEBUG", no=10, color="C080D3"),  # pyright:ignore
+        LogLevel(name="INFO", no=20, color="5FAFAC"),  # pyright:ignore
+        LogLevel(name="SUCCESS", no=25, color="2E8B57"),  # pyright:ignore
+        LogLevel(name="WARNING", no=30, color="E09C34"),  # pyright:ignore
+        LogLevel(name="ERROR", no=40, color="E04E3A"),  # pyright:ignore
+        LogLevel(name="CRITICAL", no=50, color="FF0000"),  # pyright:ignore
+    ]
+
+    # Special messages ---------------------------------------------------------
 
     # Function input logging
-    _FUNC_INPUT_LVL_NAME = "FINP <-"
-    _FUNC_INPUT_LVL_MSG = multiline(
+    _FUNC_INPUT_MSG = multiline(
         """
         {class_name}.{func_name}(...) <-
         {func_args}
@@ -104,8 +124,7 @@ class Logger:
     )
 
     # Function output logging
-    _FUNC_OUTPUT_LVL_NAME = "FOUT ->"
-    _FUNC_OUTPUT_LVL_MSG = multiline(
+    _FUNC_OUTPUT_MSG = multiline(
         """
         {class_name}.{func_name}(...) -> {elapsed_time} ->
         {func_result}
@@ -114,23 +133,8 @@ class Logger:
     )
 
     # Counter logging
-    _COUNTER_LVL_NAME = "COUNT"
-    _COUNTER_LVL_SET_MSG = "# [{counter_key}] <- ({set_val})"
-    _COUNTER_LVL_INCR_MSG = "# [{counter_key}] += ({incr_val})"
-
-    # (lvl_name, lvl_no, lvl_fg, lvl_is_builtin) for each lvl
-    _LOG_LVLS = [
-        ("TRACE", 5, "#505050", True),
-        (_FUNC_INPUT_LVL_NAME, 7, "#38758A", False),
-        (_FUNC_OUTPUT_LVL_NAME, 8, "#4A6FA5", False),
-        (_COUNTER_LVL_NAME, 9, "#DAA520", False),
-        ("DEBUG", 10, "#C080D3", True),
-        ("INFO", 20, "#5FAFAC", True),
-        ("SUCCESS", 25, "#2E8B57", True),
-        ("WARNING", 30, "#E09C34", True),
-        ("ERROR", 40, "#E04E3A", True),
-        ("CRITICAL", 50, "#FF0000", True),
-    ]
+    _COUNTER_SET_MSG = "# [{counter_key}] <- ({set_val})"
+    _COUNTER_INCR_MSG = "# [{counter_key}] += ({incr_val})"
 
     # LOGGING METHODS ##########################################################
 
@@ -205,10 +209,10 @@ class Logger:
         return None
 
     def __init__(self, *args, logname: str, **kwargs):
-        """Initialize this instance’s logger.
+        """Initialize this instance's logger.
 
         Args:
-            logname (str): Name for this instance’s log files. Should be unique
+            logname (str): Name for this instance's log files. Should be unique
                 in this instance's logspace.
         """
         super().__init__(*args, **kwargs)
@@ -269,22 +273,8 @@ class Logger:
         )
 
         # Configure logging levels with colorscheme
-        for lvl_name, lvl_no, lvl_fg, lvl_is_builtin in Logger._LOG_LVLS:
-            if lvl_is_builtin:
-                # Builtin level, just change color and icon here
-                logger.level(
-                    name=lvl_name,
-                    color=f"<bold><fg {lvl_fg}>",
-                    icon="",
-                )
-            else:
-                # Custom level, register severity here
-                logger.level(
-                    name=lvl_name,
-                    no=lvl_no,
-                    color=f"<bold><fg {lvl_fg}>",
-                    icon="",
-                )
+        for lvl in Logger._LOG_LVLS:
+            Logger.add_lvl(lvl)
 
         return logger
 
@@ -313,10 +303,17 @@ class Logger:
 
     @final
     @staticmethod
-    def register_log_level(name: str, no: int, color: str) -> None:
-        """For a subcalss to register a custom log level."""
-        logger = Logger._base_logger()
-        logger.level(name=name, no=no, color=f"<bold><fg {color}>", icon="")
+    def add_lvl(lvl: LogLevel) -> None:
+        """Register or change a log level."""
+        logger = loguru.logger
+        color = f"<bold><fg {lvl.color.as_hex(format='long')}>"
+
+        try:
+            # Existent level
+            logger.level(name=lvl.name, color=color, icon="")
+        except:
+            # New level
+            logger.level(name=lvl.name, no=lvl.no, color=color, icon="")
 
     # COUNTER ##################################################################
 
@@ -393,8 +390,8 @@ class Logger:
         )
 
         self._log.opt(depth=1).log(
-            Logger._COUNTER_LVL_NAME,
-            Logger._COUNTER_LVL_SET_MSG.format(
+            Logger._counter_lvl.name,
+            Logger._COUNTER_SET_MSG.format(
                 counter_key=k,
                 set_val=v,
             ),
@@ -421,10 +418,10 @@ class Logger:
         )
 
         self._log.opt(depth=1).log(
-            Logger._COUNTER_LVL_NAME,
+            Logger._counter_lvl.name,
             "\n".join(
                 [
-                    Logger._COUNTER_LVL_SET_MSG.format(counter_key=k, set_val=v)
+                    Logger._COUNTER_SET_MSG.format(counter_key=k, set_val=v)
                     for k, v in mapping.items()
                 ]
             ),
@@ -447,8 +444,8 @@ class Logger:
         result = target.hincrby(self.chn, k, v)
 
         self._log.opt(depth=1).log(
-            Logger._COUNTER_LVL_NAME,
-            Logger._COUNTER_LVL_INCR_MSG.format(
+            Logger._counter_lvl.name,
+            Logger._COUNTER_INCR_MSG.format(
                 counter_key=k,
                 incr_val=v,
             ),
@@ -555,8 +552,8 @@ class Logger:
         result = await target.hincrby(self.chn, k, v)  # pyright:ignore
 
         self._log.opt(depth=1).log(
-            Logger._COUNTER_LVL_NAME,
-            Logger._COUNTER_LVL_INCR_MSG.format(
+            Logger._counter_lvl.name,
+            Logger._COUNTER_INCR_MSG.format(
                 counter_key=k,
                 incr_val=v,
             ),
@@ -593,7 +590,7 @@ class Logger:
 
                 # Send log entry
                 Logger._base_logger().bind(logid=logid, logtag="").log(
-                    Logger._COUNTER_LVL_NAME,
+                    Logger._counter_lvl.name,
                     counters_repr,
                 )
 
@@ -669,8 +666,8 @@ class Logger:
                     }
                     if not is_init:
                         self._log.opt(depth=depth + Logger._get_async_pad()).log(
-                            Logger._FUNC_INPUT_LVL_NAME,
-                            Logger._FUNC_INPUT_LVL_MSG.format(
+                            Logger._func_input_lvl.name,
+                            Logger._FUNC_INPUT_MSG.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -679,8 +676,8 @@ class Logger:
                     func_result = await func(*args, **kwargs)
                     if is_init:
                         self._log.opt(depth=depth + Logger._get_async_pad()).log(
-                            Logger._FUNC_INPUT_LVL_NAME,
-                            Logger._FUNC_INPUT_LVL_MSG.format(
+                            Logger._func_input_lvl.name,
+                            Logger._FUNC_INPUT_MSG.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -702,8 +699,8 @@ class Logger:
                     }
                     if not is_init:
                         self._log.opt(depth=depth).log(
-                            Logger._FUNC_INPUT_LVL_NAME,
-                            Logger._FUNC_INPUT_LVL_MSG.format(
+                            Logger._func_input_lvl.name,
+                            Logger._FUNC_INPUT_MSG.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -712,8 +709,8 @@ class Logger:
                     func_result = func(*args, **kwargs)
                     if is_init:
                         self._log.opt(depth=depth).log(
-                            Logger._FUNC_INPUT_LVL_NAME,
-                            Logger._FUNC_INPUT_LVL_MSG.format(
+                            Logger._func_input_lvl.name,
+                            Logger._FUNC_INPUT_MSG.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -756,8 +753,8 @@ class Logger:
                     end_time = time.perf_counter()
                     # +1 to achieve parity with input line num for coroutines
                     self._log.opt(depth=depth + Logger._get_async_pad() + 1).log(
-                        Logger._FUNC_OUTPUT_LVL_NAME,
-                        Logger._FUNC_OUTPUT_LVL_MSG.format(
+                        Logger._func_output_lvl.name,
+                        Logger._FUNC_OUTPUT_MSG.format(
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             elapsed_time=f"{(end_time - start_time):.4f}s",
@@ -784,8 +781,8 @@ class Logger:
                     func_result = func(*args, **kwargs)
                     end_time = time.perf_counter()
                     self._log.opt(depth=depth).log(
-                        Logger._FUNC_OUTPUT_LVL_NAME,
-                        Logger._FUNC_OUTPUT_LVL_MSG.format(
+                        Logger._func_output_lvl.name,
+                        Logger._FUNC_OUTPUT_MSG.format(
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             elapsed_time=f"{(end_time - start_time):.4f}s",

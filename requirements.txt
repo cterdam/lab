@@ -1,6 +1,7 @@
 # Data
 redis
 pydantic
+pydantic-extra-types
 pydantic-settings
 
 # Model

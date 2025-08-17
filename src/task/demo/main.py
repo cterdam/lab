@@ -48,6 +48,7 @@ def main():
     g.info("Hi again!")
     g.trig("again")
     g.success("Back!")
+    g2 = Game(logname="sample_game_2")
 
     n_tasks = 3
     wb = WordBank()

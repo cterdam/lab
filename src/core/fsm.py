@@ -5,6 +5,7 @@ from typing import Sequence, final
 from transitions import EventData
 from transitions.extensions.diagrams import HierarchicalGraphMachine
 
+from src.core.log_level import LogLevel
 from src.core.logger import Logger
 from src.core.util import multiline
 
@@ -31,9 +32,7 @@ class FSM(ABC, Logger):
     """
 
     # FSM logging
-    _FSM_LVL_NAME = "FSM"
-    _FSM_LVL_NO = 6
-    _FSM_LVL_COLOR = "#4A90E2"
+    _fsm_lvl = LogLevel(name="FSM", no=6, color="#4A90E2")  # pyright:ignore
     _FSM_INIT_MSG = multiline(
         """
         FSM created. Paste this block in Markdown to see the graph.
@@ -45,8 +44,6 @@ class FSM(ABC, Logger):
     )
     _FSM_STATE_CHANGE_MSG = "[{source}] -> [{dest}]"
 
-    _fsm_log_level_registered = False
-
     # Avoid creating another layer in log output
     logspace_part = None
 
@@ -54,14 +51,8 @@ class FSM(ABC, Logger):
 
         super().__init__(*args, **kwargs)
 
-        # Make sure the underlying logger has the FSM log level
-        if not FSM._fsm_log_level_registered:
-            Logger.register_log_level(
-                name=FSM._FSM_LVL_NAME,
-                no=FSM._FSM_LVL_NO,
-                color=FSM._FSM_LVL_COLOR,
-            )
-            FSM._fsm_log_level_registered = True
+        # Make sure the logger has the FSM log level
+        Logger.add_lvl(FSM._fsm_lvl)
 
         # Create FSM controller
         self._fsm = HierarchicalGraphMachine(
@@ -77,7 +68,7 @@ class FSM(ABC, Logger):
 
         # Save graph txt repr of FSM structure
         self._log.log(
-            FSM._FSM_LVL_NAME,
+            FSM._fsm_lvl.name,
             FSM._FSM_INIT_MSG.format(graphtxt=self._fsm.get_graph().draw(None)),
         )
 
@@ -85,7 +76,7 @@ class FSM(ABC, Logger):
         """Automatically log state changes."""
         # Add depth to skip all transitions internals
         self._log.opt(depth=12).log(
-            FSM._FSM_LVL_NAME,
+            FSM._fsm_lvl.name,
             FSM._FSM_STATE_CHANGE_MSG.format(
                 source=event.transition.source,  # pyright:ignore
                 dest=event.transition.dest,  # pyright:ignore

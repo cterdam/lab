@@ -2,7 +2,7 @@ from functools import cached_property
 
 import openai
 
-from src.core.util import as_filename
+from src.core.util import as_filename, atimed, timed
 from src.lib.model.txt import LM
 from src.lib.model.txt.api.openai.openai_lm_gentxt_params import OpenAILMGentxtParams
 from src.lib.model.txt.api.openai.openai_lm_gentxt_result import OpenAILMGentxtResult
@@ -35,7 +35,7 @@ class OpenAILM(LM):
 
     def _do_gentxt(self, params: OpenAILMGentxtParams) -> OpenAILMGentxtResult:
 
-        response = self._client.responses.create(
+        duration, response = timed(self._client.responses.create)(
             input=params.prompt,
             model=self._model_name,
             instructions=params.system_prompt,
@@ -44,17 +44,16 @@ class OpenAILM(LM):
             top_p=params.top_p,
         )
 
-        result = OpenAILMGentxtResult(
+        return OpenAILMGentxtResult(
             output=response.output_text,
-            input_tokens=response.usage.input_tokens,  # pyright:ignore
-            output_tokens=response.usage.output_tokens,  # pyright:ignore
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+            duration=duration,
         )
-
-        return result
 
     async def _do_agentxt(self, params: OpenAILMGentxtParams) -> OpenAILMGentxtResult:
 
-        response = await self._aclient.responses.create(
+        duration, response = await atimed(self._aclient.responses.create)(
             input=params.prompt,
             model=self._model_name,
             instructions=params.system_prompt,
@@ -63,10 +62,9 @@ class OpenAILM(LM):
             top_p=params.top_p,
         )
 
-        result = OpenAILMGentxtResult(
+        return OpenAILMGentxtResult(
             output=response.output_text,
-            input_tokens=response.usage.input_tokens,  # pyright:ignore
-            output_tokens=response.usage.output_tokens,  # pyright:ignore
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+            duration=duration,
         )
-
-        return result

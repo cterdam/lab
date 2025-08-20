@@ -135,7 +135,7 @@ class Logger:
         # Function output logging
         FUNC_OUTPUT = multiline(
             """
-            {class_name}.{func_name}(...) -> {elapsed_time} ->
+            {class_name}.{func_name}(...) ->
             {func_result}
             """,
             oneline=False,
@@ -753,7 +753,6 @@ class Logger:
                         Logger.logmsg.FUNC_OUTPUT.format(
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
-                            elapsed_time=f"{(end_time - start_time):.4f}s",
                             func_result=textwrap.indent(
                                 prepr(
                                     func_result,
@@ -781,7 +780,6 @@ class Logger:
                         Logger.logmsg.FUNC_OUTPUT.format(
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
-                            elapsed_time=f"{(end_time - start_time):.4f}s",
                             func_result=textwrap.indent(
                                 prepr(
                                     func_result,

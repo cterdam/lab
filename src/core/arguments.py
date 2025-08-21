@@ -14,7 +14,7 @@ class Arguments(BaseSettings, Dataclass):  # type: ignore
         case_sensitive=True,
         cli_parse_args=True,
         frozen=True,
-        validate_default=False,
+        validate_default=True,
     )
 
     # Available arguments begin ###############################################
@@ -26,13 +26,13 @@ class Arguments(BaseSettings, Dataclass):  # type: ignore
         default="demo",
         description=multiline(
             """
-            Task to perform. All tasks are implemented under src/task.
+            The task to perform. All tasks are implemented under src/task.
             """,
         ),
     )
 
-    run_name: str = Field(
-        default=None,  # type: ignore
+    run_name: str | None = Field(
+        default=None,
         min_length=1,
         description=multiline(
             """
@@ -43,19 +43,11 @@ class Arguments(BaseSettings, Dataclass):  # type: ignore
     )
 
     REDIS_URL: RedisDsn = Field(
-        default="redis://redis:6379/0",  # type: ignore
-        description=multiline(
-            """
-            URL for redis server.
-            """
-        ),
+        default=RedisDsn("redis://redis:6379/0"),
+        description="URL for redis server.",
     )
 
-    OPENAI_API_KEY: SecretStr = Field(
-        default=None,  # type: ignore
-        description=multiline(
-            """
-            Default OpenAI API key.
-            """
-        ),
+    OPENAI_API_KEY: SecretStr | None = Field(
+        default=None,
+        description="Default OpenAI API key.",
     )

@@ -19,11 +19,7 @@ class LMGentxtParams(Dataclass):
     )
 
     prompt: str = Field(
-        description=multiline(
-            """
-            User prompt for generation, excluding the system prompt.
-            """
-        )
+        description="User prompt for generation, excluding the system prompt.",
     )
 
     max_new_tokens: int | None = Field(
@@ -50,9 +46,5 @@ class LMGentxtParams(Dataclass):
         default=1.0,
         ge=0,
         le=1,
-        description=multiline(
-            """
-            Lower is more deterministic, higher is more random.
-            """
-        ),
+        description="Lower is more deterministic, higher is more random.",
     )

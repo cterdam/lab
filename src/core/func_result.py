@@ -3,7 +3,6 @@ from datetime import timedelta
 from pydantic import Field
 
 from src.core.dataclass import Dataclass
-from src.core.util import multiline
 
 
 class FuncResult(Dataclass):
@@ -13,9 +12,5 @@ class FuncResult(Dataclass):
     """
 
     duration: timedelta = Field(
-        description=multiline(
-            """
-            Duration of the model generation.
-            """
-        ),
+        description="Duration of the model generation.",
     )

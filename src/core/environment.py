@@ -80,21 +80,13 @@ class Environment(Dataclass):
     INDENT: int = Field(
         default=4,
         gt=0,
-        description=multiline(
-            """
-            Default indentation for string formatting.
-            """
-        ),
+        description="Default indentation for string formatting.",
     )
 
     MAX_WIDTH: int = Field(
         default=80,
         gt=0,
-        description=multiline(
-            """
-            Maximum line length for string formatting.
-            """
-        ),
+        description="Maximum line length for string formatting.",
     )
 
     # LOG ######################################################################
@@ -124,11 +116,7 @@ class Environment(Dataclass):
     ROOT_LOGNAME: str = Field(
         default="root",
         min_length=1,
-        description=multiline(
-            """
-            logid for the root logger available as src.log
-            """
-        ),
+        description="logid for the root logger available as src.log",
     )
 
     # REDIS ####################################################################
@@ -250,11 +238,7 @@ class Environment(Dataclass):
     LOGID_SET_KEY: str = Field(
         default="logids",
         min_length=1,
-        description=multiline(
-            """
-            Redis key to retrieve the set of all logids.
-            """
-        ),
+        description="Redis key to retrieve the set of all logids.",
     )
 
     CHN_SUFFIX: str = Field(
@@ -282,9 +266,5 @@ class Environment(Dataclass):
     COUNTER_DUMP_LOCK_KEY: str = Field(
         default="counter_dump_lock",
         min_length=1,
-        description=multiline(
-            """
-            Redis key to act as a lock for the final counter dump.
-            """
-        ),
+        description="Redis key to act as a lock for the final counter dump.",
     )

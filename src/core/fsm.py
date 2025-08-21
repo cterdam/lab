@@ -33,12 +33,12 @@ class FSM(ABC, Logger):
     """
 
     # FSM logging level
-    _fsm_lvl = LogLevel(name="FSM", no=6, color="#4A90E2")  # pyright:ignore
+    _fsm_lvl = LogLevel(name="FSM", no=6, color="#4A90E2")  # type: ignore
 
     # Add depth to skip all transitions internals when logging
     _FSM_LOG_DEPTH_PAD = 12
 
-    class logmsg(StrEnum):  # pyright: ignore
+    class logmsg(StrEnum):  # type: ignore
 
         FSM_INIT = multiline(
             """
@@ -85,8 +85,8 @@ class FSM(ABC, Logger):
         self._log.opt(depth=FSM._FSM_LOG_DEPTH_PAD).log(
             FSM._fsm_lvl.name,
             FSM.logmsg.FSM_STATE_CHANGE.format(
-                source=event.transition.source,  # pyright:ignore
-                dest=event.transition.dest,  # pyright:ignore
+                source=event.transition.source,  # type: ignore
+                dest=event.transition.dest,  # type: ignore
             ),
         )
 

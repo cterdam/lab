@@ -7,7 +7,7 @@ from src.core import Dataclass
 from src.core.util import multiline
 
 
-class Arguments(BaseSettings, Dataclass):  # pyright: ignore
+class Arguments(BaseSettings, Dataclass):  # type: ignore
     """All args optional."""
 
     model_config = SettingsConfigDict(
@@ -32,7 +32,7 @@ class Arguments(BaseSettings, Dataclass):  # pyright: ignore
     )
 
     run_name: str = Field(
-        default=None,  # pyright:ignore
+        default=None,  # type: ignore
         min_length=1,
         description=multiline(
             """
@@ -43,7 +43,7 @@ class Arguments(BaseSettings, Dataclass):  # pyright: ignore
     )
 
     REDIS_URL: RedisDsn = Field(
-        default="redis://redis:6379/0",  # pyright:ignore
+        default="redis://redis:6379/0",  # type: ignore
         description=multiline(
             """
             URL for redis server.
@@ -52,7 +52,7 @@ class Arguments(BaseSettings, Dataclass):  # pyright: ignore
     )
 
     OPENAI_API_KEY: SecretStr = Field(
-        default=None,  # pyright:ignore
+        default=None,  # type: ignore
         description=multiline(
             """
             Default OpenAI API key.

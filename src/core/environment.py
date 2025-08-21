@@ -213,9 +213,9 @@ class Environment(Dataclass):
         client = redis.asyncio.Redis(connection_pool=self.ar_pool)
 
         # Convert string results to int for counter gets.
-        client.set_response_callback("HGET", str2int)  # pyright:ignore
+        client.set_response_callback("HGET", str2int)  # type: ignore
         client.set_response_callback(
-            "HMGET", lambda r: [str2int(v) for v in r]  # pyright:ignore
+            "HMGET", lambda r: [str2int(v) for v in r]  # type: ignore
         )
 
         return client

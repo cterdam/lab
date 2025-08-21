@@ -101,22 +101,22 @@ class Logger:
 
     # Params for configuring log levels ----------------------------------------
 
-    _func_input_lvl = LogLevel(name="FINP <-", no=7, color="38758A")  # pyright:ignore
-    _func_output_lvl = LogLevel(name="FOUT ->", no=7, color="4A6FA5")  # pyright:ignore
-    _counter_lvl = LogLevel(name="COUNT", no=9, color="DAA520")  # pyright:ignore
+    _func_input_lvl = LogLevel(name="FINP <-", no=7, color="38758A")  # type: ignore
+    _func_output_lvl = LogLevel(name="FOUT ->", no=7, color="4A6FA5")  # type: ignore
+    _counter_lvl = LogLevel(name="COUNT", no=9, color="DAA520")  # type: ignore
 
     # (lvl_name, lvl_no, lvl_fg, lvl_is_builtin) for each lvl
     _LOG_LVLS = [
-        LogLevel(name="TRACE", no=5, color="#505050"),  # pyright:ignore
+        LogLevel(name="TRACE", no=5, color="#505050"),  # type: ignore
         _func_input_lvl,
         _func_output_lvl,
         _counter_lvl,
-        LogLevel(name="DEBUG", no=10, color="C080D3"),  # pyright:ignore
-        LogLevel(name="INFO", no=20, color="5FAFAC"),  # pyright:ignore
-        LogLevel(name="SUCCESS", no=25, color="2E8B57"),  # pyright:ignore
-        LogLevel(name="WARNING", no=30, color="E09C34"),  # pyright:ignore
-        LogLevel(name="ERROR", no=40, color="E04E3A"),  # pyright:ignore
-        LogLevel(name="CRITICAL", no=50, color="FF0000"),  # pyright:ignore
+        LogLevel(name="DEBUG", no=10, color="C080D3"),  # type: ignore
+        LogLevel(name="INFO", no=20, color="5FAFAC"),  # type: ignore
+        LogLevel(name="SUCCESS", no=25, color="2E8B57"),  # type: ignore
+        LogLevel(name="WARNING", no=30, color="E09C34"),  # type: ignore
+        LogLevel(name="ERROR", no=40, color="E04E3A"),  # type: ignore
+        LogLevel(name="CRITICAL", no=50, color="FF0000"),  # type: ignore
     ]
 
     # Special messages ---------------------------------------------------------
@@ -366,7 +366,7 @@ class Logger:
             name=self.chn,
             key=k,
         )
-        return result  # pyright:ignore
+        return result  # type: ignore
 
     @final
     def biget(self, ks: list[str], *, p: Pipeline | None = None) -> list[int | None]:
@@ -385,7 +385,7 @@ class Logger:
             name=self.chn,
             keys=ks,
         )
-        return result  # pyright:ignore
+        return result  # type: ignore
 
     @final
     def iset(self, k: str, v: int | float, *, p: Pipeline | None = None) -> int:
@@ -402,7 +402,7 @@ class Logger:
         result = target.hset(
             name=self.chn,
             key=k,
-            value=v,  # pyright:ignore
+            value=str(v),
         )
 
         self._log.opt(depth=1).log(
@@ -413,7 +413,7 @@ class Logger:
             ),
         )
 
-        return result  # pyright:ignore
+        return result  # type: ignore
 
     @final
     def biset(self, mapping: dict[str, int], *, p: Pipeline | None = None) -> int:
@@ -443,7 +443,7 @@ class Logger:
             ),
         )
 
-        return result  # pyright:ignore
+        return result  # type: ignore
 
     @final
     def incr(self, k: str, v: int = 1, *, p: Pipeline | None = None) -> int:
@@ -467,7 +467,7 @@ class Logger:
             ),
         )
 
-        return result  # pyright:ignore
+        return result  # type: ignore
 
     # - ASYNCHRONOUS -----------------------------------------------------------
 
@@ -484,11 +484,11 @@ class Logger:
         from src import env
 
         target = p or env.acr
-        result = await target.hget(  # pyright:ignore
+        result = await target.hget(  # type: ignore
             name=self.chn,
             key=k,
         )
-        return result  # pyright:ignore
+        return result  # type: ignore
 
     @final
     async def abiget(
@@ -505,11 +505,11 @@ class Logger:
         from src import env
 
         target = p or env.acr
-        result = await target.hmget(  # pyright:ignore
+        result = await target.hmget(  # type: ignore
             name=self.chn,
             keys=ks,
         )
-        return result  # pyright:ignore
+        return result  # type: ignore
 
     @final
     async def aiset(
@@ -525,12 +525,12 @@ class Logger:
         from src import env
 
         target = p or env.acr
-        result = await target.hset(
+        result = await target.hset(  # type: ignore
             name=self.chn,
             key=k,
-            value=v,  # pyright:ignore
+            value=str(v),
         )
-        return result  # pyright:ignore
+        return result  # type: ignore
 
     @final
     async def abiset(
@@ -547,11 +547,11 @@ class Logger:
         from src import env
 
         target = p or env.acr
-        result = await target.hset(  # pyright:ignore
+        result = await target.hset(  # type: ignore
             name=self.chn,
             mapping=mapping,
         )
-        return result  # pyright:ignore
+        return result  # type: ignore
 
     @final
     async def aincr(self, k: str, v: int = 1, *, p: AsyncPipeline | None = None) -> int:
@@ -565,7 +565,7 @@ class Logger:
         from src import env
 
         target = p or env.acr
-        result = await target.hincrby(self.chn, k, v)  # pyright:ignore
+        result = await target.hincrby(self.chn, k, v)  # type: ignore
 
         self._log.opt(depth=1).log(
             Logger._counter_lvl.name,
@@ -575,7 +575,7 @@ class Logger:
             ),
         )
 
-        return result  # pyright:ignore
+        return result  # type: ignore
 
     # - OTHERS -----------------------------------------------------------------
 
@@ -587,11 +587,10 @@ class Logger:
         from src import env
 
         if not env.cr.set(env.COUNTER_DUMP_LOCK_KEY, os.getpid(), nx=True):
-            # Ensure only one process does this
-            return
+            return  # Ensure only one process does this
 
         try:
-            logids = list(env.r.smembers(env.LOGID_SET_KEY))  # pyright:ignore
+            logids = list(env.r.smembers(env.LOGID_SET_KEY))  # type: ignore
             with env.coup() as p:
                 for logid in logids:
                     p.hgetall(Logger.logid2chn(logid))

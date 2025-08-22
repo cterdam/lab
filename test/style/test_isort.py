@@ -1,10 +1,15 @@
 import subprocess
 from pathlib import Path
+from test.util import py_files_abs, py_files_rel
 
 import pytest
 
 
-# `file_path` is parameterized via the `pytest_generate_tests` hook in conftest.py
+@pytest.mark.parametrize(
+    "file_path",
+    py_files_abs,
+    ids=[str(pf) for pf in py_files_rel],
+)
 def test_isort(file_path: Path):
     result = subprocess.run(
         ["isort", "--check", "--diff", str(file_path)],

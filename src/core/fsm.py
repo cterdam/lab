@@ -1,9 +1,7 @@
-from abc import ABC, abstractmethod
 from enum import StrEnum
-from functools import cached_property
 from typing import Sequence, final
 
-from transitions import EventData
+from transitions import EventData, State
 from transitions.extensions.diagrams import HierarchicalGraphMachine
 
 from src.core.log_level import LogLevel
@@ -11,7 +9,7 @@ from src.core.logger import Logger
 from src.core.util import multiline
 
 
-class FSM(ABC, Logger):
+class FSM(Logger):
     """Base class for finite-state machines.
 
     Descendants own:
@@ -26,11 +24,10 @@ class FSM(ABC, Logger):
 
     Descendants will automatically log a state graph upon init and every state
     change upon calling triggers.
-
-    When subclassing:
-    - Implement `_fsm_state` and `_fsm_transitions` before init, so the `_fsm`
-      controller can be initialized with the correct structure.
     """
+
+    # Avoid creating another layer in log output
+    logspace_part = None
 
     # FSM logging level
     _fsm_lvl = LogLevel(name="FSM", no=6, color="#4A90E2")  # type: ignore
@@ -52,10 +49,17 @@ class FSM(ABC, Logger):
 
         FSM_STATE_CHANGE = "[{source}] -> [{dest}]"
 
-    # Avoid creating another layer in log output
-    logspace_part = None
+    def __init__(
+        self,
+        *args,
+        fsm_states: Sequence[State],
+        fsm_transitions: Sequence[dict],
+        **kwargs
+    ):
+        """Initialize the FSM.
 
-    def __init__(self, *args, **kwargs):
+        The initial state must be at index 0 of fsm_states.
+        """
 
         super().__init__(*args, **kwargs)
 
@@ -64,9 +68,9 @@ class FSM(ABC, Logger):
 
         # Create FSM controller
         self._fsm = HierarchicalGraphMachine(
-            states=self._fsm_states,
-            transitions=self._fsm_transitions,
-            initial=self._fsm_states[0],
+            states=fsm_states,
+            transitions=fsm_transitions,
+            initial=fsm_states[0],
             auto_transitions=False,
             ordered_transitions=False,
             ignore_invalid_triggers=False,
@@ -99,18 +103,3 @@ class FSM(ABC, Logger):
     def trig(self, *args, **kwargs):
         """Trigger state change."""
         return self._fsm.trigger(*args, **kwargs)
-
-    @cached_property
-    @abstractmethod
-    def _fsm_states(self) -> Sequence:
-        """Return all states for the initialization of this FSM in a sequence.
-
-        The initial state must be at index 0.
-        """
-        ...
-
-    @cached_property
-    @abstractmethod
-    def _fsm_transitions(self) -> Sequence:
-        """Return all transitions for the initialization of this FSM."""
-        ...

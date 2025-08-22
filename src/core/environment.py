@@ -32,18 +32,6 @@ class Environment(Dataclass):
         repo_root = src_path.parent
         return repo_root
 
-    @cached_property
-    def py_files_abs(self) -> list[Path]:
-        """Absolute paths to all .py files in this repo."""
-        return list(self.repo_root.rglob("*.py"))
-
-    @cached_property
-    def py_file_rel(self) -> list[str]:
-        """Relative paths to all .py files in this repo, from repo root."""
-        return [
-            str(py_file.relative_to(self.repo_root)) for py_file in self.py_files_abs
-        ]
-
     @computed_field
     @cached_property
     def run_name(self) -> str:

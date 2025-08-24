@@ -45,9 +45,9 @@ class OpenAILM(LM):
         )
 
         return OpenAILMGentxtResult(
-            output=response.output_text,
-            input_tokens=response.usage.input_tokens,
-            output_tokens=response.usage.output_tokens,
+            output_str=response.output_text,
+            n_input_tokens=response.usage.input_tokens,
+            n_output_tokens=response.usage.output_tokens,
             duration=duration,
         )
 
@@ -63,8 +63,8 @@ class OpenAILM(LM):
         )
 
         return OpenAILMGentxtResult(
-            output=response.output_text,
-            input_tokens=response.usage.input_tokens,
-            output_tokens=response.usage.output_tokens,
+            output_str=response.output_text,
+            n_input_tokens=response.usage.input_tokens,
+            n_output_tokens=response.usage.output_tokens,
             duration=duration,
         )

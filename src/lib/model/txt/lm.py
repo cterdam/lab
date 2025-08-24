@@ -28,13 +28,13 @@ class LM(Model):
         with env.coup() as p:
             self.incr(LM.coke.GENTXT_INVOC, p=p)
             self.incr(LM.coke.GENTXT_MICROS, td2ms(result.duration), p=p)
-            self.incr(LM.coke.INPUT_TOKEN, result.input_tokens, p=p)
-            self.incr(LM.coke.OUTPUT_TOKEN, result.output_tokens, p=p)
+            self.incr(LM.coke.INPUT_TOKEN, result.n_input_tokens, p=p)
+            self.incr(LM.coke.OUTPUT_TOKEN, result.n_output_tokens, p=p)
 
             log.incr(LM.coke.GENTXT_INVOC, p=p)
             log.incr(LM.coke.GENTXT_MICROS, td2ms(result.duration), p=p)
-            log.incr(LM.coke.INPUT_TOKEN, result.input_tokens, p=p)
-            log.incr(LM.coke.OUTPUT_TOKEN, result.output_tokens, p=p)
+            log.incr(LM.coke.INPUT_TOKEN, result.n_input_tokens, p=p)
+            log.incr(LM.coke.OUTPUT_TOKEN, result.n_output_tokens, p=p)
 
         return result
 
@@ -49,13 +49,13 @@ class LM(Model):
         async with env.acoup() as p:
             await self.aincr(LM.coke.AGENTXT_INVOC, p=p)
             await self.aincr(LM.coke.AGENTXT_MICROS, td2ms(result.duration), p=p)
-            await self.aincr(LM.coke.INPUT_TOKEN, result.input_tokens, p=p)
-            await self.aincr(LM.coke.OUTPUT_TOKEN, result.output_tokens, p=p)
+            await self.aincr(LM.coke.INPUT_TOKEN, result.n_input_tokens, p=p)
+            await self.aincr(LM.coke.OUTPUT_TOKEN, result.n_output_tokens, p=p)
 
             await log.aincr(LM.coke.AGENTXT_INVOC, p=p)
             await log.aincr(LM.coke.AGENTXT_MICROS, td2ms(result.duration), p=p)
-            await log.aincr(LM.coke.INPUT_TOKEN, result.input_tokens, p=p)
-            await log.aincr(LM.coke.OUTPUT_TOKEN, result.output_tokens, p=p)
+            await log.aincr(LM.coke.INPUT_TOKEN, result.n_input_tokens, p=p)
+            await log.aincr(LM.coke.OUTPUT_TOKEN, result.n_output_tokens, p=p)
 
         return result
 

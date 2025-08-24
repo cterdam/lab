@@ -6,16 +6,16 @@ from src.core import FuncResult
 class LMGentxtResult(FuncResult):
     """Result from language model generation."""
 
-    output: str = Field(
+    output_str: str = Field(
         description="Resultant text from model generation.",
     )
 
-    input_tokens: int = Field(
+    n_input_tokens: int = Field(
         ge=0,
         description="Number of input tokens, as evaluated by the model.",
     )
 
-    output_tokens: int = Field(
+    n_output_tokens: int = Field(
         ge=0,
         description="Number of output tokens, as evaluated by the model.",
     )

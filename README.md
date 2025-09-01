@@ -32,11 +32,6 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 ## Logging
 
 - Logs are timed by UTC.
-- Each logger instance has a `logspace` and a `logname`.
-  - The `logspace` is a list representing the hierarchy of names passed on by
-    ancestor classes.
-  - The `logname` is unique within its `logspace`.
-- Each logger keeps its own log files under `out/{run_id}/log`.
-  - The location of its log files depend on its `logspace` and `logid`.
+- Each logger keeps its own log files under `out/$RUN_ID/log`.
 - At the end of the run, each logger emits all its counters in its logs and in a
   JSON file aside its log files.

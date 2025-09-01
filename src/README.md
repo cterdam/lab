@@ -11,8 +11,33 @@
 ## Logging
 
 - When trying to print something, use logging.
+  - This can be achieved by using logging methods on a `Logger` object such as
+    `src.log`
+  - Each logger can also keep concurrency-safe counters.
 - When trying to printing an object, use `env.repr()` to format it.
-- Each logger can also keep concurrency-safe counters.
+
+### Loggers
+
+- Each logger instance has a `logspace` and a `logname`.
+  - The `logspace` is a list representing the hierarchy of names passed on by
+    ancestor classes.
+  - The `logname` is unique within its `logspace`.
+  - The `logid` is produced from the `logspace` and `logname` and is unique
+    across the run.
+  - The `logspace` and `logname` determine the location in `out/$RUN_ID/log`
+    where the logger instance dumps its logs.
+
+### Severity
+
+- Use the following logging severities:
+  - `TRACE` -> Routine information that the user otherwise already knows.
+  - `DEBUG` -> Important details that could be useful for debugging.
+  - `INFO` -> Information that is meaningful not on the function execution level
+        but on the app level.
+  - `SUCCESS` -> The success of an operation that could otherwise have failed.
+  - `WARNING` -> Unexpected outcomes that are non-fatal.
+  - `ERROR` -> Unexpected outcomes that cause an operation to fail.
+  - `CRITICAL` -> Unexpected outcomes that cause the entire app run to fail.
 
 ## Redis
 

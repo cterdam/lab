@@ -2,7 +2,7 @@
 markers = [
     "net: uses internet connections",
 ]
-asyncio_default_fixture_loop_scope = "function"
+asyncio_default_fixture_loop_scope = "session"
 
 [tool.isort]
 profile = "black"

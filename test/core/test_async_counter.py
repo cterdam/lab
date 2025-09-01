@@ -3,7 +3,7 @@ import pytest
 from src import env, log
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="session")
 async def test_async_counter_no_concurrency():
     key = "test_async_counter_no_concurrency"
     num_incrs = 100
@@ -13,7 +13,7 @@ async def test_async_counter_no_concurrency():
     assert await log.aiget(key) == num_incrs * val_per_incr
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="session")
 async def test_async_counter_negative():
     key = "test_async_counter_negative"
     init_val = 0
@@ -29,7 +29,7 @@ async def test_async_counter_negative():
     assert await log.aiget(key) == num_incrs * val_per_incr
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="session")
 async def test_async_counter_absent_set():
     key = "test_async_counter_absent_set"
     set_val = 10
@@ -39,7 +39,7 @@ async def test_async_counter_absent_set():
     assert await log.aiget(key) == set_val
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="session")
 async def test_async_counter_absent_incr():
     key = "test_async_counter_absent_get"
     incr_val = 10
@@ -49,7 +49,7 @@ async def test_async_counter_absent_incr():
     assert await log.aiget(key) == incr_val
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="session")
 async def test_async_iset_return_new_vs_overwrite():
     key = "test_async_iset_return_new_vs_overwrite"
 
@@ -62,7 +62,7 @@ async def test_async_iset_return_new_vs_overwrite():
     assert await log.aiget(key) == 222
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="session")
 async def test_async_biset_all_new_and_biget_fetch():
     mapping = {
         "test_async_biset_many_key_0": 0,
@@ -76,7 +76,7 @@ async def test_async_biset_all_new_and_biget_fetch():
     assert await log.abiget(list(mapping)) == list(mapping.values())
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="session")
 async def test_async_biget_mixed_present_and_absent():
     k1, k2, k3 = (
         "test_async_biget_mix_present",
@@ -90,7 +90,7 @@ async def test_async_biget_mixed_present_and_absent():
     assert res == [11, None, 33]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="session")
 async def test_async_pipeline_is_flushed_at_exit():
     k, v = "test_async_pipeline_is_flushed_at_exit", 999
     async with env.acoup() as p:
@@ -99,7 +99,7 @@ async def test_async_pipeline_is_flushed_at_exit():
     assert await log.aiget(k) == v
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope="session")
 async def test_async_pipeline_multiple_commands():
     k1, k2, k3 = "async_multi_1", "async_multi_2", "async_multi_3"
     v1, v2 = 10, 20

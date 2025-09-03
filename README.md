@@ -35,3 +35,22 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 - Each logger keeps its own log files under `out/$RUN_ID/log`.
 - At the end of the run, each logger emits all its counters in its logs and in a
   JSON file aside its log files.
+
+## Contribute
+
+- Make docker build offline
+
+- Loguru PR
+  - Similar issue: <https://github.com/empicano/aiomqtt/issues/52>
+  - Almost all asyncio objects are not thread safe:
+    <https://docs.python.org/3/library/asyncio-dev.html>
+
+- random number generator obj
+- set random seeds
+- ttt game
+
+- type validation: beartype, typeguard, deal
+
+- Game:
+  - event queue
+  - while game has not ended, dequeue one event from eq and process it

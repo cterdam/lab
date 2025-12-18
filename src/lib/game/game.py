@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.core import Logger
+from src.core import Logger, logid
 
 
 class Game(ABC, Logger):
@@ -8,12 +8,12 @@ class Game(ABC, Logger):
     logspace_part = "game"
 
     # Mapping from player's logid to player obj
-    players: dict[str, Logger]
+    players: dict[logid, Logger]
 
-    def start(self):
+    async def start(self):
         """Start the game."""
         self.info("Starting game.")
-        self._do_start()
+        await self._do_start()
 
     @abstractmethod
-    def _do_start(self): ...
+    async def _do_start(self): ...

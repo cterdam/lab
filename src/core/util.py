@@ -9,6 +9,8 @@ from typing import Any, Callable, Coroutine, NamedTuple
 
 import rich.pretty
 
+logid = str
+
 
 def multiline(s: str, oneline: bool = True, continuous: bool = False) -> str:
     """Correctly connect a multiline string.

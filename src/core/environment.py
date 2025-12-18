@@ -8,7 +8,7 @@ import redis.asyncio
 from pydantic import ConfigDict, Field, computed_field
 
 from src.core.dataclass import Dataclass
-from src.core.util import multiline, randalnu, str2int
+from src.core.util import logid, multiline, randalnu, str2int
 
 
 class Environment(Dataclass):
@@ -101,7 +101,7 @@ class Environment(Dataclass):
         ),
     )
 
-    ROOT_LOGNAME: str = Field(
+    ROOT_LOGNAME: logid = Field(
         default="root",
         min_length=1,
         description="logid for the root logger available as src.log",

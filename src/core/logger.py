@@ -13,7 +13,7 @@ from redis.asyncio.client import Pipeline as AsyncPipeline
 from redis.client import Pipeline
 
 from src.core.log_level import LogLevel
-from src.core.util import multiline, prepr, str2int
+from src.core.util import logid, multiline, prepr, str2int
 
 
 class Logger:
@@ -27,7 +27,7 @@ class Logger:
             classes.
         - logname (str):
             Name of this logger, unique in its logspace.
-        - logid (str):
+        - logid (logid):
             A string ID for this instance for the purpose of logging, produced
             from its logspace and logname and unique across this run.
         - _log (loguru Logger):
@@ -203,7 +203,7 @@ class Logger:
 
     @final
     @cached_property
-    def logid(self) -> str:
+    def logid(self) -> logid:
         """A unique identifier of the logger."""
         from src import env
 

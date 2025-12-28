@@ -31,13 +31,12 @@
 
 - Use the following logging severities:
   - `TRACE` -> Routine information that the user otherwise already knows.
-  - `DEBUG` -> Important details that could be useful for debugging.
-  - `INFO` -> Information that is meaningful not on the function execution level
-        but on the app level.
+  - `DEBUG` -> Important details on the function call level.
+  - `INFO` -> Important details on the app level.
   - `SUCCESS` -> The success of an operation that could otherwise have failed.
   - `WARNING` -> Unexpected outcomes that are non-fatal.
-  - `ERROR` -> Unexpected outcomes that cause an operation to fail.
-  - `CRITICAL` -> Unexpected outcomes that cause the entire app run to fail.
+  - `ERROR` -> Unexpected outcomes that cause a non-essential function to fail.
+  - `CRITICAL` -> Unexpected outcomes that cause the entire app to fail.
 
 ## Redis
 

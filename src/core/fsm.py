@@ -4,8 +4,7 @@ from typing import Sequence, final
 from transitions import EventData, State
 from transitions.extensions.diagrams import HierarchicalGraphMachine
 
-from src.core.log_level import LogLevel
-from src.core.logger import Logger
+from src.core.logger import Logger, LogLevel
 from src.core.util import multiline
 
 

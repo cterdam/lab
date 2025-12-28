@@ -2,18 +2,37 @@ import atexit
 import inspect
 import os
 import textwrap
-import time
 from enum import StrEnum
 from functools import cache, cached_property, wraps
 from pathlib import Path
 from typing import final
 
 import loguru
+from pydantic import Field
+from pydantic_extra_types.color import Color
 from redis.asyncio.client import Pipeline as AsyncPipeline
 from redis.client import Pipeline
 
-from src.core.log_level import LogLevel
+from src.core.dataclass import Dataclass
 from src.core.util import logid, multiline, prepr, str2int
+
+
+class LogLevel(Dataclass):
+    """Log level."""
+
+    name: str = Field(
+        min_length=1,
+        description="Name of the logging level as its unique identifier",
+    )
+
+    no: int = Field(
+        ge=1,
+        description="Positive integer severity of the logging level.",
+    )
+
+    color: Color = Field(
+        description="Color for the level's header in logs.",
+    )
 
 
 class Logger:
@@ -744,9 +763,7 @@ class Logger:
                 @wraps(func)
                 async def wrapped_afunc(*args, **kwargs):
                     self = args[0]
-                    start_time = time.perf_counter()
                     func_result = await func(*args, **kwargs)
-                    end_time = time.perf_counter()
                     self._log.opt(depth=depth + Logger._LOG_ASYNC_PAD).log(
                         Logger._func_output_lvl.name,
                         Logger.logmsg.FUNC_OUTPUT.format(
@@ -771,9 +788,7 @@ class Logger:
                 @wraps(func)
                 def wrapped_func(*args, **kwargs):
                     self = args[0]
-                    start_time = time.perf_counter()
                     func_result = func(*args, **kwargs)
-                    end_time = time.perf_counter()
                     self._log.opt(depth=depth).log(
                         Logger._func_output_lvl.name,
                         Logger.logmsg.FUNC_OUTPUT.format(

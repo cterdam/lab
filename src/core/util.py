@@ -112,7 +112,10 @@ def timed(func: Callable) -> Callable[..., TimedOutput]:
         start_time = time.perf_counter()
         output = func(*args, **kwargs)
         seconds_elapsed = time.perf_counter() - start_time
-        return TimedOutput(duration=timedelta(seconds=seconds_elapsed), output=output)
+        return TimedOutput(
+            duration=timedelta(seconds=seconds_elapsed),
+            output=output,
+        )
 
     return wrapper
 
@@ -127,6 +130,9 @@ def atimed(
         start_time = time.perf_counter()
         output = await func(*args, **kwargs)
         seconds_elapsed = time.perf_counter() - start_time
-        return TimedOutput(duration=timedelta(seconds=seconds_elapsed), output=output)
+        return TimedOutput(
+            duration=timedelta(seconds=seconds_elapsed),
+            output=output,
+        )
 
     return wrapper

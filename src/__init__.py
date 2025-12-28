@@ -24,7 +24,7 @@ def setup_msg() -> None:
     """Emit setup msgs as logs."""
     log.success(arg)
     if not arg.run_name:
-        log.warning(f"Run name is randomly initialized to {env.run_name}")
+        log.warning(f"Run name randomly initialized to {env.run_name}")
 
 
 env: Environment = Environment()

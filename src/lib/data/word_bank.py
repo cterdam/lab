@@ -9,12 +9,8 @@ class WordBank(Data):
     """A simple bank of words."""
 
     @log.input()
-    def __init__(self, logname: str = "word_bank", *args, **kwargs):
-        super().__init__(
-            logname=logname,
-            *args,
-            **kwargs,
-        )
+    def __init__(self, *args, logname: str = "word_bank", **kwargs):
+        super().__init__(*args, logname=logname, **kwargs)
         self.words = []
         self.load_file()
 

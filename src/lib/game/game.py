@@ -16,15 +16,9 @@ class Game(Logger):
     # Event queue
     _event_queue: asyncio.PriorityQueue[Event]
 
-    def __init__(
-        self,
-        logname: str,
-        params: GameInitParams,
-        *args,
-        **kwargs,
-    ):
+    def __init__(self, params: GameInitParams, *args, logname: str, **kwargs):
         """Initialize the game."""
-        super().__init__(logname=logname, *args, **kwargs)
+        super().__init__(*args, logname=logname, **kwargs)
         self.debug(f"Initializing game: {params}")
 
         self.players = dict()

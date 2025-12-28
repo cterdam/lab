@@ -19,9 +19,15 @@ class OpenAILM(LM):
     def __init__(
         self,
         params: OpenAILMInitParams,
+        *args,
         logname: str | None = None,
+        **kwargs,
     ):
-        super().__init__(logname=logname or as_filename(f"openai/{params.model_name}"))
+        super().__init__(
+            *args,
+            logname=logname or as_filename(params.model_name),
+            **kwargs,
+        )
         self._model_name = params.model_name
         self._api_key = params.api_key
 

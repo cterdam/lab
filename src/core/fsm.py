@@ -51,10 +51,10 @@ class FSM(Logger):
 
     def __init__(
         self,
-        *args,
         fsm_states: Sequence[State],
         fsm_transitions: Sequence[dict],
-        **kwargs
+        *args,
+        **kwargs,
     ):
         """Initialize the FSM.
 

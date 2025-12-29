@@ -2,7 +2,7 @@ import asyncio
 from enum import StrEnum
 
 from src import log
-from src.lib.data import Data
+from src.lib.data.data import Data
 
 
 class PriorityQueue(asyncio.PriorityQueue, Data):

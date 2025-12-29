@@ -15,8 +15,6 @@ class Game(Logger):
     logspace_part = "game"
 
     class prio(IntEnum):
-        """Event priorities. Lower number = higher priority."""
-
         REACT = 0
         NORMAL = 10
 
@@ -58,7 +56,7 @@ class Game(Logger):
 
         await self._eq.put(
             (
-                self.prio.NORMAL,
+                Game.prio.NORMAL,
                 GameStart(src=self.logid),
             )
         )
@@ -73,7 +71,7 @@ class Game(Logger):
             if isinstance(e, GameEnd):
                 break
 
-    # - EVENT HANDLING ---------------------------------------------------------
+    # EVENT HANDLING ###########################################################
 
     async def _announce_event_before(self, e: Event):
         """Announce an event to all visible players before it is handled."""
@@ -113,7 +111,7 @@ class Game(Logger):
     async def _handle_unknown(self, e: Event):
         raise ValueError(f"Unknown event: {e}")
 
-    # - UTILS ------------------------------------------------------------------
+    # UTILS ####################################################################
 
     async def event2audience(self, e: Event) -> list[logid]:
         """Given an event, return the list of player logids who can see it."""

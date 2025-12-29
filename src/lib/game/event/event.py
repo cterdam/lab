@@ -1,26 +1,30 @@
-from uuid import UUID, uuid4
+from typing import TypeAlias
 
 from pydantic import Field
 
 from src.core import Dataclass, logid
 from src.core.util import multiline
+from src.lib.data.serial import Serial
+
+eid: TypeAlias = int
+_eids = Serial(logname="game_event_id")
 
 
 class Event(Dataclass):
     """In-game event."""
 
-    event_id: UUID = Field(
-        description="UUID of this event.",
-        default_factory=uuid4,
+    event_id: eid = Field(
+        description="Event ID which is sorted by creation time.",
+        default_factory=_eids.next,
     )
 
-    react_to: UUID | None = Field(
+    react_to: eid | None = Field(
         default=None,
         description=multiline(
             """
-            If this event is a reaction, this is the UUID of the event
-            that this event is reacting to.
-            """,
+            If this event is a reaction, this is the event ID of the event that
+            this event is reacting to.
+            """
         ),
     )
 
@@ -39,9 +43,7 @@ class Event(Dataclass):
         description=multiline(
             """
             True iff this event should be announced for reaction before it is
-            handled. Usually, events with this flag set to false are events
-            which have been announced before and are put to the queue again, or
-            reaction events themselves.
+            handled.
             """
         ),
     )

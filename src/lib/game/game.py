@@ -54,10 +54,12 @@ class Game(Logger):
         """Start the game."""
         self.info("Game starting")
 
+        game_start = GameStart(src=self.logid)
         await self._eq.put(
             (
                 Game.prio.NORMAL,
-                GameStart(src=self.logid),
+                game_start.event_id,
+                game_start,
             )
         )
 
@@ -102,10 +104,10 @@ class Game(Logger):
             case _:
                 await self._handle_unknown(e)
 
-    async def _handle_GameStart(self, e: GameStart):
+    async def _handle_GameStart(self, _: GameStart):
         pass
 
-    async def _handle_GameEnd(self, e: GameEnd):
+    async def _handle_GameEnd(self, _: GameEnd):
         self.info("Game ending")
 
     async def _handle_unknown(self, e: Event):

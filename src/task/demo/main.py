@@ -49,8 +49,8 @@ async def demo_game():
     # Create game
     game = Game(
         params=GameInitParams(
-            chat_allowed=True,
-            chat_interrupt_allowed=False,
+            max_react_per_event=-1,  # Unlimited reactions
+            max_interrupt_per_speech=-1,  # Unlimited interruptions
         ),
     )
 
@@ -59,7 +59,14 @@ async def demo_game():
 
     # Wait a bit, then end the game
     await asyncio.sleep(0.1)
-    await game._eq.put(GameEnd(src=game.logid))
+    game_end = GameEnd(src=game.logid)
+    await game._eq.put(
+        (
+            game.prio.NORMAL,
+            game_end.event_id,
+            game_end,
+        )
+    )
 
     # Wait for game to finish
     await game_task

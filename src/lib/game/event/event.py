@@ -14,12 +14,55 @@ class Event(Dataclass):
         default_factory=uuid4,
     )
 
+    react_to: UUID | None = Field(
+        default=None,
+        description=multiline(
+            """
+            If this event is a reaction, this is the UUID of the event
+            that this event is reacting to.
+            """,
+        ),
+    )
+
     src: logid = Field(
         description=multiline(
             """
             Source of this event. If the event is a speech, this is the speaker.
             If the event is a battle, this is the attacker. If the event is
             environmental and external to any player, this is the game's logid.
+            """
+        ),
+    )
+
+    announce_before: bool = Field(
+        default=True,
+        description=multiline(
+            """
+            True iff this event should be announced for reaction before it is
+            handled. Usually, events with this flag set to false are events
+            which have been announced before and are put to the queue again, or
+            reaction events themselves.
+            """
+        ),
+    )
+
+    announce_after: bool = Field(
+        default=True,
+        description=multiline(
+            """
+            True iff this event should be announced for reaction after it is
+            handled.
+            """
+        ),
+    )
+
+    visible: list[logid] | None = Field(
+        default=None,
+        description=multiline(
+            """
+            List of player logids who can see this event. If None, the event is
+            visible to all players. If empty list, the event is visible to no
+            players.
             """
         ),
     )

@@ -1,3 +1,6 @@
+import asyncio
+from enum import IntEnum
+
 from src import log
 from src.core import Logger, logid
 from src.lib.data import PriorityQueue
@@ -10,6 +13,12 @@ from src.lib.game.player import Player
 class Game(Logger):
 
     logspace_part = "game"
+
+    class prio(IntEnum):
+        """Event priorities. Lower number = higher priority."""
+
+        REACT = 0
+        NORMAL = 10
 
     # Internal config
     cfg: GameConfig
@@ -32,7 +41,7 @@ class Game(Logger):
         super().__init__(*args, logname=logname, **kwargs)
 
         self.cfg = GameConfig(
-            max_speech_per_event=params.max_speech_per_event,
+            max_react_per_event=params.max_react_per_event,
             max_interrupt_per_speech=params.max_interrupt_per_speech,
         )
         self.players = dict()
@@ -46,28 +55,54 @@ class Game(Logger):
     async def start(self):
         """Start the game."""
         self.info("Game starting")
-        await self._eq.put(GameStart(src=self.logid))
+
+        await self._eq.put(
+            (
+                self.prio.NORMAL,
+                GameStart(src=self.logid),
+            )
+        )
+
         while True:
-            e = await self._eq.get()
+            _, _, e = await self._eq.get()
+            if e.announce_before:
+                await self._announce_event_before(e)
             await self._handle_event(e)
+            if e.announce_after:
+                await self._announce_event_after(e)
             if isinstance(e, GameEnd):
                 break
 
     # - EVENT HANDLING ---------------------------------------------------------
 
-    @log.input()
-    async def _handle_event(self, e: Event):
-        await self._do_handle_event(e)
+    async def _announce_event_before(self, e: Event):
+        """Announce an event to all visible players before it is handled."""
+        audience = await self.event2audience(e)
+        tasks = []
+        for player_logid, player in self.players.items():
+            if player_logid in audience:
+                tasks.append(player.ack_event_before(e))
+        await asyncio.gather(*tasks)
+
+    async def _announce_event_after(self, e: Event):
+        """Announce an event to all visible players after it is handled."""
+        audience = await self.event2audience(e)
+        tasks = []
+        for player_logid, player in self.players.items():
+            if player_logid in audience:
+                tasks.append(player.ack_event_after(e))
+        await asyncio.gather(*tasks)
 
     @log.input()
-    async def _do_handle_event(self, e: Event):
+    async def _handle_event(self, e: Event):
+        """Handle an event."""
         match e:
             case GameStart():
                 await self._handle_GameStart(e)
             case GameEnd():
                 await self._handle_GameEnd(e)
             case _:
-                await self._handle_unknown_event(e)
+                await self._handle_unknown(e)
 
     async def _handle_GameStart(self, e: GameStart):
         pass
@@ -75,5 +110,14 @@ class Game(Logger):
     async def _handle_GameEnd(self, e: GameEnd):
         self.info("Game ending")
 
-    async def _handle_unknown_event(self, e: Event):
+    async def _handle_unknown(self, e: Event):
         raise ValueError(f"Unknown event: {e}")
+
+    # - UTILS ------------------------------------------------------------------
+
+    async def event2audience(self, e: Event) -> list[logid]:
+        """Given an event, return the list of player logids who can see it."""
+        if e.visible is None:
+            return list(self.players.keys())
+        else:
+            return e.visible

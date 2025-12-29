@@ -7,13 +7,13 @@ from src.core.util import multiline
 class GameConfig(Dataclass):
     """Config options for a game."""
 
-    max_speech_per_event: int = Field(
+    max_react_per_event: int = Field(
         ge=-1,
         description=multiline(
             """
-            The default max number of player speeches allowed in reaction to any
-            event. This default could be overriden for specific events. If 0, no
-            chat is allowed. If -1, the number of player speeches is unlimited.
+            The default max number of reaction events to any event on the spot.
+            This default could be overriden for specific events. If 0, no
+            reactions is allowed. If -1, the number of reactions is unlimited.
             """
         ),
     )

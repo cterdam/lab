@@ -1,12 +1,22 @@
 from abc import ABC, abstractmethod
 
 from src.core import Logger, logid
-from src.lib.game.event.speech import Interrupt, Speech
+from src.lib.game.event import Event, Interrupt, Speech
 
 
 class Player(ABC, Logger):
 
     logspace_part = "player"
+
+    @abstractmethod
+    async def ack_event_before(self, e: Event):
+        """Acknowledge an event before it is handled."""
+        pass
+
+    @abstractmethod
+    async def ack_event_after(self, e: Event):
+        """Acknowledge an event after it is handled."""
+        pass
 
     async def speak(self, audience: list[logid], content: str):
         """Speak to other players in the game."""

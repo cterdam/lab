@@ -3,6 +3,9 @@ import time
 
 from src import log
 from src.lib.data.word_bank import WordBank
+from src.lib.game.event.misc import GameEnd
+from src.lib.game.game import Game
+from src.lib.game.game_init_params import GameInitParams
 from src.lib.model.txt.api.openai import (
     OpenAILM,
     OpenAILMGentxtParams,
@@ -39,6 +42,31 @@ async def run_async(n_tasks: int, wb: WordBank, model: OpenAILM):
     log.success(f"Async run took {duration:.2f}s")
 
 
+async def demo_game():
+    """Run a simple game demo."""
+    log.info("Starting game demo")
+
+    # Create game
+    game = Game(
+        params=GameInitParams(
+            chat_allowed=True,
+            chat_interrupt_allowed=False,
+        ),
+    )
+
+    # Start game in background (this will emit GameStart and process it)
+    game_task = asyncio.create_task(game.start())
+
+    # Wait a bit, then end the game
+    await asyncio.sleep(0.1)
+    await game._eq.put(GameEnd(src=game.logid))
+
+    # Wait for game to finish
+    await game_task
+
+    log.success("Game demo finished")
+
+
 def main():
 
     n_tasks = 1
@@ -50,3 +78,6 @@ def main():
 
     log.biset({"abc": 1, "def": 2, "ghi": 30})
     log.incr("abc")
+
+    # Run game demo
+    asyncio.run(demo_game())

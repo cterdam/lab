@@ -4,8 +4,8 @@ from src.core import Dataclass
 from src.core.util import multiline
 
 
-class GameInitParams(Dataclass):
-    """Initialization params for a game."""
+class GameConfig(Dataclass):
+    """Config options for a game."""
 
     max_speech_per_event: int = Field(
         ge=-1,

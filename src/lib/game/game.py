@@ -14,7 +14,7 @@ class Game(Logger):
     players: dict[logid, Player]
 
     # Event queue
-    _event_queue: asyncio.PriorityQueue[Event]
+    _eq: asyncio.PriorityQueue[Event]
 
     def __init__(self, params: GameInitParams, *args, logname: str, **kwargs):
         """Initialize the game."""
@@ -23,7 +23,7 @@ class Game(Logger):
 
         self.players = dict()
         self.params = params
-        self._event_queue = asyncio.PriorityQueue()
+        self._eq = asyncio.PriorityQueue()
 
     def add_player(self, player: Player):
         """Add a player."""
@@ -34,8 +34,10 @@ class Game(Logger):
         """Start the game."""
         self.info("Game starting")
         while True:
-            event = await self._event_queue.get()
-            await self._process_event(event)
+            e = await self._eq.get()
+            await self._process_event(e)
 
     async def _process_event(self, e: Event):
-        pass
+        match e:
+            case Event():
+                pass

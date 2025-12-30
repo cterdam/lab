@@ -6,23 +6,23 @@ from src.core import Dataclass, logid
 from src.core.util import multiline
 from src.lib.data.serial import Serial
 
-eid: TypeAlias = int
-_eids = Serial(logname="game_event_id")
+geid: TypeAlias = int
+_geids = Serial(logname="game_event_ids")
 
 
-class Event(Dataclass):
+class GameEvent(Dataclass):
     """In-game event."""
 
-    event_id: eid = Field(
+    event_id: geid = Field(
         description="Event ID which is sorted by creation time.",
-        default_factory=_eids.next,
+        default_factory=_geids.next,
     )
 
-    react_to: eid | None = Field(
+    react_to: geid | None = Field(
         default=None,
         description=multiline(
             """
-            If this event is a reaction, this is the event ID of the event that
+            If this event is a reaction, this is the GEID of the event that
             this event is reacting to.
             """
         ),

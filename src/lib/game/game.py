@@ -4,7 +4,7 @@ from enum import IntEnum
 from src import log
 from src.core import Logger, logid
 from src.lib.data import PriorityQueue
-from src.lib.game.event import Event, GameEnd, GameStart
+from src.lib.game.event import GameEnd, GameEvent, GameStart
 from src.lib.game.game_init_params import GameInitParams
 from src.lib.game.game_state import GameState
 from src.lib.game.player import Player
@@ -39,6 +39,7 @@ class Game(Logger):
         super().__init__(*args, logname=logname, **kwargs)
 
         self.state = GameState(
+            ongoing=True,
             max_react_per_event=params.max_react_per_event,
             max_interrupt_per_speech=params.max_interrupt_per_speech,
         )
@@ -73,7 +74,7 @@ class Game(Logger):
 
     # EVENT HANDLING ###########################################################
 
-    async def _announce_event_before(self, e: Event):
+    async def _announce_event_before(self, e: GameEvent):
         """Announce an event to all visible players before it is handled."""
         audience = await self.event2audience(e)
         tasks = []
@@ -82,7 +83,7 @@ class Game(Logger):
                 tasks.append(player.ack_event_before(e))
         await asyncio.gather(*tasks)
 
-    async def _announce_event_after(self, e: Event):
+    async def _announce_event_after(self, e: GameEvent):
         """Announce an event to all visible players after it is handled."""
         audience = await self.event2audience(e)
         tasks = []
@@ -92,7 +93,7 @@ class Game(Logger):
         await asyncio.gather(*tasks)
 
     @log.input()
-    async def _handle_event(self, e: Event):
+    async def _handle_event(self, e: GameEvent):
         """Handle an event."""
         match e:
             case GameStart():
@@ -109,12 +110,12 @@ class Game(Logger):
         self.state.ongoing = False
         self.info("Game ending")
 
-    async def _handle_unknown(self, e: Event):
+    async def _handle_unknown(self, e: GameEvent):
         raise ValueError(f"Unknown event: {e}")
 
     # UTILS ####################################################################
 
-    async def event2audience(self, e: Event) -> list[logid]:
+    async def event2audience(self, e: GameEvent) -> list[logid]:
         """Given an event, return the list of player logids who can see it."""
         if e.visible is None:
             return list(self.players.keys())

@@ -8,7 +8,6 @@ class GameState(Dataclass):
     """Internal states of a game."""
 
     ongoing: bool = Field(
-        default=True,
         description="True iff the game is still ongoing.",
     )
 

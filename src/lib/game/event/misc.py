@@ -1,9 +1,9 @@
-from src.lib.game.event.event import Event
+from src.lib.game.event.game_event import GameEvent
 
 
-class GameStart(Event):
+class GameStart(GameEvent):
     """Event emitted when the game starts."""
 
 
-class GameEnd(Event):
+class GameEnd(GameEvent):
     """Event emitted when the game ends."""

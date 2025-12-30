@@ -5,8 +5,8 @@ from src import log
 from src.core import Logger, logid
 from src.lib.data import PriorityQueue
 from src.lib.game.event import Event, GameEnd, GameStart
-from src.lib.game.game_config import GameConfig
 from src.lib.game.game_init_params import GameInitParams
+from src.lib.game.game_state import GameState
 from src.lib.game.player import Player
 
 
@@ -18,8 +18,8 @@ class Game(Logger):
         REACT = 0
         NORMAL = 10
 
-    # Internal config
-    cfg: GameConfig
+    # Internal states
+    state: GameState
 
     # Mapping from player's logid to player obj
     players: dict[logid, Player]
@@ -38,7 +38,7 @@ class Game(Logger):
         """Initialize the game."""
         super().__init__(*args, logname=logname, **kwargs)
 
-        self.cfg = GameConfig(
+        self.state = GameState(
             max_react_per_event=params.max_react_per_event,
             max_interrupt_per_speech=params.max_interrupt_per_speech,
         )

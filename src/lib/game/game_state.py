@@ -4,8 +4,8 @@ from src.core import Dataclass
 from src.core.util import multiline
 
 
-class GameConfig(Dataclass):
-    """Config options for a game."""
+class GameState(Dataclass):
+    """Internal states of a game."""
 
     max_react_per_event: int = Field(
         ge=-1,

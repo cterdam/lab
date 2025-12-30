@@ -8,6 +8,7 @@ class GameInitParams(Dataclass):
     """Initialization params for a game."""
 
     max_react_per_event: int = Field(
+        default=3,
         ge=-1,
         description=multiline(
             """
@@ -19,6 +20,7 @@ class GameInitParams(Dataclass):
     )
 
     max_interrupt_per_speech: int = Field(
+        default=3,
         ge=-1,
         description=multiline(
             """

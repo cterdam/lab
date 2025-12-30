@@ -63,15 +63,13 @@ class Game(Logger):
             )
         )
 
-        while True:
+        while self.state.ongoing:
             _, _, e = await self._eq.get()
             if e.announce_before:
                 await self._announce_event_before(e)
             await self._handle_event(e)
             if e.announce_after:
                 await self._announce_event_after(e)
-            if isinstance(e, GameEnd):
-                break
 
     # EVENT HANDLING ###########################################################
 
@@ -108,6 +106,7 @@ class Game(Logger):
         pass
 
     async def _handle_GameEnd(self, _: GameEnd):
+        self.state.ongoing = False
         self.info("Game ending")
 
     async def _handle_unknown(self, e: Event):

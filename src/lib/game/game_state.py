@@ -7,6 +7,11 @@ from src.core.util import multiline
 class GameState(Dataclass):
     """Internal states of a game."""
 
+    ongoing: bool = Field(
+        default=True,
+        description="True iff the game is still ongoing.",
+    )
+
     max_react_per_event: int = Field(
         ge=-1,
         description=multiline(

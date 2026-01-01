@@ -19,15 +19,15 @@ class GameInitParams(Dataclass):
         ),
     )
 
-    max_interrupt_per_speech: int = Field(
+    max_successive_interrupt: int = Field(
         default=3,
         ge=-1,
         description=multiline(
             """
-            The default max number of player interruptions allowed in reaction
-            to any other player speech. This default could be overriden for
-            specific speeches. If 0, no interruption is allowed. If -1, the
-            number of speech interruptions is unlimited.
+            The default max number of successive player interruptions allowed to
+            be processed in a row, which could be overriden for specific
+            speeches. If 0, no interruption is allowed. If -1, the number of
+            speech interruptions is unlimited.
             """
         ),
     )

@@ -139,12 +139,9 @@ class Game(Logger):
         viewer2reacts = dict(zip(viewer_logids, react_lists))
 
         # Validate reacts
-        validation_tasks = [
-            self._validate_react(e, react, viewer_logid)
-            for viewer_logid, reacts in viewer2reacts.items()
-            for react in reacts
-        ]
-        await asyncio.gather(*validation_tasks)
+        for viewer_logid, reacts in viewer2reacts.items():
+            for react in reacts:
+                self._validate_react(e, react, viewer_logid)
 
         return viewer2reacts
 
@@ -233,7 +230,7 @@ class Game(Logger):
 
     # UTILS ####################################################################
 
-    async def _validate_react(
+    def _validate_react(
         self,
         e: GameEvent,
         react: GameEvent,
@@ -253,14 +250,12 @@ class Game(Logger):
             react.src={react.src} != player.logid={viewer_logid}
             """
         )
-
         assert e.geid in react.blocks, multiline(
             f"""
             React blocks mismatch:
             event.geid={e.geid} not in react.blocks={react.blocks}
             """
         )
-
         if isinstance(react, Interrupt):
             assert isinstance(e, Speech), multiline(
                 f"""

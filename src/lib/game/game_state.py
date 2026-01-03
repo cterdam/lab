@@ -1,14 +1,46 @@
+from enum import StrEnum
+
 from pydantic import Field
 
 from src.core import Dataclass
 from src.core.util import multiline
+from src.lib.game.event import GameEvent, geid_t
+
+
+class GameStage(StrEnum):
+    """Stage of the game lifecycle."""
+
+    WAITING = "waiting"
+    ONGOING = "ongoing"
+    ENDED = "ended"
 
 
 class GameState(Dataclass):
     """Internal states of a game."""
 
-    ongoing: bool = Field(
-        description="True iff the game is still ongoing.",
+    stage: GameStage = Field(
+        default=GameStage.WAITING,
+        description="Current stage of the game lifecycle.",
+    )
+
+    event_queue: list[tuple[int, geid_t, GameEvent]] = Field(
+        default_factory=list,
+        description=multiline(
+            """
+            Priority queue of upcoming events. Each entry is a (priority,
+            event_id, event) tuple.
+            """
+        ),
+    )
+
+    history: list[GameEvent] = Field(
+        default_factory=list,
+        description=multiline(
+            """
+            Record of events at various stages of processing. This list should
+            contain enough information to reconstruct the whole game.
+            """
+        ),
     )
 
     max_react_per_event: int = Field(
@@ -30,6 +62,16 @@ class GameState(Dataclass):
             be processed in a row, which could be overriden for specific
             speeches. If 0, no interruption is allowed. If -1, the number of
             speech interruptions is unlimited.
+            """
+        ),
+    )
+
+    default_event_priority: int = Field(
+        default=10,
+        description=multiline(
+            """
+            Default priority for events in the event queue. Lower numbers mean
+            higher priority.
             """
         ),
     )

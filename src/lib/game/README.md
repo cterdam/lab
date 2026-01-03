@@ -6,7 +6,7 @@ The game is driven by a sequence of events.
 
 ### Basics
 
-All events inherit from the `Event` base class and have an `event_id` (eid).
+All events inherit from the `Event` base class and have an `event_id` (geid).
 This is monotonically increasing and sorted by creation time.
 
 An event is handled when it is sent to its specific handler function. An event
@@ -15,15 +15,31 @@ event-specific handling and generic processing logic.
 
 ### Queue
 
-The game uses a priority queue to manage events. Each item in the queue is a
-tuple `(priority: int, eid: int, event: Event)`. The main game loop is getting
-the top event from the queue and processing it.
+The game uses a queue to manage events. Each item in the queue is a tuple
+`(priority: int, eid: int, event: Event)`. The main game loop is getting the top
+event from the queue and processing it.
 
 ### Subevents
 
 Sometimes the processing of an event necessitates processing another event
 before it finishes. In this case the subevent is created and directly processed
 without going through the queue.
+
+## State
+
+The game's internal state is kept in a `GameState` object. It should keep any
+and all internal attributes that's serializable. During the program, read or
+write access to the state must pass through an async context manager to ensure
+concurrency safety.
+
+## History
+
+Each event is snapshotted on the game's history multiple times throughout that
+event's life cycle. This gives the nice property that the first snapshot of an
+event will have the stage `TENTATIVE`, and the last snapshot of the same event
+will have the stage `FINAL`. The region between them represents exactly this
+event's full life cycle, including any and all subevents invoked during its
+processing.
 
 ### Extending the Game
 

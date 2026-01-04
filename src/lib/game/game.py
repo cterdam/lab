@@ -13,6 +13,7 @@ from src.lib.game.event import (
     GameStart,
     Interrupt,
     Speech,
+    geid_t,
 )
 from src.lib.game.game_init_params import GameInitParams
 from src.lib.game.game_state import GameStage, GameState
@@ -97,7 +98,7 @@ class Game(Logger):
         # Gather tentative reacts
         e.stage = GameEventStage.TENTATIVE
         await self._record_event(e)
-        await self._announce_event(e)
+        await self._notify_event(e)
 
         # Start handling
         e.stage = GameEventStage.HANDLING
@@ -107,16 +108,16 @@ class Game(Logger):
         # Gather finishing reacts
         e.stage = GameEventStage.HANDLED
         await self._record_event(e)
-        await self._announce_event(e)
+        await self._notify_event(e)
 
         # Finalize record
         e.stage = GameEventStage.FINAL
         await self._record_event(e)
 
-    async def _announce_event(self, e: GameEvent):
-        """Announce an event to all visible players."""
+    async def _notify_event(self, e: GameEvent):
+        """Notify an event to all visible players."""
 
-        viewer2reacts = await self._collect_reacts(e)
+        viewer2reacts = await self._send_notif(e)
         await self._process_reacts(e, viewer2reacts)
 
     async def _handle_event(self, e: GameEvent):
@@ -129,22 +130,33 @@ class Game(Logger):
             case _:
                 await self._handle_unknown(e)
 
-    async def _collect_reacts(self, e: GameEvent) -> dict[logid, list[GameEvent]]:
-        """Collect react events from eligible players.
+    async def _send_notif(self, e: GameEvent) -> dict[logid, list[GameEvent]]:
+        """Send notification of an event to players and collect reacts.
 
         Returns:
             A dict mapping each viewer logid to a list of their reacts.
         """
 
-        # Get reacts
+        # Determine if the event can still accept reacts
+        async with self.state() as state:
+            can_react = (
+                state.max_react_per_event == -1
+                or self._n_reacts_to_event(state.history, e.geid)
+                < state.max_react_per_event
+            )
+
+        # Send notif
         viewer_logids = await self.event2viewers(e)
         tasks = [
-            self.players[viewer_logid].ack_event(e) for viewer_logid in viewer_logids
+            self.players[viewer_logid].ack_event(e, can_react=can_react)
+            for viewer_logid in viewer_logids
         ]
         react_lists = await asyncio.gather(*tasks)
-        viewer2reacts = dict(zip(viewer_logids, react_lists))
+        if not can_react:
+            react_lists = []
 
-        # Validate reacts
+        # Validate any reacts
+        viewer2reacts = dict(zip(viewer_logids, react_lists))
         for viewer_logid, reacts in viewer2reacts.items():
             for react in reacts:
                 self._validate_react(e, react, viewer_logid)
@@ -171,7 +183,13 @@ class Game(Logger):
                     for react in reacts
                     if isinstance(react, Interrupt)
                 ]
-                if interrupts:
+                async with self.state() as state:
+                    can_interrupt = (
+                        state.max_successive_interrupt == -1
+                        or self._n_tail_interrupts(state.history)
+                        < state.max_successive_interrupt
+                    )
+                if interrupts and can_interrupt:
                     selected_interrupt = min(
                         interrupts, key=lambda i: len(i.target_speech_content)
                     )
@@ -233,6 +251,45 @@ class Game(Logger):
         raise ValueError(f"Unknown event: {e}")
 
     # UTILS ####################################################################
+
+    def _n_tail_interrupts(self, history: list[GameEvent]) -> int:
+        """Count distinct successive interrupts at the end of history.
+
+        Finds the contiguous block of Interrupt events at the end of history,
+        then counts distinct event IDs (geids) from that block.
+
+        Args:
+            history: The event history list to check.
+
+        Returns:
+            The number of distinct Interrupt events at the end of history.
+        """
+        interrupt_geids = set()
+        for event in reversed(history):
+            if isinstance(event, Interrupt):
+                interrupt_geids.add(event.geid)
+            else:
+                break
+        return len(interrupt_geids)
+
+    def _n_reacts_to_event(self, history: list[GameEvent], target_geid: geid_t) -> int:
+        """Count distinct reactions to a given event.
+
+        Finds all events in history that react to the target event (i.e., have
+        target_geid in their blocks field), then counts distinct reaction event IDs.
+
+        Args:
+            history: The event history list to check.
+            target_geid: The geid of the event to count reactions for.
+
+        Returns:
+            The number of distinct reactions to the target event.
+        """
+        react_geids = set()
+        for event in history:
+            if target_geid in event.blocks:
+                react_geids.add(event.geid)
+        return len(react_geids)
 
     def _validate_react(
         self,

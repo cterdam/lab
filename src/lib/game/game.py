@@ -5,7 +5,6 @@ from contextlib import asynccontextmanager
 
 from src import log
 from src.core import Logger, logid
-from src.core.util import multiline
 from src.lib.game.event import (
     GameEnd,
     GameEvent,
@@ -137,30 +136,51 @@ class Game(Logger):
             A dict mapping each viewer logid to a list of their reacts.
         """
 
-        # Determine if the event can still accept reacts
+        # Determine the event's eligibility for reacts
         async with self.state() as state:
             can_react = (
                 state.max_react_per_event == -1
                 or self._n_reacts_to_event(state.history, e.geid)
                 < state.max_react_per_event
             )
+            can_interrupt = isinstance(e, Speech) and (
+                state.max_successive_interrupt == -1
+                or self._n_tail_interrupts(state.history)
+                < state.max_successive_interrupt
+            )
 
         # Send notif
         viewer_logids = await self.event2viewers(e)
         tasks = [
-            self.players[viewer_logid].ack_event(e, can_react=can_react)
+            self.players[viewer_logid].ack_event(
+                e, can_react=can_react, can_interrupt=can_interrupt
+            )
             for viewer_logid in viewer_logids
         ]
         react_lists = await asyncio.gather(*tasks)
-        if not can_react:
-            react_lists = []
 
-        # Validate any reacts
-        viewer2reacts = dict(zip(viewer_logids, react_lists))
-        for viewer_logid, reacts in viewer2reacts.items():
+        # Filter out wrong reacts
+        filtered_reacts = []
+        for viewer_logid, reacts in zip(viewer_logids, react_lists):
+            filtered = []
             for react in reacts:
-                self._validate_react(e, react, viewer_logid)
+                if not can_react:
+                    continue
+                if not can_interrupt and isinstance(react, Interrupt):
+                    continue
+                if react.src != viewer_logid:
+                    continue
+                if e.geid not in react.blocks:
+                    continue
+                if isinstance(react, Interrupt):
+                    if not isinstance(e, Speech):
+                        continue
+                    if not e.content.startswith(react.target_speech_content):
+                        continue
+                filtered.append(react)
+            filtered_reacts.append(filtered)
 
+        viewer2reacts = dict(zip(viewer_logids, filtered_reacts))
         return viewer2reacts
 
     async def _process_reacts(
@@ -183,57 +203,21 @@ class Game(Logger):
                     for react in reacts
                     if isinstance(react, Interrupt)
                 ]
-                async with self.state() as state:
-                    can_interrupt = (
-                        state.max_successive_interrupt == -1
-                        or self._n_tail_interrupts(state.history)
-                        < state.max_successive_interrupt
-                    )
-                if interrupts and can_interrupt:
+                if interrupts:
                     selected_interrupt = min(
                         interrupts, key=lambda i: len(i.target_speech_content)
                     )
                     e.content = selected_interrupt.target_speech_content
                     selected_reacts = [selected_interrupt]
                 else:
-                    selected_reacts = await self._sample_reacts(viewer2reacts)
+                    selected_reacts = await self._sample_reacts(e, viewer2reacts)
 
             case _:
-                selected_reacts = await self._sample_reacts(viewer2reacts)
+                selected_reacts = await self._sample_reacts(e, viewer2reacts)
 
         for react in selected_reacts:
             e.requires.append(react.geid)
             await self._process_event(react)
-
-    async def _sample_reacts(
-        self,
-        viewer2reacts: dict[logid, list[GameEvent]],
-    ) -> list[GameEvent]:
-        """Select reacts based on the limit.
-
-        Args:
-            viewer2reacts: Mapping from viewer logid to their reacts.
-
-        Returns: A list of selected reacts.
-        """
-        all_reacts = [react for reacts in viewer2reacts.values() for react in reacts]
-        async with self.state() as state:
-            max_react = state.max_react_per_event
-
-        # Try selecting all
-        if max_react == -1 or len(all_reacts) <= max_react:
-            return all_reacts
-
-        # Too many, try limiting to one per player
-        one_per_player = []
-        for reacts in viewer2reacts.values():
-            if reacts:
-                one_per_player.append(reacts[0])
-        if len(one_per_player) <= max_react:
-            return one_per_player
-
-        # Still too many, sample from one per player
-        return random.sample(one_per_player, max_react)
 
     # HANDLER FUNCS ############################################################
 
@@ -251,6 +235,49 @@ class Game(Logger):
         raise ValueError(f"Unknown event: {e}")
 
     # UTILS ####################################################################
+
+    async def _sample_reacts(
+        self,
+        e: GameEvent,
+        viewer2reacts: dict[logid, list[GameEvent]],
+    ) -> list[GameEvent]:
+        """Select reacts based on the limit.
+
+        Args:
+            e: The event being reacted to.
+            viewer2reacts: Mapping from viewer logid to their reacts.
+
+        Returns: A list of selected reacts.
+        """
+
+        # Calculate the number of reacts possible
+        async with self.state() as state:
+            max_n_reacts = (
+                state.max_react_per_event
+                - self._n_reacts_to_event(state.history, e.geid)
+                if state.max_react_per_event != -1
+                else -1
+            )
+
+        # If no reactions allowed, return empty
+        if max_n_reacts == 0:
+            return []
+
+        # Try selecting all
+        all_reacts = [react for reacts in viewer2reacts.values() for react in reacts]
+        if max_n_reacts == -1 or len(all_reacts) <= max_n_reacts:
+            return all_reacts
+
+        # Too many, try limiting to one per player
+        one_per_player = []
+        for reacts in viewer2reacts.values():
+            if reacts:
+                one_per_player.append(reacts[0])
+        if len(one_per_player) <= max_n_reacts:
+            return one_per_player
+
+        # Still too many, sample from one per player
+        return random.sample(one_per_player, max_n_reacts)
 
     def _n_tail_interrupts(self, history: list[GameEvent]) -> int:
         """Count distinct successive interrupts at the end of history.
@@ -290,47 +317,6 @@ class Game(Logger):
             if target_geid in event.blocks:
                 react_geids.add(event.geid)
         return len(react_geids)
-
-    def _validate_react(
-        self,
-        e: GameEvent,
-        react: GameEvent,
-        viewer_logid: logid,
-    ):
-        """Validate that a react has correct fields.
-
-        Args:
-            event: The original event that the react is responding to.
-            react: The react event to validate.
-            viewer_logid: The logid of the player who returned this react.
-        """
-
-        assert react.src == viewer_logid, multiline(
-            f"""
-            React src mismatch:
-            react.src={react.src} != player.logid={viewer_logid}
-            """
-        )
-        assert e.geid in react.blocks, multiline(
-            f"""
-            React blocks mismatch:
-            event.geid={e.geid} not in react.blocks={react.blocks}
-            """
-        )
-        if isinstance(react, Interrupt):
-            assert isinstance(e, Speech), multiline(
-                f"""
-                Interrupt can only react to Speech events:
-                react is Interrupt but event is {type(e).__name__}
-                """
-            )
-            assert e.content.startswith(react.target_speech_content), multiline(
-                f"""
-                Interrupt target_speech_content must be a prefix of original speech:
-                event.content={e.content!r}
-                interrupt.target_speech_content={react.target_speech_content!r}
-                """
-            )
 
     async def _add_event(self, e: GameEvent):
         """Add an event to the queue."""

@@ -9,12 +9,17 @@ class Player(ABC, Logger):
     logspace_part = "player"
 
     @abstractmethod
-    async def ack_event(self, e: GameEvent, *, can_react: bool) -> list[GameEvent]:
+    async def ack_event(
+        self, e: GameEvent, *, can_react: bool, can_interrupt: bool
+    ) -> list[GameEvent]:
         """Acknowledge and potentially react to an event.
 
         Args:
             e: The event to acknowledge.
             can_react: Whether the event can still accept reactions. If False,
                 the player should not return any reaction events.
+            can_interrupt: Whether interrupts are allowed. This is only True for
+                Speech events that can still accept interrupts. If False, the
+                player should not return any Interrupt events.
         """
         pass

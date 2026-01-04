@@ -19,6 +19,14 @@ The game uses a queue to manage events. Each item in the queue is a tuple
 `(priority: int, eid: int, event: Event)`. The main game loop is getting the top
 event from the queue and processing it.
 
+### Reacts
+
+The game will send notif of each event to relevant players. At various stages,
+players can react to the events by returning a list of react events.
+
+An interrupt is a special kind of react that only applies to speech events. It
+takes precedence over other kind of reacts.
+
 ### Subevents
 
 Sometimes the processing of an event necessitates processing another event

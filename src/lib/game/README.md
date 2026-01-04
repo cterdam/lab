@@ -6,8 +6,8 @@ The game is driven by a sequence of events.
 
 ### Basics
 
-All events inherit from the `Event` base class and have an `event_id` (geid).
-This is monotonically increasing and sorted by creation time.
+All events inherit from the `Event` base class and have a `geid` (Game Event
+ID). This is monotonically increasing and sorted by creation time.
 
 An event is handled when it is sent to its specific handler function. An event
 is processed when it is fully taken care of, which includes both the
@@ -29,8 +29,8 @@ without going through the queue.
 
 The game's internal state is kept in a `GameState` object. It should keep any
 and all internal attributes that's serializable. During the program, read or
-write access to the state must pass through an async context manager to ensure
-concurrency safety.
+write access to any field of the game state must pass through an async context
+manager to ensure concurrency safety.
 
 ## History
 

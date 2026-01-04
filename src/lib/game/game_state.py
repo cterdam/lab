@@ -16,7 +16,11 @@ class GameStage(StrEnum):
 
 
 class GameState(Dataclass):
-    """Internal states of a game."""
+    """Internal states of a game.
+
+    This consists of fields that could change during the life cycle of a game.
+    Therefore, a lock must be acquired for reading or writing to any field.
+    """
 
     stage: GameStage = Field(
         default=GameStage.WAITING,
@@ -27,8 +31,8 @@ class GameState(Dataclass):
         default_factory=list,
         description=multiline(
             """
-            Priority queue of upcoming events. Each entry is a (priority,
-            event_id, event) tuple.
+            Priority queue of upcoming events. Each entry is a (priority, geid,
+            event) tuple.
             """
         ),
     )
@@ -39,6 +43,16 @@ class GameState(Dataclass):
             """
             Record of events at various stages of processing. This list should
             contain enough information to reconstruct the whole game.
+            """
+        ),
+    )
+
+    default_event_priority: int = Field(
+        default=10,
+        description=multiline(
+            """
+            Default priority for events in the event queue. Lower numbers mean
+            higher priority.
             """
         ),
     )
@@ -62,16 +76,6 @@ class GameState(Dataclass):
             be processed in a row, which could be overriden for specific
             speeches. If 0, no interruption is allowed. If -1, the number of
             speech interruptions is unlimited.
-            """
-        ),
-    )
-
-    default_event_priority: int = Field(
-        default=10,
-        description=multiline(
-            """
-            Default priority for events in the event queue. Lower numbers mean
-            higher priority.
             """
         ),
     )

@@ -20,7 +20,7 @@ from src.lib.game.player import Player
 
 
 class Game(Logger):
-    """Async-safe game."""
+    """Async-safe event loop."""
 
     logspace_part = "game"
 
@@ -53,32 +53,38 @@ class Game(Logger):
         logname: str = "game",
         **kwargs,
     ):
-        """Initialize the game."""
         super().__init__(*args, logname=logname, **kwargs)
 
         self._state_lock = asyncio.Lock()
         self._state = GameState(
-            stage=GameStage.WAITING,
             max_react_per_event=params.max_react_per_event,
             max_successive_interrupt=params.max_successive_interrupt,
         )
         self.players = dict()
 
     def add_player(self, player: Player):
-        """Add a player and wire the event sink into it."""
         self.players[player.logid] = player
 
     async def start(self):
         """Enter the event loop."""
+
+        # Add GameStart event if needed
         async with self.state() as state:
-            if state.stage == GameStage.WAITING:
-                await self._add_event(GameStart())
-        while True:
-            async with self.state() as state:
-                if state.stage != GameStage.ONGOING:
-                    break
-            e = await self._pop_event()
+            waiting = state.stage == GameStage.WAITING
+        if waiting:
+            await self._add_event(GameStart())
+
+        ongoing = True
+        while ongoing:
+            # Add GameEnd event if needed
+            try:
+                e = await self._pop_event()
+            except ValueError:
+                await self._add_event(GameEnd())
+                e = await self._pop_event()
             await self._process_event(e)
+            async with self.state() as state:
+                ongoing = state.stage == GameStage.ONGOING
 
     # EVENT PROCESSING #########################################################
 
@@ -190,11 +196,9 @@ class Game(Logger):
         Args:
             viewer2reacts: Mapping from viewer logid to their reacts.
 
-        Returns:
-            Selected reacts.
+        Returns: A list of selected reacts.
         """
         all_reacts = [react for reacts in viewer2reacts.values() for react in reacts]
-
         async with self.state() as state:
             max_react = state.max_react_per_event
 
@@ -273,8 +277,9 @@ class Game(Logger):
 
     async def _add_event(self, e: GameEvent):
         """Add an event to the queue."""
-        if e.src is None:
+        if not e.src:
             e.src = self.logid
+
         async with self.state() as state:
             heapq.heappush(
                 state.event_queue,
@@ -282,16 +287,27 @@ class Game(Logger):
             )
 
     async def _pop_event(self) -> GameEvent:
-        """Pop the next event from the queue or get GameEnd."""
+        """Pop the next event from the queue.
+
+        Returns:
+            The next event to process.
+
+        Raises:
+            ValueError: If the queue is empty.
+        """
         async with self.state() as state:
-            if len(state.event_queue) == 0:
-                await self._add_event(GameEnd())
+            if not state.event_queue:
+                raise ValueError("Event queue is empty")
             _, _, event = heapq.heappop(state.event_queue)
-            return event
+        return event
 
     @log.input()
     async def _record_event(self, e: GameEvent):
-        """Record the snapshot of an event in the game history."""
+        """Record the snapshot of an event in the game history.
+
+        Args:
+            e: The event to record.
+        """
         async with self.state() as state:
             state.history.append(e.model_copy(deep=True))
 

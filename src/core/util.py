@@ -5,11 +5,12 @@ import textwrap
 import time
 from datetime import timedelta
 from functools import wraps
-from typing import Any, Callable, Coroutine, NamedTuple
+from typing import Any, Callable, Coroutine, NamedTuple, TypeAlias
 
 import rich.pretty
 
-logid = str
+logid: TypeAlias = str
+pk: TypeAlias = int
 
 
 def multiline(s: str, oneline: bool = True, continuous: bool = False) -> str:

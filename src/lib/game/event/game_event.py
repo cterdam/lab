@@ -3,12 +3,11 @@ from typing import TypeAlias
 
 from pydantic import Field
 
+from src import env
 from src.core import Dataclass, logid
 from src.core.util import multiline
-from src.lib.data.serial import Serial
 
 geid_t: TypeAlias = int
-_geids = Serial(logname="game_event_ids")
 
 
 class GameEventStage(StrEnum):
@@ -25,7 +24,7 @@ class GameEvent(Dataclass):
 
     geid: geid_t = Field(
         description="Event ID which is sorted by creation time.",
-        default_factory=_geids.next,
+        default_factory=env.next_pk,
     )
 
     stage: GameEventStage = Field(

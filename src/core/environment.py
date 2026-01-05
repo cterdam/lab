@@ -109,7 +109,7 @@ class Environment(Dataclass):
 
     # REDIS ####################################################################
 
-    # - SYNCHRONOUS --------------------------------------------------------------
+    # - SYNCHRONOUS ------------------------------------------------------------
 
     @cached_property
     def r_pool(self) -> redis.ConnectionPool:
@@ -167,7 +167,7 @@ class Environment(Dataclass):
         finally:
             p.reset()
 
-    # - ASYNCHRONOUS -------------------------------------------------------------
+    # - ASYNCHRONOUS -----------------------------------------------------------
 
     @cached_property
     def ar_pool(self) -> redis.asyncio.ConnectionPool:
@@ -227,7 +227,7 @@ class Environment(Dataclass):
         finally:
             await p.reset()
 
-    # - OTHERS -------------------------------------------------------------------
+    # - OTHERS -----------------------------------------------------------------
 
     LOGID_SET_KEY: str = Field(
         default="logids",
@@ -262,3 +262,40 @@ class Environment(Dataclass):
         min_length=1,
         description="Redis key to act as a lock for the final counter dump.",
     )
+
+    # PRIMARY KEY ##############################################################
+
+    PK_COUNTER_KEY: str = Field(
+        default="pk",
+        min_length=1,
+        description=multiline(
+            """
+            Counter key for the globally shared primary key ID generator.
+            This key is used in the root logger's counter hash to generate
+            monotonically increasing IDs shared across all objects.
+            """
+        ),
+    )
+
+    def next_pk(self) -> int:
+        """Get the next globally shared primary key.
+
+        Uses the root logger's counter for a monotonically increasing ID
+        shared across all objects in the run.
+
+        Returns:
+            The next primary key ID.
+        """
+        from src import log
+
+        return log.incr(self.PK_COUNTER_KEY)
+
+    async def anext_pk(self) -> int:
+        """Async get the next globally shared primary key.
+
+        Returns:
+            The next primary key ID.
+        """
+        from src import log
+
+        return await log.aincr(self.PK_COUNTER_KEY)

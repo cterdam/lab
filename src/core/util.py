@@ -10,7 +10,7 @@ from typing import Any, Callable, Coroutine, NamedTuple, TypeAlias
 import rich.pretty
 
 logid: TypeAlias = str
-pk: TypeAlias = int
+sid_t: TypeAlias = int
 
 
 def multiline(s: str, oneline: bool = True, continuous: bool = False) -> str:

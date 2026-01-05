@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from src import log
 from src.core import Logger, logid
+from src.core.util import sid_t
 from src.lib.game.event import (
     GameEnd,
     GameEvent,
@@ -12,7 +13,6 @@ from src.lib.game.event import (
     GameStart,
     Interrupt,
     Speech,
-    geid_t,
 )
 from src.lib.game.game_init_params import GameInitParams
 from src.lib.game.game_state import GameStage, GameState
@@ -140,7 +140,7 @@ class Game(Logger):
         async with self.state() as state:
             can_react = (
                 state.max_react_per_event == -1
-                or self._n_reacts_to_event(state.history, e.geid)
+                or self._n_reacts_to_event(state.history, e.sid)
                 < state.max_react_per_event
             )
             can_interrupt = isinstance(e, Speech) and (
@@ -170,7 +170,7 @@ class Game(Logger):
                     continue
                 if react.src != viewer_logid:
                     continue
-                if e.geid not in react.blocks:
+                if e.sid not in react.blocks:
                     continue
                 if isinstance(react, Interrupt):
                     if not isinstance(e, Speech):
@@ -216,7 +216,7 @@ class Game(Logger):
                 selected_reacts = await self._sample_reacts(e, viewer2reacts)
 
         for react in selected_reacts:
-            e.requires.append(react.geid)
+            e.requires.append(react.sid)
             await self._process_event(react)
 
     # HANDLER FUNCS ############################################################
@@ -254,7 +254,7 @@ class Game(Logger):
         async with self.state() as state:
             max_n_reacts = (
                 state.max_react_per_event
-                - self._n_reacts_to_event(state.history, e.geid)
+                - self._n_reacts_to_event(state.history, e.sid)
                 if state.max_react_per_event != -1
                 else -1
             )
@@ -283,7 +283,7 @@ class Game(Logger):
         """Count distinct successive interrupts at the end of history.
 
         Finds the contiguous block of Interrupt events at the end of history,
-        then counts distinct event IDs (geids) from that block.
+        then counts distinct events by sids from that block.
 
         Args:
             history: The event history list to check.
@@ -291,32 +291,32 @@ class Game(Logger):
         Returns:
             The number of distinct Interrupt events at the end of history.
         """
-        interrupt_geids = set()
+        interrupt_sids = set()
         for event in reversed(history):
             if isinstance(event, Interrupt):
-                interrupt_geids.add(event.geid)
+                interrupt_sids.add(event.sid)
             else:
                 break
-        return len(interrupt_geids)
+        return len(interrupt_sids)
 
-    def _n_reacts_to_event(self, history: list[GameEvent], target_geid: geid_t) -> int:
+    def _n_reacts_to_event(self, history: list[GameEvent], target_sid: sid_t) -> int:
         """Count distinct reactions to a given event.
 
         Finds all events in history that react to the target event (i.e., have
-        target_geid in their blocks field), then counts distinct reaction event IDs.
+        target_sid in their blocks field), then counts distinct reaction event IDs.
 
         Args:
             history: The event history list to check.
-            target_geid: The geid of the event to count reactions for.
+            target_sid: The sid of the event to count reactions for.
 
         Returns:
             The number of distinct reactions to the target event.
         """
-        react_geids = set()
+        react_sids = set()
         for event in history:
-            if target_geid in event.blocks:
-                react_geids.add(event.geid)
-        return len(react_geids)
+            if target_sid in event.blocks:
+                react_sids.add(event.sid)
+        return len(react_sids)
 
     async def _add_event(self, e: GameEvent):
         """Add an event to the queue."""
@@ -326,7 +326,7 @@ class Game(Logger):
         async with self.state() as state:
             heapq.heappush(
                 state.event_queue,
-                (state.default_event_priority, e.geid, e),
+                (state.default_event_priority, e.sid, e),
             )
 
     async def _pop_event(self) -> GameEvent:

@@ -6,8 +6,8 @@ The game is driven by a sequence of events.
 
 ### Basics
 
-All events inherit from the `Event` base class and have a `geid` (Game Event
-ID). This is monotonically increasing and sorted by creation time.
+All events inherit from the `Event` base class and use the `sid` as event ID.
+This is monotonically increasing and sorted by creation time.
 
 An event is handled when it is sent to its specific handler function. An event
 is processed when it is fully taken care of, which includes both the

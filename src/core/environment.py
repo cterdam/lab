@@ -8,7 +8,7 @@ import redis.asyncio
 from pydantic import ConfigDict, Field, computed_field
 
 from src.core.dataclass import Dataclass
-from src.core.util import logid, multiline, pk, randalnu, str2int
+from src.core.util import logid, multiline, randalnu, sid_t, str2int
 
 
 class Environment(Dataclass):
@@ -275,8 +275,8 @@ class Environment(Dataclass):
 
     # PRIMARY KEY ##############################################################
 
-    PK_COUNTER_KEY: str = Field(
-        default="pk",
+    SID_COUNTER_KEY: str = Field(
+        default="sid",
         min_length=1,
         description=multiline(
             """
@@ -287,7 +287,7 @@ class Environment(Dataclass):
         ),
     )
 
-    def next_pk(self) -> pk:
+    def next_sid(self) -> sid_t:
         """Get the next globally shared primary key.
 
         Uses the root logger's counter for a monotonically increasing ID
@@ -298,9 +298,9 @@ class Environment(Dataclass):
         """
         from src import log
 
-        return log.incr(self.PK_COUNTER_KEY)
+        return log.incr(self.SID_COUNTER_KEY)
 
-    async def anext_pk(self) -> pk:
+    async def anext_sid(self) -> sid_t:
         """Async get the next globally shared primary key.
 
         Uses the root logger's counter for a monotonically increasing ID
@@ -311,4 +311,4 @@ class Environment(Dataclass):
         """
         from src import log
 
-        return await log.aincr(self.PK_COUNTER_KEY)
+        return await log.aincr(self.SID_COUNTER_KEY)

@@ -3,8 +3,8 @@ from enum import StrEnum
 from pydantic import Field
 
 from src.core import Dataclass
-from src.core.util import multiline
-from src.lib.game.event import GameEvent, geid_t
+from src.core.util import multiline, sid_t
+from src.lib.game.event import GameEvent
 
 
 class GameStage(StrEnum):
@@ -27,11 +27,11 @@ class GameState(Dataclass):
         description="Current stage of the game lifecycle.",
     )
 
-    event_queue: list[tuple[int, geid_t, GameEvent]] = Field(
+    event_queue: list[tuple[int, sid_t, GameEvent]] = Field(
         default_factory=list,
         description=multiline(
             """
-            Priority queue of upcoming events. Each entry is a (priority, geid,
+            Priority queue of upcoming events. Each entry is a (priority, sid,
             event) tuple.
             """
         ),

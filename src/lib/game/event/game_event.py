@@ -1,13 +1,9 @@
 from enum import StrEnum
-from typing import TypeAlias
 
-from pydantic import Field
+from redis_om import Field
 
-from src import env
 from src.core import Dataclass, logid
-from src.core.util import multiline
-
-geid_t: TypeAlias = int
+from src.core.util import multiline, sid_t
 
 
 class GameEventStage(StrEnum):
@@ -22,18 +18,14 @@ class GameEventStage(StrEnum):
 class GameEvent(Dataclass):
     """In-game event."""
 
-    geid: geid_t = Field(
-        description="Event ID which is sorted by creation time.",
-        default_factory=env.next_pk,
-    )
-
     stage: GameEventStage = Field(
         default=GameEventStage.TENTATIVE,
         description="Current stage of the event in its lifecycle.",
     )
 
-    blocks: list[geid_t] = Field(
+    blocks: list[sid_t] = Field(
         default_factory=list,
+        index=False,
         description=multiline(
             """
             If this event is a reaction, this is the list of GEIDs of events that
@@ -42,8 +34,9 @@ class GameEvent(Dataclass):
         ),
     )
 
-    requires: list[geid_t] = Field(
+    requires: list[sid_t] = Field(
         default_factory=list,
+        index=False,
         description=multiline(
             """
             If this event has reactions, this is the list of GEIDs of reactions
@@ -67,6 +60,7 @@ class GameEvent(Dataclass):
 
     visible: list[logid] | None = Field(
         default=None,
+        index=False,
         description=multiline(
             """
             List of player logids who can see this event. If None, the event is

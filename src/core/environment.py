@@ -136,6 +136,9 @@ class Environment(Dataclass):
         # Convert string results to int for counter gets.
         client.set_response_callback("HGET", str2int)
         client.set_response_callback("HMGET", lambda r: [str2int(v) for v in r])
+        client.set_response_callback(
+            "HGETALL", lambda r: {k: str2int(v) for k, v in r.items()}
+        )
 
         return client
 
@@ -192,6 +195,9 @@ class Environment(Dataclass):
         client.set_response_callback("HGET", str2int)  # type: ignore
         client.set_response_callback(
             "HMGET", lambda r: [str2int(v) for v in r]  # type: ignore
+        )
+        client.set_response_callback(
+            "HGETALL", lambda r: {k: str2int(v) for k, v in r.items()}  # type: ignore
         )
 
         return client

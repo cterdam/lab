@@ -8,7 +8,7 @@ import redis.asyncio
 from pydantic import ConfigDict, Field, computed_field
 
 from src.core.dataclass import Dataclass
-from src.core.util import logid, multiline, randalnu, str2int
+from src.core.util import logid, multiline, pk, randalnu, str2int
 
 
 class Environment(Dataclass):
@@ -137,7 +137,8 @@ class Environment(Dataclass):
         client.set_response_callback("HGET", str2int)
         client.set_response_callback("HMGET", lambda r: [str2int(v) for v in r])
         client.set_response_callback(
-            "HGETALL", lambda r: {k: str2int(v) for k, v in r.items()}
+            "HGETALL",
+            lambda r: {k: str2int(v) for k, v in r.items()},  # type: ignore
         )
 
         return client
@@ -197,7 +198,8 @@ class Environment(Dataclass):
             "HMGET", lambda r: [str2int(v) for v in r]  # type: ignore
         )
         client.set_response_callback(
-            "HGETALL", lambda r: {k: str2int(v) for k, v in r.items()}  # type: ignore
+            "HGETALL",
+            lambda r: {k: str2int(v) for k, v in r.items()},  # type: ignore
         )
 
         return client
@@ -277,7 +279,7 @@ class Environment(Dataclass):
         ),
     )
 
-    def next_pk(self) -> int:
+    def next_pk(self) -> pk:
         """Get the next globally shared primary key.
 
         Uses the root logger's counter for a monotonically increasing ID
@@ -290,8 +292,11 @@ class Environment(Dataclass):
 
         return log.incr(self.PK_COUNTER_KEY)
 
-    async def anext_pk(self) -> int:
+    async def anext_pk(self) -> pk:
         """Async get the next globally shared primary key.
+
+        Uses the root logger's counter for a monotonically increasing ID
+        shared across all objects in the run.
 
         Returns:
             The next primary key ID.

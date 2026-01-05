@@ -59,8 +59,6 @@ async def demo_game():
 
     # Wait a bit, then end the game
     await asyncio.sleep(0.1)
-    game_end = GameEnd(src=game.logid)
-    await game._enq(game_end)
 
     # Wait for game to finish
     await game_task

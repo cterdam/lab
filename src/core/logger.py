@@ -618,9 +618,7 @@ class Logger:
             for logid, counter_kvs in zip(logids, counter_hashes):
                 if not counter_kvs:
                     continue
-                msg = Logger.logmsg.COUNT_TALLY.format(
-                    counters=prepr({ck: str2int(cv) for ck, cv in counter_kvs.items()})
-                )
+                msg = Logger.logmsg.COUNT_TALLY.format(counters=prepr(counter_kvs))
 
                 # Send log entry
                 Logger._base_logger().bind(logid=logid, logtag="").log(

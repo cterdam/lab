@@ -138,7 +138,11 @@ class Environment(Dataclass):
         client.set_response_callback("HMGET", lambda r: [str2int(v) for v in r])
         client.set_response_callback(
             "HGETALL",
-            lambda r: {k: str2int(v) for k, v in r.items()},  # type: ignore
+            lambda r: (
+                {k: str2int(v) for k, v in zip(r[::2], r[1::2])}
+                if isinstance(r, list)
+                else {k: str2int(v) for k, v in r.items()}
+            ),
         )
 
         return client
@@ -199,7 +203,11 @@ class Environment(Dataclass):
         )
         client.set_response_callback(
             "HGETALL",
-            lambda r: {k: str2int(v) for k, v in r.items()},  # type: ignore
+            lambda r: (  # type: ignore
+                {k: str2int(v) for k, v in zip(r[::2], r[1::2])}
+                if isinstance(r, list)
+                else {k: str2int(v) for k, v in r.items()}
+            ),
         )
 
         return client

@@ -38,7 +38,16 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 
 ## Contribute
 
-- Make docker build offline
+- Make Dataclass inherit from HashModel
+  - Monotonically increasing ID
+
+- Simplify can react count cap to just count with max
+- AddPlayer event
+  - Group access ctrl for players
+  - Different player groups inside state
+
+- Game save & load
+  - Including dumping Redis counters
 
 - Loguru PR
   - Similar issue: <https://github.com/empicano/aiomqtt/issues/52>
@@ -50,7 +59,3 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 - ttt game
 
 - type validation: beartype, typeguard, deal
-
-- Game:
-  - event queue
-  - while game has not ended, dequeue one event from eq and process it

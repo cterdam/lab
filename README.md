@@ -38,8 +38,7 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 
 ## Contribute
 
-- Make Dataclass inherit from HashModel
-  - Monotonically increasing ID
+- Remove Logger LogLevel
 
 - Simplify can react count cap to just count with max
 - AddPlayer event

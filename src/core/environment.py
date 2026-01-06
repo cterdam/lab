@@ -222,7 +222,7 @@ class Environment(BaseModel):
         finally:
             await p.reset()
 
-    # - OTHERS -----------------------------------------------------------------
+    # - OTHER ------------------------------------------------------------------
 
     LOGID_SET_KEY: str = Field(
         default="logids",
@@ -241,13 +241,12 @@ class Environment(BaseModel):
         ),
     )
 
-    LOGID_CHNS_SEPARATOR: str = Field(
+    LOGID_SUBKEY_SEPARATOR: str = Field(
         default="/",
         min_length=1,
         description=multiline(
             """
-            Str connector between a logger's logid and the counter hash name
-            suffix when producing the counter key.
+            Str connector between a logger's logid and its subkeys in Redis.
             """
         ),
     )

@@ -2,8 +2,10 @@ import asyncio
 import heapq
 import random
 from contextlib import asynccontextmanager
+from functools import cached_property
+from typing import AsyncIterator, final
 
-from src import log
+from src import env, log
 from src.core import Logger, logid
 from src.core.util import sid_t
 from src.lib.game.event import (
@@ -24,26 +26,11 @@ class Game(Logger):
 
     logspace_part = "game"
 
-    # Internal states
-    _state_lock: asyncio.Lock
-    _state: GameState
-
-    # Mapping from player's logid to player obj
-    players: dict[logid, Player]
-
-    @asynccontextmanager
-    async def state(self):
-        """Context manager to access the game state.
-
-        This is the public API for accessing game state. All state modifications
-        should go through this context manager to ensure concurrency safety.
-
-        Usage:
-            async with self.state() as state:
-                # Do something with state
-        """
-        async with self._state_lock:
-            yield self._state
+    @final
+    @cached_property
+    def _state_key(self) -> str:
+        """Redis key for game state."""
+        return f"{self.logid}{env.LOGID_SUBKEY_SEPARATOR}state"
 
     @log.input()
     def __init__(
@@ -54,13 +41,33 @@ class Game(Logger):
         **kwargs,
     ):
         super().__init__(*args, logname=logname, **kwargs)
-
+        self.players = dict()
         self._state_lock = asyncio.Lock()
-        self._state = GameState(
+
+        state = GameState(
             max_react_per_event=params.max_react_per_event,
             max_successive_interrupt=params.max_successive_interrupt,
         )
-        self.players = dict()
+        env.r.json().set(self._state_key, "$", state.model_dump_json())
+
+    @asynccontextmanager
+    async def state(self) -> AsyncIterator[GameState]:
+        """Context manager to access the game state.
+
+        This is the public API for accessing game state. All state modifications
+        should go through this context manager to ensure concurrency safety.
+
+        Usage:
+            async with self.state() as state:
+                # Do something with state
+        """
+        from src import env
+
+        async with self._state_lock:
+            state_json = await env.ar.json().get(self._state_key)
+            state = GameState.model_validate_json(state_json)
+            yield state
+            await env.ar.json().set(self._state_key, "$", state.model_dump_json())
 
     def add_player(self, player: Player):
         self.players[player.logid] = player

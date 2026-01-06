@@ -361,7 +361,7 @@ class Logger:
         """Given a logid, return its corresponding counter hash name."""
         from src import env
 
-        return f"{logid}{env.LOGID_CHNS_SEPARATOR}{env.CHN_SUFFIX}"
+        return f"{logid}{env.LOGID_SUBKEY_SEPARATOR}{env.CHN_SUFFIX}"
 
     # - SYNCHRONOUS ------------------------------------------------------------
 

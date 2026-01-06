@@ -5,12 +5,16 @@ import textwrap
 import time
 from datetime import timedelta
 from functools import wraps
+from pathlib import Path
 from typing import Any, Callable, Coroutine, NamedTuple, TypeAlias
 
 import rich.pretty
 
 logid: TypeAlias = str
 sid_t: TypeAlias = int
+
+# Root path of the repo inside the Docker container.
+REPO_ROOT: Path = Path("/gpt")
 
 
 def multiline(s: str, oneline: bool = True, continuous: bool = False) -> str:
@@ -86,6 +90,13 @@ def prepr(
         indent_size=indent or env.INDENT,
         expand_all=True,
     )
+
+
+def next_sid() -> sid_t:
+    """Get the next serial ID from the environment."""
+    from src import env
+
+    return env.r.incr(env.SID_COUNTER_KEY)
 
 
 def str2int(s: str | None) -> int | None:

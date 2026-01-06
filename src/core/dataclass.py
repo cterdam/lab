@@ -1,18 +1,13 @@
-from pydantic import ConfigDict
-from redis_om import Field, JsonModel
+from pydantic import BaseModel, ConfigDict, Field
 
-from src.core.util import sid_t
-
-
-def _get_next_sid() -> sid_t:
-    """Get the next serial ID from the environment."""
-    from src import env
-
-    return env.next_sid()
+from src.core.util import next_sid, prepr, sid_t
 
 
-class Dataclass(JsonModel):
-    """Base dataclass with strict guarantees and Redis persistence."""
+class Dataclass(BaseModel):
+    """Base dataclass with strict guarantees and handy properties.
+
+    All instances have a serial ID (sid) field that is automatically generated.
+    """
 
     model_config = ConfigDict(
         extra="forbid",
@@ -21,12 +16,9 @@ class Dataclass(JsonModel):
     )
 
     sid: sid_t = Field(
-        default_factory=_get_next_sid,
-        primary_key=True,
+        default_factory=next_sid,
         description="Serial ID, auto generated monotonically increasing.",
     )
 
     def __str__(self) -> str:
-        from src.core.util import prepr
-
         return prepr(self)

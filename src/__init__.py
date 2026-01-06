@@ -3,6 +3,7 @@ import sys
 from src.core import Logger
 from src.core.arguments import Arguments
 from src.core.environment import Environment
+from src.core.util import REPO_ROOT, prepr
 
 
 def set_logger() -> Logger:
@@ -22,13 +23,13 @@ def set_logger() -> Logger:
 
 def setup_msg() -> None:
     """Emit setup msgs as logs."""
-    log.success(arg)
+    log.success(prepr(arg))
     if not arg.run_name:
         log.warning(f"Run name randomly initialized to {env.run_name}")
 
 
+arg: Arguments = Arguments(_env_file=[REPO_ROOT / "args"])  # type: ignore
 env: Environment = Environment()
-arg: Arguments = Arguments(_env_file=[env.repo_root / "args"])  # type: ignore
 log: Logger = set_logger()
 
 setup_msg()

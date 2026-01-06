@@ -3,11 +3,10 @@ from typing import Literal
 from pydantic import Field, RedisDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.core import Dataclass
 from src.core.util import multiline
 
 
-class Arguments(BaseSettings, Dataclass):  # type: ignore
+class Arguments(BaseSettings):
     """All args optional."""
 
     model_config = SettingsConfigDict(

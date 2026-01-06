@@ -1,36 +1,21 @@
-import importlib.util
 from contextlib import asynccontextmanager, contextmanager
 from functools import cached_property
 from pathlib import Path
 
 import redis
 import redis.asyncio
-from pydantic import ConfigDict, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from src.core.dataclass import Dataclass
-from src.core.util import logid, multiline, randalnu, sid_t, str2int
+from src.core.util import REPO_ROOT, logid, multiline, randalnu, str2int
 
 
-class Environment(Dataclass):
+class Environment(BaseModel):
     """Context info about the run which are not set by the user."""
 
     # For pydantic to allow non-Pydantic fields
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # REPO #####################################################################
-
-    @computed_field
-    @cached_property
-    def repo_root(self) -> Path:
-        """Root path of the repo.
-        This is assumed to be the parent of the `src` folder.
-        """
-        module_spec = importlib.util.find_spec("src")
-        if module_spec is None or module_spec.origin is None:
-            raise ModuleNotFoundError("Could not locate src module.")
-        src_path = Path(module_spec.origin).parent
-        repo_root = src_path.parent
-        return repo_root
 
     @computed_field
     @cached_property
@@ -55,7 +40,7 @@ class Environment(Dataclass):
     @cached_property
     def out_dir(self) -> Path:
         """Dir to hold all outputs of the current run."""
-        return self.repo_root / "out" / self.run_name
+        return REPO_ROOT / "out" / self.run_name
 
     @computed_field
     @cached_property
@@ -273,42 +258,16 @@ class Environment(Dataclass):
         description="Redis key to act as a lock for the final counter dump.",
     )
 
-    # PRIMARY KEY ##############################################################
+    # SERIAL ID ################################################################
 
     SID_COUNTER_KEY: str = Field(
         default="sid",
         min_length=1,
         description=multiline(
             """
-            Counter key for the globally shared primary key ID generator.
-            This key is used in the root logger's counter hash to generate
-            monotonically increasing IDs shared across all objects.
+            Counter key for the globally shared serial ID generator. This ID is
+            used as a global Redis counter for monotonically increasing IDs
+            shared between different classes.
             """
         ),
     )
-
-    def next_sid(self) -> sid_t:
-        """Get the next globally shared primary key.
-
-        Uses the root logger's counter for a monotonically increasing ID
-        shared across all objects in the run.
-
-        Returns:
-            The next primary key ID.
-        """
-        from src import log
-
-        return log.incr(self.SID_COUNTER_KEY)
-
-    async def anext_sid(self) -> sid_t:
-        """Async get the next globally shared primary key.
-
-        Uses the root logger's counter for a monotonically increasing ID
-        shared across all objects in the run.
-
-        Returns:
-            The next primary key ID.
-        """
-        from src import log
-
-        return await log.aincr(self.SID_COUNTER_KEY)

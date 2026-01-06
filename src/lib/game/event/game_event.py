@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-from redis_om import Field
+from pydantic import Field
 
 from src.core import Dataclass, logid
 from src.core.util import multiline, sid_t
@@ -25,7 +25,6 @@ class GameEvent(Dataclass):
 
     blocks: list[sid_t] = Field(
         default_factory=list,
-        index=False,
         description=multiline(
             """
             If this event is a reaction, this is the list of GEIDs of events that
@@ -36,7 +35,6 @@ class GameEvent(Dataclass):
 
     requires: list[sid_t] = Field(
         default_factory=list,
-        index=False,
         description=multiline(
             """
             If this event has reactions, this is the list of GEIDs of reactions
@@ -60,7 +58,6 @@ class GameEvent(Dataclass):
 
     visible: list[logid] | None = Field(
         default=None,
-        index=False,
         description=multiline(
             """
             List of player logids who can see this event. If None, the event is

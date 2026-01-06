@@ -8,16 +8,15 @@ from pathlib import Path
 from typing import final
 
 import loguru
-from pydantic import Field
+from pydantic import BaseModel, Field
 from pydantic_extra_types.color import Color
 from redis.asyncio.client import Pipeline as AsyncPipeline
 from redis.client import Pipeline
 
-from src.core.dataclass import Dataclass
-from src.core.util import logid, multiline, prepr, str2int
+from src.core.util import REPO_ROOT, logid, multiline, prepr
 
 
-class LogLevel(Dataclass):
+class LogLevel(BaseModel):
     """Log level."""
 
     name: str = Field(
@@ -295,15 +294,13 @@ class Logger:
 
         All derivative loggers from this class should base on this logger."""
 
-        from src import env
-
         # Use loguru logger
         logger = loguru.logger
 
         # Send relative path and header str with records
         logger = logger.patch(
             lambda record: record["extra"].update(
-                relpath=os.path.relpath(record["file"].path, env.repo_root)
+                relpath=os.path.relpath(record["file"].path, REPO_ROOT)
             )
         )
 
@@ -449,7 +446,7 @@ class Logger:
         target = p or env.cr
         result = target.hset(
             name=self.chn,
-            mapping=mapping,
+            mapping=mapping,  # type: ignore
         )
 
         self._log.opt(depth=1).log(
@@ -566,9 +563,9 @@ class Logger:
         from src import env
 
         target = p or env.acr
-        result = await target.hset(  # type: ignore
+        result = await target.hset(
             name=self.chn,
-            mapping=mapping,
+            mapping=mapping,  # type: ignore
         )
         return result  # type: ignore
 

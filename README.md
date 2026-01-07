@@ -38,7 +38,6 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 
 ## Contribute
 
-- Simplify can react count cap to just count with max
 - AddPlayer event
   - Group access ctrl for players
   - Different player groups inside state

@@ -69,10 +69,10 @@ class Game(Logger):
         from src import env
 
         async with self._state_lock:
-            state_json = await env.ar.json().get(self._state_key)
+            state_json = await env.ar.json().get(self._state_key)  # type: ignore
             state = GameState.model_validate_json(state_json)
             yield state
-            await env.ar.json().set(self._state_key, "$", state.model_dump_json())
+            await env.ar.json().set(self._state_key, "$", state.model_dump_json())  # type: ignore
 
     def add_player(self, player: Player):
         self.players[player.logid] = player
@@ -143,16 +143,18 @@ class Game(Logger):
                 await self._handle_unknown(e)
 
     async def _send_notif(self, e: GameEvent) -> dict[logid, list[GameEvent]]:
-        """Send notification of an event to players and collect reacts.
+        """Send notification of an event to players and collect valid reacts.
 
         Returns:
-            A dict mapping each viewer logid to a list of their reacts.
+            A dict mapping each viewer logid to a list of their reacts. Note the
+            list could be empty if the reacts returned by the viewer are all
+            invalid and are filtered out.
         """
 
         # Determine the event's eligibility for reacts
         async with self.state() as state:
             can_react = state.max_react_per_event != 0
-            can_interrupt = isinstance(e, Speech) and (
+            can_interrupt = (
                 state.max_successive_interrupt == -1
                 or self._n_tail_interrupts(state.history)
                 < state.max_successive_interrupt
@@ -170,12 +172,10 @@ class Game(Logger):
 
         # Filter out wrong reacts
         filtered_reacts = []
-        for viewer_logid, reacts in zip(viewer_logids, react_lists):
+        for viewer_logid, react_list in zip(viewer_logids, react_lists):
             filtered = []
-            for react in reacts:
+            for react in react_list:
                 if not can_react:
-                    continue
-                if not can_interrupt and isinstance(react, Interrupt):
                     continue
                 if react.src != viewer_logid:
                     continue
@@ -183,6 +183,8 @@ class Game(Logger):
                     continue
                 if isinstance(react, Interrupt):
                     if not isinstance(e, Speech):
+                        continue
+                    if not can_interrupt:
                         continue
                     if not e.content.startswith(react.target_speech_content):
                         continue
@@ -219,10 +221,10 @@ class Game(Logger):
                     e.content = selected_interrupt.target_speech_content
                     selected_reacts = [selected_interrupt]
                 else:
-                    selected_reacts = await self._sample_reacts(e, viewer2reacts)
+                    selected_reacts = await self._sample_reacts(viewer2reacts)
 
             case _:
-                selected_reacts = await self._sample_reacts(e, viewer2reacts)
+                selected_reacts = await self._sample_reacts(viewer2reacts)
 
         for react in selected_reacts:
             e.requires.append(react.sid)
@@ -247,7 +249,6 @@ class Game(Logger):
 
     async def _sample_reacts(
         self,
-        e: GameEvent,
         viewer2reacts: dict[logid, list[GameEvent]],
     ) -> list[GameEvent]:
         """Select reacts based on the limit.
@@ -273,10 +274,7 @@ class Game(Logger):
             return all_reacts
 
         # Too many, try limiting to one per player
-        one_per_player = []
-        for reacts in viewer2reacts.values():
-            if reacts:
-                one_per_player.append(reacts[0])
+        one_per_player = [reacts[0] for reacts in viewer2reacts.values() if reacts]
         if len(one_per_player) <= max_reacts:
             return one_per_player
 
@@ -325,13 +323,11 @@ class Game(Logger):
         """
         async with self.state() as state:
             if not state.event_queue:
-                raise ValueError("Event queue is empty")
+                raise ValueError("Event queue empty")
             _, _, serialized = heapq.heappop(state.event_queue)
 
         # Deserialize based on kind field
-        kind = serialized.get("kind", "GameEvent")
-        event_cls = self._ek2ec.get(kind, GameEvent)
-        return event_cls.model_validate(serialized)
+        return self._ek2ec[serialized["kind"]].model_validate(serialized)
 
     @log.input()
     async def _record_event(self, e: GameEvent):

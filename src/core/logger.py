@@ -270,16 +270,7 @@ class Logger:
         Logger.add_sink(
             self.logspace_dir / f"{logname}.txt",
             filter=only_self,
-        )
-        Logger.add_sink(
-            self.logspace_dir / f"{logname}.colo.txt",
-            filter=only_self,
             colorize=True,
-        )
-        Logger.add_sink(
-            self.logspace_dir / f"{logname}.jsonl",
-            filter=only_self,
-            serialize=True,
         )
 
     @final

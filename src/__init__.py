@@ -14,9 +14,7 @@ def set_logger() -> Logger:
 
     # Configure sinks
     Logger.add_sink(sys.stderr, level=10)
-    Logger.add_sink(env.log_dir / "all.txt")
-    Logger.add_sink(env.log_dir / "all.colo.txt", colorize=True)
-    Logger.add_sink(env.log_dir / "all.jsonl", serialize=True)
+    Logger.add_sink(env.log_dir / "all.txt", colorize=True)
 
     return Logger(logname=env.ROOT_LOGNAME)
 

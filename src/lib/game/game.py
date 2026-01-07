@@ -7,13 +7,14 @@ from typing import AsyncIterator, final
 
 from src import env, log
 from src.core import Logger, logid
-from src.core.util import sid_t
+from src.core.util import descendant_classes, prepr, sid_t
 from src.lib.game.event import (
     GameEnd,
     GameEvent,
     GameEventStage,
     GameStart,
     Interrupt,
+    SerializedGameEvent,
     Speech,
 )
 from src.lib.game.game_init_params import GameInitParams
@@ -49,6 +50,10 @@ class Game(Logger):
             max_successive_interrupt=params.max_successive_interrupt,
         )
         env.r.json().set(self._state_key, "$", state.model_dump_json())
+
+        # Index mapping game event kind to game event class
+        self._ek2ec: dict[str, type[GameEvent]] = descendant_classes(GameEvent)
+        self.info(f"All event types: {prepr(self._ek2ec)}")
 
     @asynccontextmanager
     async def state(self) -> AsyncIterator[GameState]:
@@ -87,6 +92,7 @@ class Game(Logger):
             try:
                 e = await self._pop_event()
             except ValueError:
+                self.warning("Event queue drained, game ending")
                 await self._add_event(GameEnd())
                 e = await self._pop_event()
             await self._process_event(e)
@@ -286,7 +292,7 @@ class Game(Logger):
         # Still too many, sample from one per player
         return random.sample(one_per_player, max_n_reacts)
 
-    def _n_tail_interrupts(self, history: list[GameEvent]) -> int:
+    def _n_tail_interrupts(self, history: list[SerializedGameEvent]) -> int:
         """Count distinct successive interrupts at the end of history.
 
         Finds the contiguous block of Interrupt events at the end of history,
@@ -299,14 +305,16 @@ class Game(Logger):
             The number of distinct Interrupt events at the end of history.
         """
         interrupt_sids = set()
-        for event in reversed(history):
-            if isinstance(event, Interrupt):
-                interrupt_sids.add(event.sid)
+        for serialized in reversed(history):
+            if serialized.get("kind") == "Interrupt":
+                interrupt_sids.add(serialized["sid"])
             else:
                 break
         return len(interrupt_sids)
 
-    def _n_reacts_to_event(self, history: list[GameEvent], target_sid: sid_t) -> int:
+    def _n_reacts_to_event(
+        self, history: list[SerializedGameEvent], target_sid: sid_t
+    ) -> int:
         """Count distinct reactions to a given event.
 
         Finds all events in history that react to the target event (i.e., have
@@ -320,9 +328,9 @@ class Game(Logger):
             The number of distinct reactions to the target event.
         """
         react_sids = set()
-        for event in history:
-            if target_sid in event.blocks:
-                react_sids.add(event.sid)
+        for serialized in history:
+            if target_sid in serialized.get("blocks", []):
+                react_sids.add(serialized["sid"])
         return len(react_sids)
 
     async def _add_event(self, e: GameEvent):
@@ -333,7 +341,7 @@ class Game(Logger):
         async with self.state() as state:
             heapq.heappush(
                 state.event_queue,
-                (state.default_event_priority, e.sid, e),
+                (state.default_event_priority, e.sid, e.model_dump()),
             )
 
     async def _pop_event(self) -> GameEvent:
@@ -348,8 +356,12 @@ class Game(Logger):
         async with self.state() as state:
             if not state.event_queue:
                 raise ValueError("Event queue is empty")
-            _, _, event = heapq.heappop(state.event_queue)
-        return event
+            _, _, serialized = heapq.heappop(state.event_queue)
+
+        # Deserialize based on kind field
+        kind = serialized.get("kind", "GameEvent")
+        event_cls = self._ek2ec.get(kind, GameEvent)
+        return event_cls.model_validate(serialized)
 
     @log.input()
     async def _record_event(self, e: GameEvent):
@@ -359,7 +371,7 @@ class Game(Logger):
             e: The event to record.
         """
         async with self.state() as state:
-            state.history.append(e.model_copy(deep=True))
+            state.history.append(e.model_dump())
 
     async def event2viewers(self, e: GameEvent) -> list[logid]:
         """Given an event, return the list of player logids who can see it."""

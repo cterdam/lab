@@ -6,7 +6,7 @@ import time
 from datetime import timedelta
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Coroutine, NamedTuple, TypeAlias
+from typing import Any, Callable, Coroutine, NamedTuple, TypeAlias, TypeVar
 
 import rich.pretty
 
@@ -148,3 +148,41 @@ def atimed(
         )
 
     return wrapper
+
+
+T = TypeVar("T")
+
+
+def descendant_classes(cls: type[T]) -> dict[str, type[T]]:
+    """Recursively finds all subclasses at any depth.
+
+    Args:
+        cls: The base class to find subclasses of.
+
+    Returns:
+        A dict mapping subclass names (as strings) to subclass types.
+
+    Examples:
+        >>> class Base: pass
+        >>> class Sub1(Base): pass
+        >>> class Sub2(Base): pass
+        >>> class SubSub(Sub1): pass
+        >>> mapping = subclass_name_map(Base)
+        >>> mapping["Sub1"] == Sub1
+        True
+        >>> mapping["Sub2"] == Sub2
+        True
+        >>> mapping["SubSub"] == SubSub
+        True
+    """
+    subclasses: set[type[T]] = set()
+    stack: list[type[T]] = [cls]
+
+    while stack:
+        current_cls = stack.pop()
+        for sub in current_cls.__subclasses__():
+            if sub not in subclasses:
+                subclasses.add(sub)
+                stack.append(sub)
+
+    return {subcls.__name__: subcls for subcls in subclasses}

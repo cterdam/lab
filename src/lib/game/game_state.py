@@ -4,7 +4,7 @@ from pydantic import Field
 
 from src.core import Dataclass
 from src.core.util import multiline, sid_t
-from src.lib.game.event import GameEvent
+from src.lib.game.event import SerializedGameEvent
 
 
 class GameStage(StrEnum):
@@ -27,22 +27,23 @@ class GameState(Dataclass):
         description="Current stage of the game lifecycle.",
     )
 
-    event_queue: list[tuple[int, sid_t, GameEvent]] = Field(
+    event_queue: list[tuple[int, sid_t, SerializedGameEvent]] = Field(
         default_factory=list,
         description=multiline(
             """
             Priority queue of upcoming events. Each entry is a (priority, sid,
-            event) tuple.
+            event) tuple. Events are stored as serialized dicts.
             """
         ),
     )
 
-    history: list[GameEvent] = Field(
+    history: list[SerializedGameEvent] = Field(
         default_factory=list,
         description=multiline(
             """
             Record of events at various stages of processing. This list should
-            contain enough information to reconstruct the whole game.
+            contain enough information to reconstruct the whole game. Events are
+            stored as serialized dicts.
             """
         ),
     )

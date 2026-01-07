@@ -54,14 +54,7 @@ async def demo_game():
         ),
     )
 
-    # Start game in background (this will emit GameStart and process it)
-    game_task = asyncio.create_task(game.start())
-
-    # Wait a bit, then end the game
-    await asyncio.sleep(0.1)
-
-    # Wait for game to finish
-    await game_task
+    await game.start()
 
     log.success("Game demo finished")
 

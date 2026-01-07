@@ -7,7 +7,7 @@ from typing import AsyncIterator, final
 
 from src import env, log
 from src.core import Logger, logid
-from src.core.util import descendant_classes, prepr, sid_t
+from src.core.util import descendant_classes, prepr
 from src.lib.game.event import (
     GameEnd,
     GameEvent,
@@ -151,11 +151,7 @@ class Game(Logger):
 
         # Determine the event's eligibility for reacts
         async with self.state() as state:
-            can_react = (
-                state.max_react_per_event == -1
-                or self._n_reacts_to_event(state.history, e.sid)
-                < state.max_react_per_event
-            )
+            can_react = state.max_react_per_event != 0
             can_interrupt = isinstance(e, Speech) and (
                 state.max_successive_interrupt == -1
                 or self._n_tail_interrupts(state.history)
@@ -263,22 +259,17 @@ class Game(Logger):
         Returns: A list of selected reacts.
         """
 
-        # Calculate the number of reacts possible
+        # Get the max number of reacts allowed
         async with self.state() as state:
-            max_n_reacts = (
-                state.max_react_per_event
-                - self._n_reacts_to_event(state.history, e.sid)
-                if state.max_react_per_event != -1
-                else -1
-            )
+            max_reacts = state.max_react_per_event
 
         # If no reactions allowed, return empty
-        if max_n_reacts == 0:
+        if max_reacts == 0:
             return []
 
         # Try selecting all
         all_reacts = [react for reacts in viewer2reacts.values() for react in reacts]
-        if max_n_reacts == -1 or len(all_reacts) <= max_n_reacts:
+        if max_reacts == -1 or len(all_reacts) <= max_reacts:
             return all_reacts
 
         # Too many, try limiting to one per player
@@ -286,11 +277,11 @@ class Game(Logger):
         for reacts in viewer2reacts.values():
             if reacts:
                 one_per_player.append(reacts[0])
-        if len(one_per_player) <= max_n_reacts:
+        if len(one_per_player) <= max_reacts:
             return one_per_player
 
         # Still too many, sample from one per player
-        return random.sample(one_per_player, max_n_reacts)
+        return random.sample(one_per_player, max_reacts)
 
     def _n_tail_interrupts(self, history: list[SerializedGameEvent]) -> int:
         """Count distinct successive interrupts at the end of history.
@@ -311,27 +302,6 @@ class Game(Logger):
             else:
                 break
         return len(interrupt_sids)
-
-    def _n_reacts_to_event(
-        self, history: list[SerializedGameEvent], target_sid: sid_t
-    ) -> int:
-        """Count distinct reactions to a given event.
-
-        Finds all events in history that react to the target event (i.e., have
-        target_sid in their blocks field), then counts distinct reaction event IDs.
-
-        Args:
-            history: The event history list to check.
-            target_sid: The sid of the event to count reactions for.
-
-        Returns:
-            The number of distinct reactions to the target event.
-        """
-        react_sids = set()
-        for serialized in history:
-            if target_sid in serialized.get("blocks", []):
-                react_sids.add(serialized["sid"])
-        return len(react_sids)
 
     async def _add_event(self, e: GameEvent):
         """Add an event to the queue."""

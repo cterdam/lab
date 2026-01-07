@@ -43,9 +43,6 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
   - Group access ctrl for players
   - Different player groups inside state
 
-- Game save & load
-  - Including dumping Redis counters
-
 - Loguru PR
   - Similar issue: <https://github.com/empicano/aiomqtt/issues/52>
   - Almost all asyncio objects are not thread safe:

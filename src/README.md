@@ -66,3 +66,8 @@
   [isort](https://github.com/PyCQA/isort) for Python files. This is enforced
   with precommit hooks.
 - Commit messages should start with tags. E.g. `[model] add Anthropic provider`
+
+## Other
+
+- If you call an async coroutine in the task main function, it can only involve
+  1 event loop. Otherwise, cached redis clients will be obsolete.

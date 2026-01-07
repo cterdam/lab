@@ -1,7 +1,7 @@
 import asyncio
 import time
 
-from src import log
+from src import env, log
 from src.lib.data.word_bank import WordBank
 from src.lib.game.event.misc import GameEnd
 from src.lib.game.game import Game
@@ -66,17 +66,25 @@ async def demo_game():
     log.success("Game demo finished")
 
 
-def main():
+async def main_async():
+    """Main async entrypoint."""
+    n_tasks = 1
+    wb = WordBank()
+    model = OpenAILM(params=OpenAILMInitParams(model_name="gpt-4.1"))
 
+    await run_async(n_tasks, wb, model)
+    await demo_game()
+
+
+def main():
+    """Main entrypoint."""
     n_tasks = 1
     wb = WordBank()
     model = OpenAILM(params=OpenAILMInitParams(model_name="gpt-4.1"))
 
     run_sync(n_tasks, wb, model)
-    asyncio.run(run_async(n_tasks, wb, model))
 
     log.biset({"abc": 1, "def": 2, "ghi": 30})
     log.incr("abc")
 
-    # Run game demo
-    asyncio.run(demo_game())
+    asyncio.run(main_async())

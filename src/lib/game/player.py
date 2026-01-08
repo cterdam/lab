@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from src.core import Logger
-from src.lib.game.event import GameEvent
+from src.lib.game.event import Event
 
 
 class Player(ABC, Logger):
@@ -10,8 +10,8 @@ class Player(ABC, Logger):
 
     @abstractmethod
     async def ack_event(
-        self, e: GameEvent, *, can_react: bool, can_interrupt: bool
-    ) -> list[GameEvent]:
+        self, e: Event, *, can_react: bool, can_interrupt: bool
+    ) -> list[Event]:
         """Acknowledge and potentially react to an event.
 
         Args:

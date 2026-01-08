@@ -4,7 +4,7 @@ from pydantic import Field
 
 from src.core import Dataclass
 from src.core.util import multiline, sid_t
-from src.lib.game.event import SerializedGameEvent
+from src.lib.game.event import SerializedEvent
 
 
 class GameStage(StrEnum):
@@ -27,7 +27,7 @@ class GameState(Dataclass):
         description="Current stage of the game lifecycle.",
     )
 
-    event_queue: list[tuple[int, sid_t, SerializedGameEvent]] = Field(
+    event_queue: list[tuple[int, sid_t, SerializedEvent]] = Field(
         default_factory=list,
         description=multiline(
             """
@@ -37,7 +37,7 @@ class GameState(Dataclass):
         ),
     )
 
-    history: list[SerializedGameEvent] = Field(
+    history: list[SerializedEvent] = Field(
         default_factory=list,
         description=multiline(
             """

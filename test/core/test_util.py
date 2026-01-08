@@ -3,6 +3,7 @@ import re
 import pytest
 
 from src.core.util import as_filename, descendant_classes, randalnu
+from src.lib.game.event import Event, GameEnd, GameStart, Interrupt, Speech
 
 
 def test_as_filename_basic():
@@ -166,9 +167,8 @@ def test_descendant_classes_very_deep():
 
 def test_descendant_classes_with_game_event():
     """Test with actual GameEvent hierarchy to ensure it works in practice."""
-    from src.lib.game.event import GameEnd, GameEvent, GameStart, Interrupt, Speech
 
-    result = descendant_classes(GameEvent)
+    result = descendant_classes(Event)
 
     # Should find all event subclasses
     assert "GameStart" in result

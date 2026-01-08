@@ -9,12 +9,12 @@ from src import env, log
 from src.core import Logger, logid_t
 from src.core.util import descendant_classes, prepr
 from src.lib.game.event import (
+    Event,
+    EventStage,
     GameEnd,
-    GameEvent,
-    GameEventStage,
     GameStart,
     Interrupt,
-    SerializedGameEvent,
+    SerializedEvent,
     Speech,
 )
 from src.lib.game.game_init_params import GameInitParams
@@ -52,7 +52,7 @@ class Game(Logger):
         env.r.json().set(self._state_key, "$", state.model_dump_json())
 
         # Index mapping game event kind to game event class
-        self._ek2ec: dict[str, type[GameEvent]] = descendant_classes(GameEvent)
+        self._ek2ec: dict[str, type[Event]] = descendant_classes(Event)
         self.info(f"All event types: {prepr(self._ek2ec)}")
 
     @asynccontextmanager
@@ -101,38 +101,38 @@ class Game(Logger):
 
     # EVENT PROCESSING #########################################################
 
-    async def _process_event(self, e: GameEvent):
+    async def _process_event(self, e: Event):
         """Process an event end-to-end.
 
         This includes both generic processing logic and event-specific handling.
         """
 
         # Gather tentative reacts
-        e.stage = GameEventStage.TENTATIVE
+        e.stage = EventStage.TENTATIVE
         await self._record_event(e)
         await self._notify_event(e)
 
         # Start handling
-        e.stage = GameEventStage.HANDLING
+        e.stage = EventStage.HANDLING
         await self._record_event(e)
         await self._handle_event(e)
 
         # Gather finishing reacts
-        e.stage = GameEventStage.HANDLED
+        e.stage = EventStage.HANDLED
         await self._record_event(e)
         await self._notify_event(e)
 
         # Finalize record
-        e.stage = GameEventStage.FINAL
+        e.stage = EventStage.FINAL
         await self._record_event(e)
 
-    async def _notify_event(self, e: GameEvent):
+    async def _notify_event(self, e: Event):
         """Notify an event to all visible players."""
 
         viewer2reacts = await self._send_notif(e)
         await self._process_reacts(e, viewer2reacts)
 
-    async def _handle_event(self, e: GameEvent):
+    async def _handle_event(self, e: Event):
         """Pick a handler function for event-specific handling."""
         match e:
             case GameStart():
@@ -142,7 +142,7 @@ class Game(Logger):
             case _:
                 await self._handle_unknown(e)
 
-    async def _send_notif(self, e: GameEvent) -> dict[logid_t, list[GameEvent]]:
+    async def _send_notif(self, e: Event) -> dict[logid_t, list[Event]]:
         """Send notification of an event to players and collect valid reacts.
 
         Returns:
@@ -195,7 +195,7 @@ class Game(Logger):
         return viewer2reacts
 
     async def _process_reacts(
-        self, e: GameEvent, viewer2reacts: dict[logid_t, list[GameEvent]]
+        self, e: Event, viewer2reacts: dict[logid_t, list[Event]]
     ) -> None:
         """Given an event and viewer reacts, select and process reacts.
 
@@ -242,15 +242,15 @@ class Game(Logger):
             state.stage = GameStage.ENDED
         self.info("Game ending")
 
-    async def _handle_unknown(self, e: GameEvent):
+    async def _handle_unknown(self, e: Event):
         raise ValueError(f"Unknown event: {e}")
 
     # UTILS ####################################################################
 
     async def _sample_reacts(
         self,
-        viewer2reacts: dict[logid_t, list[GameEvent]],
-    ) -> list[GameEvent]:
+        viewer2reacts: dict[logid_t, list[Event]],
+    ) -> list[Event]:
         """Select reacts based on the limit.
 
         Args:
@@ -281,7 +281,7 @@ class Game(Logger):
         # Still too many, sample from one per player
         return random.sample(one_per_player, max_reacts)
 
-    def _n_tail_interrupts(self, history: list[SerializedGameEvent]) -> int:
+    def _n_tail_interrupts(self, history: list[SerializedEvent]) -> int:
         """Count distinct successive interrupts at the end of history.
 
         Finds the contiguous block of Interrupt events at the end of history,
@@ -301,7 +301,7 @@ class Game(Logger):
                 break
         return len(interrupt_sids)
 
-    async def _add_event(self, e: GameEvent):
+    async def _add_event(self, e: Event):
         """Add an event to the queue."""
         if not e.src:
             e.src = self.logid
@@ -312,7 +312,7 @@ class Game(Logger):
                 (state.default_event_priority, e.sid, e.model_dump()),
             )
 
-    async def _pop_event(self) -> GameEvent:
+    async def _pop_event(self) -> Event:
         """Pop the next event from the queue.
 
         Returns:
@@ -330,7 +330,7 @@ class Game(Logger):
         return self._ek2ec[serialized["kind"]].model_validate(serialized)
 
     @log.input()
-    async def _record_event(self, e: GameEvent):
+    async def _record_event(self, e: Event):
         """Record the snapshot of an event in the game history.
 
         Args:
@@ -339,7 +339,7 @@ class Game(Logger):
         async with self.state() as state:
             state.history.append(e.model_dump())
 
-    async def event2viewers(self, e: GameEvent) -> list[logid_t]:
+    async def event2viewers(self, e: Event) -> list[logid_t]:
         """Given an event, return the list of player logids who can see it."""
         if e.visible is None:
             return list(self.players.keys())

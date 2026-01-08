@@ -6,10 +6,10 @@ from pydantic import Field, model_validator
 from src.core import Dataclass, logid_t
 from src.core.util import multiline, sid_t
 
-SerializedGameEvent = dict[str, Any]
+SerializedEvent = dict[str, Any]
 
 
-class GameEventStage(StrEnum):
+class EventStage(StrEnum):
     """Stage of an event in its lifecycle."""
 
     TENTATIVE = "tentative"
@@ -18,7 +18,7 @@ class GameEventStage(StrEnum):
     FINAL = "final"
 
 
-class GameEvent(Dataclass):
+class Event(Dataclass):
     """In-game event."""
 
     kind: str | None = Field(
@@ -39,8 +39,8 @@ class GameEvent(Dataclass):
             data["kind"] = cls.__name__
         return data
 
-    stage: GameEventStage = Field(
-        default=GameEventStage.TENTATIVE,
+    stage: EventStage = Field(
+        default=EventStage.TENTATIVE,
         description="Current stage of the event in its lifecycle.",
     )
 

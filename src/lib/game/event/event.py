@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Any
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from src.core import Dataclass, logid_t
 from src.core.util import multiline, sid_t
@@ -20,24 +20,6 @@ class EventStage(StrEnum):
 
 class Event(Dataclass):
     """In-game event."""
-
-    kind: str | None = Field(
-        default=None,
-        description=multiline(
-            """
-            The class name of this event type, relevant for deserialization.
-            Automatically set to the class name if not provided.
-            """,
-        ),
-    )
-
-    @model_validator(mode="before")
-    @classmethod
-    def set_kind(cls, data):
-        """Ensure kind is always set to the class name."""
-        if isinstance(data, dict) and data.get("kind") is None:
-            data["kind"] = cls.__name__
-        return data
 
     stage: EventStage = Field(
         default=EventStage.TENTATIVE,

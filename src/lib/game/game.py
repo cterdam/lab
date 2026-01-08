@@ -6,14 +6,12 @@ from typing import AsyncIterator
 
 from src import log
 from src.core import Logger, logid_t
-from src.core.util import descendant_classes, prepr
 from src.lib.game.event import (
     Event,
     EventStage,
     GameEnd,
     GameStart,
     Interrupt,
-    SerializedEvent,
     Speech,
 )
 from src.lib.game.game_init_params import GameInitParams
@@ -26,6 +24,13 @@ class Game(Logger):
 
     logspace_part = "game"
 
+    # Mapping from player's logid to player object
+    players: dict[logid_t, Player]
+
+    # The game state should contain enough information to reconstruct the game
+    _state_lock: asyncio.Lock
+    _state: GameState
+
     @log.input()
     def __init__(
         self,
@@ -37,15 +42,10 @@ class Game(Logger):
         super().__init__(*args, logname=logname, **kwargs)
         self.players = dict()
         self._state_lock = asyncio.Lock()
-
         self._state = GameState(
             max_react_per_event=params.max_react_per_event,
             max_successive_interrupt=params.max_successive_interrupt,
         )
-
-        # Index mapping game event kind to game event class
-        self._ek2ec: dict[str, type[Event]] = descendant_classes(Event)
-        self.info(f"All event types: {prepr(self._ek2ec)}")
 
     @asynccontextmanager
     async def state(self) -> AsyncIterator[GameState]:
@@ -268,7 +268,7 @@ class Game(Logger):
         # Still too many, sample from one per player
         return random.sample(one_per_player, max_reacts)
 
-    def _n_tail_interrupts(self, history: list[SerializedEvent]) -> int:
+    def _n_tail_interrupts(self, history: list[Event]) -> int:
         """Count distinct successive interrupts at the end of history.
 
         Finds the contiguous block of Interrupt events at the end of history,
@@ -281,9 +281,9 @@ class Game(Logger):
             The number of distinct Interrupt events at the end of history.
         """
         interrupt_sids = set()
-        for serialized in reversed(history):
-            if serialized.get("kind") == "Interrupt":
-                interrupt_sids.add(serialized["sid"])
+        for event in reversed(history):
+            if isinstance(event, Interrupt):
+                interrupt_sids.add(event.sid)
             else:
                 break
         return len(interrupt_sids)
@@ -296,7 +296,7 @@ class Game(Logger):
         async with self.state() as state:
             heapq.heappush(
                 state.event_queue,
-                (state.default_event_priority, e.sid, e.model_dump()),
+                (state.default_event_priority, e.sid, e),
             )
 
     async def _pop_event(self) -> Event:
@@ -311,10 +311,9 @@ class Game(Logger):
         async with self.state() as state:
             if not state.event_queue:
                 raise ValueError("Event queue empty")
-            _, _, serialized = heapq.heappop(state.event_queue)
+            _, _, event = heapq.heappop(state.event_queue)
 
-        # Deserialize based on kind field
-        return self._ek2ec[serialized["kind"]].model_validate(serialized)
+        return event
 
     @log.input()
     async def _record_event(self, e: Event):
@@ -324,7 +323,7 @@ class Game(Logger):
             e: The event to record.
         """
         async with self.state() as state:
-            state.history.append(e.model_dump())
+            state.history.append(e.model_copy(deep=True))
 
     async def event2viewers(self, e: Event) -> list[logid_t]:
         """Given an event, return the list of player logids who can see it."""

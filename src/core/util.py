@@ -10,7 +10,7 @@ from typing import Any, Callable, Coroutine, NamedTuple, TypeAlias, TypeVar
 
 import rich.pretty
 
-logid: TypeAlias = str
+logid_t: TypeAlias = str
 sid_t: TypeAlias = int
 
 # Root path of the repo inside the Docker container.

@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic import Field, model_validator
 
-from src.core import Dataclass, logid
+from src.core import Dataclass, logid_t
 from src.core.util import multiline, sid_t
 
 SerializedGameEvent = dict[str, Any]
@@ -64,7 +64,7 @@ class GameEvent(Dataclass):
         ),
     )
 
-    src: logid | None = Field(
+    src: logid_t | None = Field(
         default=None,
         description=multiline(
             """
@@ -77,7 +77,7 @@ class GameEvent(Dataclass):
         ),
     )
 
-    visible: list[logid] | None = Field(
+    visible: list[logid_t] | None = Field(
         default=None,
         description=multiline(
             """

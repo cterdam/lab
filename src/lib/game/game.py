@@ -6,7 +6,7 @@ from functools import cached_property
 from typing import AsyncIterator, final
 
 from src import env, log
-from src.core import Logger, logid
+from src.core import Logger, logid_t
 from src.core.util import descendant_classes, prepr
 from src.lib.game.event import (
     GameEnd,
@@ -142,7 +142,7 @@ class Game(Logger):
             case _:
                 await self._handle_unknown(e)
 
-    async def _send_notif(self, e: GameEvent) -> dict[logid, list[GameEvent]]:
+    async def _send_notif(self, e: GameEvent) -> dict[logid_t, list[GameEvent]]:
         """Send notification of an event to players and collect valid reacts.
 
         Returns:
@@ -195,7 +195,7 @@ class Game(Logger):
         return viewer2reacts
 
     async def _process_reacts(
-        self, e: GameEvent, viewer2reacts: dict[logid, list[GameEvent]]
+        self, e: GameEvent, viewer2reacts: dict[logid_t, list[GameEvent]]
     ) -> None:
         """Given an event and viewer reacts, select and process reacts.
 
@@ -249,7 +249,7 @@ class Game(Logger):
 
     async def _sample_reacts(
         self,
-        viewer2reacts: dict[logid, list[GameEvent]],
+        viewer2reacts: dict[logid_t, list[GameEvent]],
     ) -> list[GameEvent]:
         """Select reacts based on the limit.
 
@@ -339,7 +339,7 @@ class Game(Logger):
         async with self.state() as state:
             state.history.append(e.model_dump())
 
-    async def event2viewers(self, e: GameEvent) -> list[logid]:
+    async def event2viewers(self, e: GameEvent) -> list[logid_t]:
         """Given an event, return the list of player logids who can see it."""
         if e.visible is None:
             return list(self.players.keys())

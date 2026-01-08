@@ -13,7 +13,7 @@ from pydantic_extra_types.color import Color
 from redis.asyncio.client import Pipeline as AsyncPipeline
 from redis.client import Pipeline
 
-from src.core.util import REPO_ROOT, logid, multiline, prepr
+from src.core.util import REPO_ROOT, logid_t, multiline, prepr
 
 
 class LogLevel(BaseModel):
@@ -221,7 +221,7 @@ class Logger:
 
     @final
     @cached_property
-    def logid(self) -> logid:
+    def logid(self) -> logid_t:
         """A unique identifier of the logger."""
         from src import env
 

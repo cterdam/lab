@@ -6,7 +6,7 @@ import redis
 import redis.asyncio
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from src.core.util import REPO_ROOT, logid, multiline, randalnu, str2int
+from src.core.util import REPO_ROOT, logid_t, multiline, randalnu, str2int
 
 
 class Environment(BaseModel):
@@ -86,7 +86,7 @@ class Environment(BaseModel):
         ),
     )
 
-    ROOT_LOGNAME: logid = Field(
+    ROOT_LOGNAME: logid_t = Field(
         default="root",
         min_length=1,
         description="logid for the root logger available as src.log",

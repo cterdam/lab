@@ -2,10 +2,9 @@ import asyncio
 import heapq
 import random
 from contextlib import asynccontextmanager
-from functools import cached_property
-from typing import AsyncIterator, final
+from typing import AsyncIterator
 
-from src import env, log
+from src import log
 from src.core import Logger, logid_t
 from src.core.util import descendant_classes, prepr
 from src.lib.game.event import (
@@ -27,12 +26,6 @@ class Game(Logger):
 
     logspace_part = "game"
 
-    @final
-    @cached_property
-    def _state_key(self) -> str:
-        """Redis key for game state."""
-        return f"{self.logid}{env.LOGID_SUBKEY_SEPARATOR}state"
-
     @log.input()
     def __init__(
         self,
@@ -45,11 +38,10 @@ class Game(Logger):
         self.players = dict()
         self._state_lock = asyncio.Lock()
 
-        state = GameState(
+        self._state = GameState(
             max_react_per_event=params.max_react_per_event,
             max_successive_interrupt=params.max_successive_interrupt,
         )
-        env.r.json().set(self._state_key, "$", state.model_dump_json())
 
         # Index mapping game event kind to game event class
         self._ek2ec: dict[str, type[Event]] = descendant_classes(Event)
@@ -66,13 +58,8 @@ class Game(Logger):
             async with self.state() as state:
                 # Do something with state
         """
-        from src import env
-
         async with self._state_lock:
-            state_json = await env.ar.json().get(self._state_key)  # type: ignore
-            state = GameState.model_validate_json(state_json)
-            yield state
-            await env.ar.json().set(self._state_key, "$", state.model_dump_json())  # type: ignore
+            yield self._state
 
     def add_player(self, player: Player):
         self.players[player.logid] = player

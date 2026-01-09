@@ -92,6 +92,22 @@ def prepr(
     )
 
 
+def logid2subkey(logid: str, subkey_suffix: str) -> str:
+    """Given a logid and a subkey suffix, return the corresponding subkey.
+
+    The subkey represents a Redis entry owned by the logid.
+    """
+    from src import env
+
+    return f"{logid}{env.LOGID_SUBKEY_SEPARATOR}{subkey_suffix}"
+
+
+def logspace2dir(logspace: list[str]) -> Path:
+    from src import env
+
+    return env.log_dir.joinpath(*logspace)
+
+
 def next_sid() -> sid_t:
     """Get the next serial ID from the environment."""
     from src import env

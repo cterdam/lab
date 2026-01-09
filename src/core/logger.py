@@ -3,8 +3,7 @@ import inspect
 import os
 import textwrap
 from enum import StrEnum
-from functools import cache, cached_property, wraps
-from pathlib import Path
+from functools import cache, wraps
 from typing import final
 
 import loguru
@@ -13,7 +12,14 @@ from pydantic_extra_types.color import Color
 from redis.asyncio.client import Pipeline as AsyncPipeline
 from redis.client import Pipeline
 
-from src.core.util import REPO_ROOT, logid_t, multiline, prepr
+from src.core.util import (
+    REPO_ROOT,
+    logid2subkey,
+    logid_t,
+    logspace2dir,
+    multiline,
+    prepr,
+)
 
 
 class LogLevel(BaseModel):
@@ -97,6 +103,12 @@ class Logger:
 
     # Each descendant class can add a layer in its log dir path by overriding
     logspace_part: str | None = None
+
+    # Logid. Globally unique identifier for this object.
+    logid: logid_t
+
+    # Counter Hash Name. The redis key containing the instance's counters.
+    counter_hash_key: str
 
     # Allow all logs for downstream sinks
     _LOG_LEVEL = 0
@@ -202,38 +214,6 @@ class Logger:
 
     # SETUP & TEARDOWN #########################################################
 
-    @final
-    @cached_property
-    def logspace(self) -> list[str]:
-        """The list of names passed down from ancestor classes."""
-        return [
-            logspace_part
-            for cls in reversed(self.__class__.__mro__)
-            if (logspace_part := cls.__dict__.get("logspace_part"))
-        ]
-
-    @final
-    @cached_property
-    def logspace_dir(self) -> Path:
-        from src import env
-
-        return env.log_dir.joinpath(*self.logspace)
-
-    @final
-    @cached_property
-    def logid(self) -> logid_t:
-        """A unique identifier of the logger."""
-        from src import env
-
-        return multiline(
-            f"""
-            {env.LOGSPACE_DELIMITER.join(self.logspace)}
-            {env.LOGSPACE_LOGNAME_SEPARATOR}
-            {self.logname}
-            """,
-            continuous=True,
-        )
-
     @property
     def _logtag(self) -> str | None:
         """Return any contextual info for logging alongside the logid.
@@ -252,6 +232,24 @@ class Logger:
         super().__init__(*args, **kwargs)
         from src import env
 
+        # Store logging-related attributes
+        self.logspace = [
+            logspace_part
+            for cls in reversed(self.__class__.__mro__)
+            if (logspace_part := cls.__dict__.get("logspace_part"))
+        ]
+        self.logname = logname
+        self.logid = multiline(
+            f"""
+            {env.LOGSPACE_DELIMITER.join(self.logspace)}
+            {env.LOGSPACE_LOGNAME_SEPARATOR}
+            {self.logname}
+            """,
+            continuous=True,
+        )
+        self.logdir = logspace2dir(self.logspace)
+        self.counter_hash_key = logid2subkey(self.logid, env.CHN_SUFFIX)
+
         # Bind logger for this instance
         self.logname = logname
         self._log = Logger._base_logger().bind(logid=self.logid)
@@ -268,7 +266,7 @@ class Logger:
         # Add file sinks
         only_self = lambda record: record["extra"]["logid"] == self.logid
         Logger.add_sink(
-            self.logspace_dir / f"{logname}.txt",
+            self.logdir / f"{logname}.txt",
             filter=only_self,
             colorize=True,
         )
@@ -340,20 +338,6 @@ class Logger:
 
     # COUNTER ##################################################################
 
-    @final
-    @cached_property
-    def chn(self) -> str:
-        """Counter hash name. Name of the logger's counter hash in Redis."""
-        return Logger.logid2chn(self.logid)
-
-    @final
-    @staticmethod
-    def logid2chn(logid: str) -> str:
-        """Given a logid, return its corresponding counter hash name."""
-        from src import env
-
-        return f"{logid}{env.LOGID_SUBKEY_SEPARATOR}{env.CHN_SUFFIX}"
-
     # - SYNCHRONOUS ------------------------------------------------------------
 
     @final
@@ -370,7 +354,7 @@ class Logger:
 
         target = p or env.cr
         result = target.hget(
-            name=self.chn,
+            name=self.counter_hash_key,
             key=k,
         )
         return result  # type: ignore
@@ -389,7 +373,7 @@ class Logger:
 
         target = p or env.cr
         result = target.hmget(
-            name=self.chn,
+            name=self.counter_hash_key,
             keys=ks,
         )
         return result  # type: ignore
@@ -407,7 +391,7 @@ class Logger:
 
         target = p or env.cr
         result = target.hset(
-            name=self.chn,
+            name=self.counter_hash_key,
             key=k,
             value=str(v),
         )
@@ -436,7 +420,7 @@ class Logger:
 
         target = p or env.cr
         result = target.hset(
-            name=self.chn,
+            name=self.counter_hash_key,
             mapping=mapping,  # type: ignore
         )
 
@@ -464,7 +448,7 @@ class Logger:
         from src import env
 
         target = p or env.cr
-        result = target.hincrby(self.chn, k, v)
+        result = target.hincrby(self.counter_hash_key, k, v)
 
         self._log.opt(depth=1).log(
             Logger._counter_lvl.name,
@@ -492,7 +476,7 @@ class Logger:
 
         target = p or env.acr
         result = await target.hget(  # type: ignore
-            name=self.chn,
+            name=self.counter_hash_key,
             key=k,
         )
         return result  # type: ignore
@@ -513,7 +497,7 @@ class Logger:
 
         target = p or env.acr
         result = await target.hmget(  # type: ignore
-            name=self.chn,
+            name=self.counter_hash_key,
             keys=ks,
         )
         return result  # type: ignore
@@ -533,7 +517,7 @@ class Logger:
 
         target = p or env.acr
         result = await target.hset(  # type: ignore
-            name=self.chn,
+            name=self.counter_hash_key,
             key=k,
             value=str(v),
         )
@@ -555,7 +539,7 @@ class Logger:
 
         target = p or env.acr
         result = await target.hset(
-            name=self.chn,
+            name=self.counter_hash_key,
             mapping=mapping,  # type: ignore
         )
         return result  # type: ignore
@@ -572,7 +556,7 @@ class Logger:
         from src import env
 
         target = p or env.acr
-        result = await target.hincrby(self.chn, k, v)  # type: ignore
+        result = await target.hincrby(self.counter_hash_key, k, v)  # type: ignore
 
         self._log.opt(depth=1).log(
             Logger._counter_lvl.name,
@@ -584,7 +568,7 @@ class Logger:
 
         return result  # type: ignore
 
-    # - OTHERS -----------------------------------------------------------------
+    # - OTHER ------------------------------------------------------------------
 
     @final
     @staticmethod
@@ -600,7 +584,7 @@ class Logger:
             logids = list(env.r.smembers(env.LOGID_SET_KEY))  # type: ignore
             with env.coup() as p:
                 for logid in logids:
-                    p.hgetall(Logger.logid2chn(logid))
+                    p.hgetall(logid2subkey(logid, env.CHN_SUFFIX))
                 counter_hashes = p.execute()
 
             for logid, counter_kvs in zip(logids, counter_hashes):
@@ -618,10 +602,10 @@ class Logger:
                 logspace = logid.split(env.LOGSPACE_LOGNAME_SEPARATOR)[0].split(
                     env.LOGSPACE_DELIMITER
                 )
-                logspace_dir = env.log_dir.joinpath(*logspace)
-                logspace_dir.mkdir(parents=True, exist_ok=True)
+                logdir = logspace2dir(logspace)
+                logdir.mkdir(parents=True, exist_ok=True)
                 logname = logid.split(env.LOGSPACE_LOGNAME_SEPARATOR)[-1]
-                (logspace_dir / f"{logname}_counters.json").write_text(msg)
+                (logdir / f"{logname}_counters.json").write_text(msg)
 
         finally:
             env.cr.delete(env.COUNTER_DUMP_LOCK_KEY)

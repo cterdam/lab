@@ -36,12 +36,12 @@ def _is_gid(s: str) -> bool:
 
 def _include_key(g: gid_t) -> str:
     """Get Redis key for a group's include set."""
-    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}include"
+    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}{env.GID_INCLUDE_SUFFIX}"
 
 
 def _exclude_key(g: gid_t) -> str:
     """Get Redis key for a group's exclude set."""
-    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}exclude"
+    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}{env.GID_EXCLUDE_SUFFIX}"
 
 
 # Modify membership

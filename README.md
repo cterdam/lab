@@ -33,12 +33,15 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 
 Redis-backed group membership with include/exclude rules.
 
+Groups are identified by gid (group ID) in format `g:groupname`. The prefix and
+separator are configurable in env (`GID_PREFIX`, `GID_SEPARATOR`).
+
 ### Redis Keys
 
 ```
-groups                      # SET of all group names
-group:{name}/include        # SET of included logids
-group:{name}/exclude        # SET of excluded logids
+gids                   # SET of all gids
+g:{name}/include       # SET of included logids or gids
+g:{name}/exclude       # SET of excluded logids or gids
 ```
 
 ### Usage
@@ -50,15 +53,15 @@ from src.lib.data import group
 group.create("admins")
 group.create("users")
 
-# Add members (use group.logid() for nested groups)
+# Add members (use group.gid() for nested groups)
 group.add_include("admins", "player:alice")
 group.add_include("users", "player:bob")
-group.add_include("users", group.logid("admins"))  # Include admins group
+group.add_include("users", group.gid("admins"))  # Include admins group
 
 # Query membership
 group.get_members("users")  # {"player:alice", "player:bob"}
 group.is_member("player:alice", "users")  # True
-group.get_groups("player:alice")  # {"admins", "users"}
+group.get_groups("player:alice")  # {"g:admins", "g:users"}
 ```
 
 ### Resolution

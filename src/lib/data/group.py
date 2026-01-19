@@ -1,42 +1,61 @@
 """Redis-backed group membership management.
 
-Groups are stored as Redis sets. Each group has:
-- group:{name}/include - SET of included logids (groups or members)
-- group:{name}/exclude - SET of excluded logids (groups or members)
+Groups are identified by gid (group ID) in format: g:groupname
+- The prefix "g" and separator ":" are configurable in env.
 
-All groups are tracked in the 'groups' SET.
+Redis keys:
+- gids: SET of all gids
+- {gid}/include: SET of included logids (groups or members)
+- {gid}/exclude: SET of excluded logids (groups or members)
 
 Resolution: included - excluded, with recursive expansion for nested groups.
 """
 
 from src import env
-from src.core import logid_t
-
-# Redis key constants
-GROUPS_KEY = "groups"
-GROUP_PREFIX = "group"
+from src.core import gid_t, logid_t
 
 
-def _include_key(name: str) -> str:
+def _gid(name: str) -> gid_t:
+    """Convert a group name to a gid."""
+    return f"{env.GID_PREFIX}{env.GID_SEPARATOR}{name}"
+
+
+def _name(gid: gid_t) -> str:
+    """Extract group name from a gid."""
+    prefix = f"{env.GID_PREFIX}{env.GID_SEPARATOR}"
+    if gid.startswith(prefix):
+        return gid[len(prefix):]
+    return gid
+
+
+def _is_gid(s: str) -> bool:
+    """Check if a string is a gid."""
+    return s.startswith(f"{env.GID_PREFIX}{env.GID_SEPARATOR}")
+
+
+def _include_key(gid: gid_t) -> str:
     """Get Redis key for a group's include set."""
-    return f"{GROUP_PREFIX}:{name}{env.LOGID_SUBKEY_SEPARATOR}include"
+    return f"{gid}{env.LOGID_SUBKEY_SEPARATOR}include"
 
 
-def _exclude_key(name: str) -> str:
+def _exclude_key(gid: gid_t) -> str:
     """Get Redis key for a group's exclude set."""
-    return f"{GROUP_PREFIX}:{name}{env.LOGID_SUBKEY_SEPARATOR}exclude"
+    return f"{gid}{env.LOGID_SUBKEY_SEPARATOR}exclude"
 
 
 # Group management
 
 
-def create(name: str) -> bool:
+def create(name: str) -> gid_t | None:
     """Create a new group.
 
     Returns:
-        True if created, False if already exists.
+        The gid if created, None if already exists.
     """
-    return env.r.sadd(GROUPS_KEY, name) == 1
+    gid = _gid(name)
+    if env.r.sadd(env.GIDS_KEY, gid) == 1:
+        return gid
+    return None
 
 
 def delete(name: str) -> bool:
@@ -45,78 +64,79 @@ def delete(name: str) -> bool:
     Returns:
         True if deleted, False if not found.
     """
-    if not env.r.sismember(GROUPS_KEY, name):
+    gid = _gid(name)
+    if not env.r.sismember(env.GIDS_KEY, gid):
         return False
-    env.r.srem(GROUPS_KEY, name)
-    env.r.delete(_include_key(name), _exclude_key(name))
+    env.r.srem(env.GIDS_KEY, gid)
+    env.r.delete(_include_key(gid), _exclude_key(gid))
     return True
 
 
 def exists(name: str) -> bool:
     """Check if a group exists."""
-    return env.r.sismember(GROUPS_KEY, name)
+    return env.r.sismember(env.GIDS_KEY, _gid(name))
 
 
-def list_all() -> set[str]:
-    """List all group names."""
-    return env.r.smembers(GROUPS_KEY)
+def list_all() -> set[gid_t]:
+    """List all gids."""
+    return env.r.smembers(env.GIDS_KEY)
 
 
 # Modify membership
 
 
-def add_include(name: str, logid: logid_t) -> bool:
-    """Add a logid to a group's include set.
+def add_include(name: str, member: logid_t | gid_t) -> bool:
+    """Add a logid or gid to a group's include set.
 
     Returns:
         True if added, False if already present or group doesn't exist.
     """
     if not exists(name):
         return False
-    return env.r.sadd(_include_key(name), logid) == 1
+    return env.r.sadd(_include_key(_gid(name)), member) == 1
 
 
-def add_exclude(name: str, logid: logid_t) -> bool:
-    """Add a logid to a group's exclude set.
+def add_exclude(name: str, member: logid_t | gid_t) -> bool:
+    """Add a logid or gid to a group's exclude set.
 
     Returns:
         True if added, False if already present or group doesn't exist.
     """
     if not exists(name):
         return False
-    return env.r.sadd(_exclude_key(name), logid) == 1
+    return env.r.sadd(_exclude_key(_gid(name)), member) == 1
 
 
-def remove_include(name: str, logid: logid_t) -> bool:
-    """Remove a logid from a group's include set.
-
-    Returns:
-        True if removed, False if not present or group doesn't exist.
-    """
-    if not exists(name):
-        return False
-    return env.r.srem(_include_key(name), logid) == 1
-
-
-def remove_exclude(name: str, logid: logid_t) -> bool:
-    """Remove a logid from a group's exclude set.
+def remove_include(name: str, member: logid_t | gid_t) -> bool:
+    """Remove a logid or gid from a group's include set.
 
     Returns:
         True if removed, False if not present or group doesn't exist.
     """
     if not exists(name):
         return False
-    return env.r.srem(_exclude_key(name), logid) == 1
+    return env.r.srem(_include_key(_gid(name)), member) == 1
 
 
-def get_include(name: str) -> set[logid_t]:
+def remove_exclude(name: str, member: logid_t | gid_t) -> bool:
+    """Remove a logid or gid from a group's exclude set.
+
+    Returns:
+        True if removed, False if not present or group doesn't exist.
+    """
+    if not exists(name):
+        return False
+    return env.r.srem(_exclude_key(_gid(name)), member) == 1
+
+
+def get_include(name: str) -> set[logid_t | gid_t]:
     """Get the raw include set for a group."""
-    return env.r.smembers(_include_key(name))
+    return env.r.smembers(_include_key(_gid(name)))
 
 
-def get_exclude(name: str) -> set[logid_t]:
+def get_exclude(name: str) -> set[logid_t | gid_t]:
     """Get the raw exclude set for a group."""
-    return env.r.smembers(_exclude_key(name))
+    return env.r.smembers(_exclude_key(_gid(name)))
 
 
 # Query
@@ -160,45 +180,45 @@ def _resolve(name: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:
     excluded: set[logid_t] = set()
 
     # Process includes
-    for logid in get_include(name):
-        # Check if it's a group (extract name from group:NAME format)
-        if logid.startswith(f"{GROUP_PREFIX}:"):
-            group_name = logid[len(f"{GROUP_PREFIX}:"):]
+    for member in get_include(name):
+        if _is_gid(member):
+            group_name = _name(member)
             if exists(group_name):
                 inc, exc = _resolve(group_name, visited)
                 included |= inc
                 excluded |= exc
                 continue
         # It's an individual member
-        included.add(logid)
+        included.add(member)
 
     # Process excludes
-    for logid in get_exclude(name):
-        if logid.startswith(f"{GROUP_PREFIX}:"):
-            group_name = logid[len(f"{GROUP_PREFIX}:"):]
+    for member in get_exclude(name):
+        if _is_gid(member):
+            group_name = _name(member)
             if exists(group_name):
                 exc_inc, exc_exc = _resolve(group_name, visited)
                 excluded |= (exc_inc - exc_exc)
                 continue
-        excluded.add(logid)
+        excluded.add(member)
 
     return included, excluded
 
 
-def is_member(logid: logid_t, name: str) -> bool:
+def is_member(member: logid_t, name: str) -> bool:
     """Check if a logid is a member of a group."""
-    return logid in get_members(name)
+    return member in get_members(name)
 
 
-def get_groups(logid: logid_t) -> set[str]:
+def get_groups(member: logid_t) -> set[gid_t]:
     """Get all groups that contain a logid as a member."""
     result = set()
-    for name in list_all():
-        if is_member(logid, name):
-            result.add(name)
+    for gid in list_all():
+        name = _name(gid)
+        if is_member(member, name):
+            result.add(gid)
     return result
 
 
-def logid(name: str) -> logid_t:
-    """Get the logid for a group name."""
-    return f"{GROUP_PREFIX}:{name}"
+def gid(name: str) -> gid_t:
+    """Get the gid for a group name."""
+    return _gid(name)

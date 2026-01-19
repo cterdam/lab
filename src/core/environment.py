@@ -284,9 +284,3 @@ class Environment(BaseModel):
         min_length=1,
         description="Separator between group prefix and group name in gid.",
     )
-
-    GIDS_KEY: str = Field(
-        default="gids",
-        min_length=1,
-        description="Redis key for the set of all group IDs.",
-    )

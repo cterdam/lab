@@ -39,21 +39,18 @@ separator are configurable in env (`GID_PREFIX`, `GID_SEPARATOR`).
 ### Redis Keys
 
 ```
-gids                   # SET of all gids
 g:{name}/include       # SET of included logids or gids
 g:{name}/exclude       # SET of excluded logids or gids
 ```
+
+Groups are implicit - they exist if they have members.
 
 ### Usage
 
 ```python
 from src.lib.data import group
 
-# Create groups
-group.create("admins")
-group.create("users")
-
-# Add members (use group.gid() for nested groups)
+# Add members (groups are created implicitly)
 group.add_include("admins", "player:alice")
 group.add_include("users", "player:bob")
 group.add_include("users", group.gid("admins"))  # Include admins group
@@ -61,7 +58,6 @@ group.add_include("users", group.gid("admins"))  # Include admins group
 # Query membership
 group.get_members("users")  # {"player:alice", "player:bob"}
 group.is_member("player:alice", "users")  # True
-group.get_groups("player:alice")  # {"g:admins", "g:users"}
 ```
 
 ### Resolution

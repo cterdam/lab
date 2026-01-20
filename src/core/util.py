@@ -114,12 +114,12 @@ def obj_in_namespace(s: str, namespace: str) -> bool:
     return s.startswith(f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}")
 
 
-def obj_name_from_id(objid: str, namespace: str) -> str:
-    """Extract the object name from an object ID in the given namespace."""
+def obj_id2name(objid: str) -> str:
+    """Extract the object name from an object ID."""
     from src import env
 
-    prefix = f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}"
-    return objid[len(prefix):] if objid.startswith(prefix) else objid
+    sep = env.NAMESPACE_OBJ_SEPARATOR
+    return objid.split(sep, 1)[1] if sep in objid else objid
 
 
 def logspace2dir(logspace: list[str]) -> Path:

@@ -65,14 +65,15 @@ class _GroupLogger(Logger):
     logspace_part = "group"
 
 
-_loggers: dict[str, _GroupLogger] = {}
+class _Loggers(dict[str, _GroupLogger]):
+    """Auto-creating dict for group loggers."""
+
+    def __missing__(self, name: str) -> _GroupLogger:
+        self[name] = _GroupLogger(logname=name)
+        return self[name]
 
 
-def _log(name: str) -> _GroupLogger:
-    """Get or create a logger for a group."""
-    if name not in _loggers:
-        _loggers[name] = _GroupLogger(logname=name)
-    return _loggers[name]
+_loggers = _Loggers()
 
 
 def _key(name: str, relation: Relation) -> str:
@@ -90,7 +91,7 @@ def add(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
     """Add a relation between a group and a member."""
     result = env.r.sadd(_key(name, relation), member) == 1
     if result:
-        _log(name).info(f"ADD {relation} {member}")
+        _loggers[name].info(f"ADD {relation} {member}")
     return result
 
 
@@ -98,7 +99,7 @@ def rm(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
     """Remove a relation between a group and a member."""
     result = env.r.srem(_key(name, relation), member) == 1
     if result:
-        _log(name).info(f"RM {relation} {member}")
+        _loggers[name].info(f"RM {relation} {member}")
     return result
 
 
@@ -115,7 +116,8 @@ def delete(name: str) -> int:
         _key(name, Relation.EXCLUDE),
     )
     if result:
-        _log(name).info("deleted")
+        _loggers[name].info("DELETE")
+        _loggers.pop(name, None)
     return result
 
 
@@ -123,16 +125,10 @@ def trace(name: str, member: logid_t) -> Trace:
     """Trace how a member relates to a group.
 
     Returns paths showing how the member is included / excluded,
-    plus the final verdict.
+    plus the final verdict (using the same logic as members()).
     """
     paths = _trace_paths(name, member, steps=[], visited=set())
-    has_include = any(
-        p.steps[-1].relation == Relation.INCLUDE for p in paths if p.steps
-    )
-    has_exclude = any(
-        p.steps[-1].relation == Relation.EXCLUDE for p in paths if p.steps
-    )
-    verdict = has_include and not has_exclude
+    verdict = member in members(name)
     return Trace(paths=paths, verdict=verdict)
 
 
@@ -163,7 +159,7 @@ def _trace_paths(
 def _resolve(name: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:
     """Resolve members recursively with cycle detection."""
     if name in visited:
-        _log(name).warning("circular reference detected")
+        _loggers[name].warning("circular reference detected")
         return set(), set()
 
     visited = visited | {name}

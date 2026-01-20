@@ -9,10 +9,12 @@ Groups are implicit - they exist if they have members.
 Each group gets its own log file via internal Logger instances.
 """
 
-from dataclasses import dataclass, field
 from enum import StrEnum
 
+from pydantic import Field
+
 from src import env
+from src.core.dataclass import Dataclass
 from src.core.logger import Logger
 from src.core.util import logid_t
 
@@ -24,26 +26,23 @@ class Relation(StrEnum):
     OUT = "out"
 
 
-@dataclass
-class Step:
+class Step(Dataclass):
     """A single step in a membership path."""
 
     group: str
     relation: Relation
 
 
-@dataclass
-class Path:
+class Path(Dataclass):
     """A path showing how a member relates to a group."""
 
-    steps: list[Step] = field(default_factory=list)
+    steps: list[Step] = Field(default_factory=list)
 
 
-@dataclass
-class Trace:
+class Trace(Dataclass):
     """Result of tracing a member's relationship to a group."""
 
-    paths: list[Path] = field(default_factory=list)
+    paths: list[Path] = Field(default_factory=list)
     verdict: bool = False
 
 

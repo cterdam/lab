@@ -4,8 +4,8 @@ Groups are identified by gid (group ID) in format: g:groupname
 - The prefix "g" and separator ":" are configurable in env.
 
 Redis keys:
-- {gid}/include: SET of included logids (groups or members)
-- {gid}/exclude: SET of excluded logids (groups or members)
+- {gid}/in: SET of included logids (groups or members)
+- {gid}/ex: SET of excluded logids (groups or members)
 
 Groups are implicit - they exist if they have members in include/exclude sets.
 
@@ -13,7 +13,7 @@ Resolution: included - excluded, with recursive expansion for nested groups.
 """
 
 from src import env
-from src.core import gid_t, logid_t
+from src.core.util import gid_t, logid_t
 
 
 def gid(name: str) -> gid_t:
@@ -36,12 +36,12 @@ def _is_gid(s: str) -> bool:
 
 def _include_key(g: gid_t) -> str:
     """Get Redis key for a group's include set."""
-    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}{env.GID_INCLUDE_SUFFIX}"
+    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}{env.GID_INCLUDE}"
 
 
 def _exclude_key(g: gid_t) -> str:
     """Get Redis key for a group's exclude set."""
-    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}{env.GID_EXCLUDE_SUFFIX}"
+    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}{env.GID_EXCLUDE}"
 
 
 # Modify membership

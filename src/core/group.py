@@ -22,8 +22,8 @@ from src.core.util import gid_t, logid_t
 class Relation(StrEnum):
     """Types of membership relations."""
 
-    IN = "in"
-    OUT = "out"
+    INCLUDE = "include"
+    EXCLUDE = "exclude"
 
 
 class Step(Dataclass):
@@ -67,14 +67,14 @@ def _gid(name: str) -> gid_t:
     return f"{env.GID_PREFIX}{env.NAMESPACE_OBJ_SEPARATOR}{name}"
 
 
-def _in_key(name: str) -> str:
-    """Redis key for include set."""
-    return f"{_gid(name)}{env.OBJ_SUBKEY_SEPARATOR}{env.GID_INCLUDE_SUFFIX}"
-
-
-def _out_key(name: str) -> str:
-    """Redis key for exclude set."""
-    return f"{_gid(name)}{env.OBJ_SUBKEY_SEPARATOR}{env.GID_EXCLUDE_SUFFIX}"
+def _key(name: str, relation: Relation) -> str:
+    """Redis key for a relation set."""
+    suffix = (
+        env.GID_INCLUDE_SUFFIX
+        if relation == Relation.INCLUDE
+        else env.GID_EXCLUDE_SUFFIX
+    )
+    return f"{_gid(name)}{env.OBJ_SUBKEY_SEPARATOR}{suffix}"
 
 
 def _is_gid(s: str) -> bool:
@@ -96,41 +96,28 @@ def gid(name: str) -> gid_t:
     return _gid(name)
 
 
-def add(name: str, member: logid_t | gid_t) -> bool:
-    """Add member to group's include set."""
-    result = env.r.sadd(_in_key(name), member) == 1
+def add_relation(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
+    """Add a relation between a group and a member."""
+    result = env.r.sadd(_key(name, relation), member) == 1
     if result:
-        _log(name).info(f"in: {member}")
+        _log(name).info(f"{relation}: {member}")
     return result
 
 
-def rm(name: str, member: logid_t | gid_t) -> bool:
-    """Remove member from group's include set."""
-    result = env.r.srem(_in_key(name), member) == 1
+def rm_relation(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
+    """Remove a relation between a group and a member."""
+    result = env.r.srem(_key(name, relation), member) == 1
     if result:
-        _log(name).info(f"rm: {member}")
-    return result
-
-
-def ban(name: str, member: logid_t | gid_t) -> bool:
-    """Add member to group's exclude set."""
-    result = env.r.sadd(_out_key(name), member) == 1
-    if result:
-        _log(name).info(f"ban: {member}")
-    return result
-
-
-def unban(name: str, member: logid_t | gid_t) -> bool:
-    """Remove member from group's exclude set."""
-    result = env.r.srem(_out_key(name), member) == 1
-    if result:
-        _log(name).info(f"unban: {member}")
+        _log(name).info(f"rm {relation}: {member}")
     return result
 
 
 def delete(name: str) -> int:
     """Delete group's include and exclude sets."""
-    result = env.r.delete(_in_key(name), _out_key(name))
+    result = env.r.delete(
+        _key(name, Relation.INCLUDE),
+        _key(name, Relation.EXCLUDE),
+    )
     if result:
         _log(name).info("deleted")
     return result
@@ -154,10 +141,13 @@ def trace(name: str, member: logid_t) -> Trace:
     plus the final verdict.
     """
     paths = _trace_paths(name, member, steps=[], visited=set())
-    # Verdict: in if any path ends with IN and no path ends with OUT
-    has_in = any(p.steps[-1].relation == Relation.IN for p in paths if p.steps)
-    has_out = any(p.steps[-1].relation == Relation.OUT for p in paths if p.steps)
-    verdict = has_in and not has_out
+    has_include = any(
+        p.steps[-1].relation == Relation.INCLUDE for p in paths if p.steps
+    )
+    has_exclude = any(
+        p.steps[-1].relation == Relation.EXCLUDE for p in paths if p.steps
+    )
+    verdict = has_include and not has_exclude
     return Trace(paths=paths, verdict=verdict)
 
 
@@ -174,25 +164,15 @@ def _trace_paths(
     visited = visited | {name}
     paths: list[Path] = []
 
-    # Check include set
-    for m in env.r.smembers(_in_key(name)):
-        current_steps = steps + [Step(group=name, relation=Relation.IN)]
-        if m == member:
-            paths.append(Path(steps=current_steps))
-        elif _is_gid(m):
-            paths.extend(_trace_paths(
-                _name_from_gid(m), member, current_steps, visited
-            ))
-
-    # Check exclude set
-    for m in env.r.smembers(_out_key(name)):
-        current_steps = steps + [Step(group=name, relation=Relation.OUT)]
-        if m == member:
-            paths.append(Path(steps=current_steps))
-        elif _is_gid(m):
-            paths.extend(_trace_paths(
-                _name_from_gid(m), member, current_steps, visited
-            ))
+    for relation in Relation:
+        for m in env.r.smembers(_key(name, relation)):
+            current_steps = steps + [Step(group=name, relation=relation)]
+            if m == member:
+                paths.append(Path(steps=current_steps))
+            elif _is_gid(m):
+                paths.extend(_trace_paths(
+                    _name_from_gid(m), member, current_steps, visited
+                ))
 
     return paths
 
@@ -207,7 +187,7 @@ def _resolve(name: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:
     included: set[logid_t] = set()
     excluded: set[logid_t] = set()
 
-    for member in env.r.smembers(_in_key(name)):
+    for member in env.r.smembers(_key(name, Relation.INCLUDE)):
         if _is_gid(member):
             inc, exc = _resolve(_name_from_gid(member), visited)
             included |= inc
@@ -215,7 +195,7 @@ def _resolve(name: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:
         else:
             included.add(member)
 
-    for member in env.r.smembers(_out_key(name)):
+    for member in env.r.smembers(_key(name, Relation.EXCLUDE)):
         if _is_gid(member):
             exc_inc, exc_exc = _resolve(_name_from_gid(member), visited)
             excluded |= (exc_inc - exc_exc)

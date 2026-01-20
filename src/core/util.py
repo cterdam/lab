@@ -107,6 +107,21 @@ def get_obj_subkey(objid: str, subkey_suffix: str) -> str:
     return f"{objid}{env.OBJ_SUBKEY_SEPARATOR}{subkey_suffix}"
 
 
+def obj_in_namespace(s: str, namespace: str) -> bool:
+    """Check if a string is an object ID in the given namespace."""
+    from src import env
+
+    return s.startswith(f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}")
+
+
+def obj_name_from_id(objid: str, namespace: str) -> str:
+    """Extract the object name from an object ID in the given namespace."""
+    from src import env
+
+    prefix = f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}"
+    return objid[len(prefix):] if objid.startswith(prefix) else objid
+
+
 def logspace2dir(logspace: list[str]) -> Path:
     from src import env
 

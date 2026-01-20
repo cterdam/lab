@@ -16,7 +16,14 @@ from pydantic import Field
 from src import env
 from src.core.dataclass import Dataclass
 from src.core.logger import Logger
-from src.core.util import get_obj_id, get_obj_subkey, gid_t, logid_t
+from src.core.util import (
+    get_obj_id,
+    get_obj_subkey,
+    gid_t,
+    logid_t,
+    obj_in_namespace,
+    obj_name_from_id,
+)
 
 
 class Relation(StrEnum):
@@ -77,17 +84,6 @@ def _key(name: str, relation: Relation) -> str:
     return get_obj_subkey(_gid(name), suffix)
 
 
-def _is_gid(s: str) -> bool:
-    """Check if string is a gid."""
-    return s.startswith(f"{env.GID_PREFIX}{env.NAMESPACE_OBJ_SEPARATOR}")
-
-
-def _name_from_gid(gid: str) -> str:
-    """Extract group name from gid."""
-    prefix = f"{env.GID_PREFIX}{env.NAMESPACE_OBJ_SEPARATOR}"
-    return gid[len(prefix):] if gid.startswith(prefix) else gid
-
-
 # Public API
 
 
@@ -123,7 +119,7 @@ def delete(name: str) -> int:
     return result
 
 
-def list(name: str) -> set[logid_t]:
+def members(name: str) -> set[logid_t]:
     """Get resolved members of a group."""
     included, excluded = _resolve(name, visited=set())
     return included - excluded
@@ -131,7 +127,7 @@ def list(name: str) -> set[logid_t]:
 
 def has(name: str, member: logid_t) -> bool:
     """Check if member is in group."""
-    return member in list(name)
+    return member in members(name)
 
 
 def trace(name: str, member: logid_t) -> Trace:
@@ -169,9 +165,9 @@ def _trace_paths(
             current_steps = steps + [Step(group=name, relation=relation)]
             if m == member:
                 paths.append(Path(steps=current_steps))
-            elif _is_gid(m):
+            elif obj_in_namespace(m, env.GID_PREFIX):
                 paths.extend(_trace_paths(
-                    _name_from_gid(m), member, current_steps, visited
+                    obj_name_from_id(m, env.GID_PREFIX), member, current_steps, visited
                 ))
 
     return paths
@@ -188,16 +184,16 @@ def _resolve(name: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:
     excluded: set[logid_t] = set()
 
     for member in env.r.smembers(_key(name, Relation.INCLUDE)):
-        if _is_gid(member):
-            inc, exc = _resolve(_name_from_gid(member), visited)
+        if obj_in_namespace(member, env.GID_PREFIX):
+            inc, exc = _resolve(obj_name_from_id(member, env.GID_PREFIX), visited)
             included |= inc
             excluded |= exc
         else:
             included.add(member)
 
     for member in env.r.smembers(_key(name, Relation.EXCLUDE)):
-        if _is_gid(member):
-            exc_inc, exc_exc = _resolve(_name_from_gid(member), visited)
+        if obj_in_namespace(member, env.GID_PREFIX):
+            exc_inc, exc_exc = _resolve(obj_name_from_id(member, env.GID_PREFIX), visited)
             excluded |= (exc_inc - exc_exc)
         else:
             excluded.add(member)

@@ -33,6 +33,12 @@ class Relation(StrEnum):
     EXCLUDE = "exclude"
 
 
+relation2suffix: dict[str, str] = {
+    Relation.INCLUDE: env.GID_INCLUDE_SUFFIX,
+    Relation.EXCLUDE: env.GID_EXCLUDE_SUFFIX,
+}
+
+
 class Step(Dataclass):
     """A single step in a membership path."""
 
@@ -70,28 +76,21 @@ def _log(name: str) -> _GroupLogger:
 
 
 def _key(name: str, relation: Relation) -> str:
-    """Redis key for a relation set."""
-    suffix = (
-        env.GID_INCLUDE_SUFFIX
-        if relation == Relation.INCLUDE
-        else env.GID_EXCLUDE_SUFFIX
+    """Redis key for a group's relation set."""
+    return get_obj_subkey(
+        get_obj_id(env.GID_PREFIX, name),
+        relation2suffix[relation],
     )
-    return get_obj_subkey(gid(name), suffix)
 
 
 # Public API
-
-
-def gid(name: str) -> gid_t:
-    """Get gid for a group name."""
-    return get_obj_id(env.GID_PREFIX, name)
 
 
 def add(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
     """Add a relation between a group and a member."""
     result = env.r.sadd(_key(name, relation), member) == 1
     if result:
-        _log(name).info(f"{relation}: {member}")
+        _log(name).info(f"ADD {relation} {member}")
     return result
 
 
@@ -99,8 +98,14 @@ def rm(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
     """Remove a relation between a group and a member."""
     result = env.r.srem(_key(name, relation), member) == 1
     if result:
-        _log(name).info(f"rm {relation}: {member}")
+        _log(name).info(f"RM {relation} {member}")
     return result
+
+
+def members(name: str) -> set[logid_t]:
+    """Get resolved members of a group."""
+    included, excluded = _resolve(name, visited=set())
+    return included - excluded
 
 
 def delete(name: str) -> int:
@@ -114,21 +119,10 @@ def delete(name: str) -> int:
     return result
 
 
-def members(name: str) -> set[logid_t]:
-    """Get resolved members of a group."""
-    included, excluded = _resolve(name, visited=set())
-    return included - excluded
-
-
-def has(name: str, member: logid_t) -> bool:
-    """Check if member is in group."""
-    return member in members(name)
-
-
 def trace(name: str, member: logid_t) -> Trace:
     """Trace how a member relates to a group.
 
-    Returns paths showing how the member is included/excluded,
+    Returns paths showing how the member is included / excluded,
     plus the final verdict.
     """
     paths = _trace_paths(name, member, steps=[], visited=set())
@@ -161,9 +155,7 @@ def _trace_paths(
             if m == member:
                 paths.append(Path(steps=current_steps))
             elif obj_in_namespace(m, env.GID_PREFIX):
-                paths.extend(
-                    _trace_paths(obj2name(m), member, current_steps, visited)
-                )
+                paths.extend(_trace_paths(obj2name(m), member, current_steps, visited))
 
     return paths
 

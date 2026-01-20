@@ -21,7 +21,7 @@ from src.core.util import (
     get_obj_subkey,
     gid_t,
     logid_t,
-    obj_id2name,
+    obj2name,
     obj_in_namespace,
 )
 
@@ -166,9 +166,9 @@ def _trace_paths(
             if m == member:
                 paths.append(Path(steps=current_steps))
             elif obj_in_namespace(m, env.GID_PREFIX):
-                paths.extend(_trace_paths(
-                    obj_id2name(m), member, current_steps, visited
-                ))
+                paths.extend(
+                    _trace_paths(obj2name(m), member, current_steps, visited)
+                )
 
     return paths
 
@@ -185,7 +185,7 @@ def _resolve(name: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:
 
     for member in env.r.smembers(_key(name, Relation.INCLUDE)):
         if obj_in_namespace(member, env.GID_PREFIX):
-            inc, exc = _resolve(obj_id2name(member), visited)
+            inc, exc = _resolve(obj2name(member), visited)
             included |= inc
             excluded |= exc
         else:
@@ -193,8 +193,8 @@ def _resolve(name: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:
 
     for member in env.r.smembers(_key(name, Relation.EXCLUDE)):
         if obj_in_namespace(member, env.GID_PREFIX):
-            exc_inc, exc_exc = _resolve(obj_id2name(member), visited)
-            excluded |= (exc_inc - exc_exc)
+            exc_inc, exc_exc = _resolve(obj2name(member), visited)
+            excluded |= exc_inc - exc_exc
         else:
             excluded.add(member)
 

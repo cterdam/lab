@@ -10,12 +10,77 @@ from typing import Any, Callable, Coroutine, NamedTuple, TypeAlias, TypeVar
 
 import rich.pretty
 
+# CONSTANTS ####################################################################
+
 logid_t: TypeAlias = str
 sid_t: TypeAlias = int
 gid_t: TypeAlias = str
 
 # Root path of the repo inside the Docker container.
 REPO_ROOT: Path = Path("/gpt")
+
+# BOOKKEEPING ##################################################################
+
+
+def get_obj_id(namespace: str, name: str) -> str:
+    """Given a namespace and a name, give the obj's complete ID."""
+    from src import env
+
+    return f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}{name}"
+
+
+def get_obj_subkey(objid: str, subkey_suffix: str) -> str:
+    """Given an obj's ID and a subkey suffix, return the subkey."""
+    from src import env
+
+    return f"{objid}{env.OBJ_SUBKEY_SEPARATOR}{subkey_suffix}"
+
+
+def obj_in_namespace(s: str, namespace: str) -> bool:
+    """Check if a string is an object ID in the given namespace."""
+    from src import env
+
+    return s.startswith(f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}")
+
+
+def obj2name(objid: str) -> str:
+    """Extract the object name from an object ID."""
+    from src import env
+
+    return objid.split(env.NAMESPACE_OBJ_SEPARATOR, 1)[1]
+
+
+def logspace2dir(logspace: list[str]) -> Path:
+    from src import env
+
+    return env.log_dir.joinpath(*logspace)
+
+
+def next_sid() -> sid_t:
+    """Get the next serial ID from the environment."""
+    from src import env
+
+    return env.r.incr(env.SID_COUNTER_KEY)
+
+
+# FORMATTING ###################################################################
+
+
+def prepr(
+    obj,
+    *,
+    max_width: int | None = None,
+    indent: int | None = None,
+):
+    """Pretty repr an arbitrary object for str output, using env defaults."""
+    from src import env
+
+    return rich.pretty.pretty_repr(
+        obj,
+        max_width=max_width or env.MAX_WIDTH,
+        indent_size=indent or env.INDENT,
+        expand_all=True,
+    )
 
 
 def multiline(s: str, oneline: bool = True, continuous: bool = False) -> str:
@@ -72,72 +137,22 @@ def as_filename(s: str) -> str:
 
 
 def randalnu(length: int = 4) -> str:
-    """Return a randomized alphanumeric string of the given length."""
+    """Return a randomized alphanumeric string of the given length.
+
+    This is used to generate a random run name.
+    """
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 
-def prepr(
-    obj,
-    *,
-    max_width: int | None = None,
-    indent: int | None = None,
-):
-    """Pretty repr an arbitrary object for str output, using env defaults."""
-    from src import env
-
-    return rich.pretty.pretty_repr(
-        obj,
-        max_width=max_width or env.MAX_WIDTH,
-        indent_size=indent or env.INDENT,
-        expand_all=True,
-    )
-
-
-def get_obj_id(namespace: str, name: str) -> str:
-    """Given a namespace and a name, give the obj's complete ID."""
-    from src import env
-
-    return f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}{name}"
-
-
-def get_obj_subkey(objid: str, subkey_suffix: str) -> str:
-    """Given an obj's ID and a subkey suffix, return the subkey."""
-    from src import env
-
-    return f"{objid}{env.OBJ_SUBKEY_SEPARATOR}{subkey_suffix}"
-
-
-def obj_in_namespace(s: str, namespace: str) -> bool:
-    """Check if a string is an object ID in the given namespace."""
-    from src import env
-
-    return s.startswith(f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}")
-
-
-def obj_id2name(objid: str) -> str:
-    """Extract the object name from an object ID."""
-    from src import env
-
-    sep = env.NAMESPACE_OBJ_SEPARATOR
-    return objid.split(sep, 1)[1] if sep in objid else objid
-
-
-def logspace2dir(logspace: list[str]) -> Path:
-    from src import env
-
-    return env.log_dir.joinpath(*logspace)
-
-
-def next_sid() -> sid_t:
-    """Get the next serial ID from the environment."""
-    from src import env
-
-    return env.r.incr(env.SID_COUNTER_KEY)
-
-
 def str2int(s: str | None) -> int | None:
-    """Post-process a Redis HGET / HMGET result into int."""
+    """Convert a string to int.
+
+    This is used to post-process a Redis HGET / HMGET result into int.
+    """
     return int(s) if s is not None else None
+
+
+# FUNCTION TIMING ##############################################################
 
 
 def td2ms(delta: timedelta) -> int:
@@ -185,6 +200,8 @@ def atimed(
 
     return wrapper
 
+
+# CLASS HIERARCHY ##############################################################
 
 T = TypeVar("T")
 

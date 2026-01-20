@@ -9,8 +9,8 @@ Groups are implicit - they exist if they have members.
 Each group gets its own log file via internal Logger instances.
 """
 
+from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import NamedTuple
 
 from src import env
 from src.core.logger import Logger
@@ -24,18 +24,27 @@ class Relation(StrEnum):
     OUT = "out"
 
 
-class Path(NamedTuple):
+@dataclass
+class Step:
+    """A single step in a membership path."""
+
+    group: str
+    relation: Relation
+
+
+@dataclass
+class Path:
     """A path showing how a member relates to a group."""
 
-    chain: list[str]  # Sequence of group names
-    relation: Relation  # Type of relation
+    steps: list[Step] = field(default_factory=list)
 
 
-class Trace(NamedTuple):
+@dataclass
+class Trace:
     """Result of tracing a member's relationship to a group."""
 
-    paths: list[Path]  # All paths found
-    verdict: bool  # True if member is in group
+    paths: list[Path] = field(default_factory=list)
+    verdict: bool = False
 
 
 class _GroupLogger(Logger):
@@ -145,9 +154,10 @@ def trace(name: str, member: logid_t) -> Trace:
     Returns paths showing how the member is included/excluded,
     plus the final verdict.
     """
-    paths = _trace_paths(name, member, chain=[], visited=set())
-    has_in = any(p.relation == Relation.IN for p in paths)
-    has_out = any(p.relation == Relation.OUT for p in paths)
+    paths = _trace_paths(name, member, steps=[], visited=set())
+    # Verdict: in if any path ends with IN and no path ends with OUT
+    has_in = any(p.steps[-1].relation == Relation.IN for p in paths if p.steps)
+    has_out = any(p.steps[-1].relation == Relation.OUT for p in paths if p.steps)
     verdict = has_in and not has_out
     return Trace(paths=paths, verdict=verdict)
 
@@ -155,7 +165,7 @@ def trace(name: str, member: logid_t) -> Trace:
 def _trace_paths(
     name: str,
     member: logid_t,
-    chain: list[str],
+    steps: list[Step],
     visited: set[str],
 ) -> list[Path]:
     """Recursively trace paths to a member."""
@@ -163,32 +173,27 @@ def _trace_paths(
         return []
 
     visited = visited | {name}
-    current_chain = chain + [name]
     paths: list[Path] = []
 
     # Check include set
     for m in env.r.smembers(_in_key(name)):
+        current_steps = steps + [Step(group=name, relation=Relation.IN)]
         if m == member:
-            paths.append(Path(chain=current_chain, relation=Relation.IN))
+            paths.append(Path(steps=current_steps))
         elif _is_gid(m):
             paths.extend(_trace_paths(
-                _name_from_gid(m), member, current_chain, visited
+                _name_from_gid(m), member, current_steps, visited
             ))
 
     # Check exclude set
     for m in env.r.smembers(_out_key(name)):
+        current_steps = steps + [Step(group=name, relation=Relation.OUT)]
         if m == member:
-            paths.append(Path(chain=current_chain, relation=Relation.OUT))
+            paths.append(Path(steps=current_steps))
         elif _is_gid(m):
-            # Members included in excluded group become excluded
-            sub_paths = _trace_paths(
-                _name_from_gid(m), member, current_chain, visited
-            )
-            for p in sub_paths:
-                if p.relation == Relation.IN:
-                    paths.append(Path(chain=p.chain, relation=Relation.OUT))
-                else:
-                    paths.append(p)
+            paths.extend(_trace_paths(
+                _name_from_gid(m), member, current_steps, visited
+            ))
 
     return paths
 

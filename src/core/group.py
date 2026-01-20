@@ -9,9 +9,19 @@ Groups are implicit - they exist if they have members.
 Each group gets its own log file via internal Logger instances.
 """
 
+from typing import NamedTuple
+
 from src import env
 from src.core.logger import Logger
 from src.core.util import logid_t
+
+
+class Trace(NamedTuple):
+    """Result of tracing a member's relationship to a group."""
+
+    included: list[list[str]]  # Paths through which member is included
+    excluded: list[list[str]]  # Paths through which member is excluded
+    verdict: bool  # True if member is in group (included and not excluded)
 
 
 class _GroupLogger(Logger):
@@ -113,6 +123,60 @@ def list(name: str) -> set[logid_t]:
 def has(name: str, member: logid_t) -> bool:
     """Check if member is in group."""
     return member in list(name)
+
+
+def trace(name: str, member: logid_t) -> Trace:
+    """Trace how a member relates to a group.
+
+    Returns paths showing how the member is included/excluded,
+    plus the final verdict.
+    """
+    inc_paths, exc_paths = _trace_paths(name, member, path=[], visited=set())
+    in_included = len(inc_paths) > 0
+    in_excluded = len(exc_paths) > 0
+    verdict = in_included and not in_excluded
+    return Trace(included=inc_paths, excluded=exc_paths, verdict=verdict)
+
+
+def _trace_paths(
+    name: str,
+    member: logid_t,
+    path: list[str],
+    visited: set[str],
+) -> tuple[list[list[str]], list[list[str]]]:
+    """Recursively trace paths to a member."""
+    if name in visited:
+        return [], []
+
+    visited = visited | {name}
+    current_path = path + [name]
+    inc_paths: list[list[str]] = []
+    exc_paths: list[list[str]] = []
+
+    # Check include set
+    for m in env.r.smembers(_in_key(name)):
+        if m == member:
+            inc_paths.append(current_path)
+        elif _is_gid(m):
+            sub_inc, sub_exc = _trace_paths(
+                _name_from_gid(m), member, current_path, visited
+            )
+            inc_paths.extend(sub_inc)
+            exc_paths.extend(sub_exc)
+
+    # Check exclude set
+    for m in env.r.smembers(_out_key(name)):
+        if m == member:
+            exc_paths.append(current_path)
+        elif _is_gid(m):
+            # Excluded group's members become excluded
+            sub_inc, sub_exc = _trace_paths(
+                _name_from_gid(m), member, current_path, visited
+            )
+            # Members included in excluded group become excluded
+            exc_paths.extend(sub_inc)
+
+    return inc_paths, exc_paths
 
 
 def _resolve(name: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:

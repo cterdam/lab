@@ -69,11 +69,6 @@ def _log(name: str) -> _GroupLogger:
     return _loggers[name]
 
 
-def _gid(name: str) -> gid_t:
-    """Convert group name to gid."""
-    return get_obj_id(env.GID_PREFIX, name)
-
-
 def _key(name: str, relation: Relation) -> str:
     """Redis key for a relation set."""
     suffix = (
@@ -81,7 +76,7 @@ def _key(name: str, relation: Relation) -> str:
         if relation == Relation.INCLUDE
         else env.GID_EXCLUDE_SUFFIX
     )
-    return get_obj_subkey(_gid(name), suffix)
+    return get_obj_subkey(gid(name), suffix)
 
 
 # Public API
@@ -89,7 +84,7 @@ def _key(name: str, relation: Relation) -> str:
 
 def gid(name: str) -> gid_t:
     """Get gid for a group name."""
-    return _gid(name)
+    return get_obj_id(env.GID_PREFIX, name)
 
 
 def add(name: str, member: logid_t | gid_t, relation: Relation) -> bool:

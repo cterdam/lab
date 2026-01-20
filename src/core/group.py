@@ -16,7 +16,7 @@ from pydantic import Field
 from src import env
 from src.core.dataclass import Dataclass
 from src.core.logger import Logger
-from src.core.util import gid_t, logid_t
+from src.core.util import get_obj_id, get_obj_subkey, gid_t, logid_t
 
 
 class Relation(StrEnum):
@@ -64,7 +64,7 @@ def _log(name: str) -> _GroupLogger:
 
 def _gid(name: str) -> gid_t:
     """Convert group name to gid."""
-    return f"{env.GID_PREFIX}{env.NAMESPACE_OBJ_SEPARATOR}{name}"
+    return get_obj_id(env.GID_PREFIX, name)
 
 
 def _key(name: str, relation: Relation) -> str:
@@ -74,7 +74,7 @@ def _key(name: str, relation: Relation) -> str:
         if relation == Relation.INCLUDE
         else env.GID_EXCLUDE_SUFFIX
     )
-    return f"{_gid(name)}{env.OBJ_SUBKEY_SEPARATOR}{suffix}"
+    return get_obj_subkey(_gid(name), suffix)
 
 
 def _is_gid(s: str) -> bool:
@@ -96,7 +96,7 @@ def gid(name: str) -> gid_t:
     return _gid(name)
 
 
-def add_relation(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
+def add(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
     """Add a relation between a group and a member."""
     result = env.r.sadd(_key(name, relation), member) == 1
     if result:
@@ -104,7 +104,7 @@ def add_relation(name: str, member: logid_t | gid_t, relation: Relation) -> bool
     return result
 
 
-def rm_relation(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
+def rm(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
     """Remove a relation between a group and a member."""
     result = env.r.srem(_key(name, relation), member) == 1
     if result:

@@ -16,7 +16,7 @@ from pydantic import Field
 from src import env
 from src.core.dataclass import Dataclass
 from src.core.logger import Logger
-from src.core.util import logid_t
+from src.core.util import gid_t, logid_t
 
 
 class Relation(StrEnum):
@@ -62,7 +62,7 @@ def _log(name: str) -> _GroupLogger:
     return _loggers[name]
 
 
-def _gid(name: str) -> str:
+def _gid(name: str) -> gid_t:
     """Convert group name to gid."""
     return f"{env.GID_PREFIX}{env.NAMESPACE_OBJ_SEPARATOR}{name}"
 
@@ -91,12 +91,12 @@ def _name_from_gid(gid: str) -> str:
 # Public API
 
 
-def gid(name: str) -> str:
+def gid(name: str) -> gid_t:
     """Get gid for a group name."""
     return _gid(name)
 
 
-def add(name: str, member: logid_t | str) -> bool:
+def add(name: str, member: logid_t | gid_t) -> bool:
     """Add member to group's include set."""
     result = env.r.sadd(_in_key(name), member) == 1
     if result:
@@ -104,7 +104,7 @@ def add(name: str, member: logid_t | str) -> bool:
     return result
 
 
-def rm(name: str, member: logid_t | str) -> bool:
+def rm(name: str, member: logid_t | gid_t) -> bool:
     """Remove member from group's include set."""
     result = env.r.srem(_in_key(name), member) == 1
     if result:
@@ -112,7 +112,7 @@ def rm(name: str, member: logid_t | str) -> bool:
     return result
 
 
-def ban(name: str, member: logid_t | str) -> bool:
+def ban(name: str, member: logid_t | gid_t) -> bool:
     """Add member to group's exclude set."""
     result = env.r.sadd(_out_key(name), member) == 1
     if result:
@@ -120,7 +120,7 @@ def ban(name: str, member: logid_t | str) -> bool:
     return result
 
 
-def unban(name: str, member: logid_t | str) -> bool:
+def unban(name: str, member: logid_t | gid_t) -> bool:
     """Remove member from group's exclude set."""
     result = env.r.srem(_out_key(name), member) == 1
     if result:

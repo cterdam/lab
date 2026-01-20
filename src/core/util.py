@@ -12,6 +12,7 @@ import rich.pretty
 
 logid_t: TypeAlias = str
 sid_t: TypeAlias = int
+gid_t: TypeAlias = str
 
 # Root path of the repo inside the Docker container.
 REPO_ROOT: Path = Path("/gpt")

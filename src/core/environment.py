@@ -285,14 +285,14 @@ class Environment(BaseModel):
         description="Separator between group prefix and group name in gid.",
     )
 
-    GID_INCLUDE: str = Field(
+    GID_IN_SUF: str = Field(
         default="in",
         min_length=1,
         description="Suffix for group include set keys in Redis.",
     )
 
-    GID_EXCLUDE: str = Field(
-        default="ex",
+    GID_OUT_SUF: str = Field(
+        default="out",
         min_length=1,
         description="Suffix for group exclude set keys in Redis.",
     )

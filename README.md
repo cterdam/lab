@@ -39,8 +39,8 @@ separator are configurable in env (`GID_PREFIX`, `GID_SEPARATOR`).
 ### Redis Keys
 
 ```
-g:{name}/in       # SET of included logids or gids
-g:{name}/ex       # SET of excluded logids or gids
+g:{name}/in        # SET of included logids or gids
+g:{name}/out       # SET of excluded logids or gids
 ```
 
 Groups are implicit - they exist if they have members.

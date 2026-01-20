@@ -5,7 +5,7 @@ Groups are identified by gid (group ID) in format: g:groupname
 
 Redis keys:
 - {gid}/in: SET of included logids (groups or members)
-- {gid}/ex: SET of excluded logids (groups or members)
+- {gid}/out: SET of excluded logids (groups or members)
 
 Groups are implicit - they exist if they have members in include/exclude sets.
 
@@ -34,14 +34,14 @@ def _is_gid(s: str) -> bool:
     return s.startswith(f"{env.GID_PREFIX}{env.GID_SEPARATOR}")
 
 
-def _include_key(g: gid_t) -> str:
+def _in_key(g: gid_t) -> str:
     """Get Redis key for a group's include set."""
-    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}{env.GID_INCLUDE}"
+    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}{env.GID_IN_SUF}"
 
 
-def _exclude_key(g: gid_t) -> str:
+def _out_key(g: gid_t) -> str:
     """Get Redis key for a group's exclude set."""
-    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}{env.GID_EXCLUDE}"
+    return f"{g}{env.LOGID_SUBKEY_SEPARATOR}{env.GID_OUT_SUF}"
 
 
 # Modify membership
@@ -53,7 +53,7 @@ def add_include(name: str, member: logid_t | gid_t) -> bool:
     Returns:
         True if added, False if already present.
     """
-    return env.r.sadd(_include_key(gid(name)), member) == 1
+    return env.r.sadd(_in_key(gid(name)), member) == 1
 
 
 def add_exclude(name: str, member: logid_t | gid_t) -> bool:
@@ -62,7 +62,7 @@ def add_exclude(name: str, member: logid_t | gid_t) -> bool:
     Returns:
         True if added, False if already present.
     """
-    return env.r.sadd(_exclude_key(gid(name)), member) == 1
+    return env.r.sadd(_out_key(gid(name)), member) == 1
 
 
 def remove_include(name: str, member: logid_t | gid_t) -> bool:
@@ -71,7 +71,7 @@ def remove_include(name: str, member: logid_t | gid_t) -> bool:
     Returns:
         True if removed, False if not present.
     """
-    return env.r.srem(_include_key(gid(name)), member) == 1
+    return env.r.srem(_in_key(gid(name)), member) == 1
 
 
 def remove_exclude(name: str, member: logid_t | gid_t) -> bool:
@@ -80,17 +80,17 @@ def remove_exclude(name: str, member: logid_t | gid_t) -> bool:
     Returns:
         True if removed, False if not present.
     """
-    return env.r.srem(_exclude_key(gid(name)), member) == 1
+    return env.r.srem(_out_key(gid(name)), member) == 1
 
 
 def get_include(name: str) -> set[logid_t | gid_t]:
     """Get the raw include set for a group."""
-    return env.r.smembers(_include_key(gid(name)))
+    return env.r.smembers(_in_key(gid(name)))
 
 
 def get_exclude(name: str) -> set[logid_t | gid_t]:
     """Get the raw exclude set for a group."""
-    return env.r.smembers(_exclude_key(gid(name)))
+    return env.r.smembers(_out_key(gid(name)))
 
 
 def delete(name: str) -> int:
@@ -99,7 +99,7 @@ def delete(name: str) -> int:
     Returns:
         Number of keys deleted (0, 1, or 2).
     """
-    return env.r.delete(_include_key(gid(name)), _exclude_key(gid(name)))
+    return env.r.delete(_in_key(gid(name)), _out_key(gid(name)))
 
 
 # Query

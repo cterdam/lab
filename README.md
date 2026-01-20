@@ -77,6 +77,12 @@ Circular references are detected and logged as warnings.
 
 ## Contribute
 
+- obj grouping
+- keep weak ref from logids to obj
+  - remove logspace2dir
+
+- Stop dumping counters to log file, only json
+
 - AddPlayer event
   - Group access ctrl for players
   - Different player groups inside state

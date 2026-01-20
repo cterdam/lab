@@ -93,14 +93,18 @@ def prepr(
     )
 
 
-def logid2subkey(logid: str, subkey_suffix: str) -> str:
-    """Given a logid and a subkey suffix, return the corresponding subkey.
-
-    The subkey represents a Redis entry owned by the logid.
-    """
+def get_obj_id(namespace: str, name: str) -> str:
+    """Given a namespace and a name, give the obj's complete ID."""
     from src import env
 
-    return f"{logid}{env.LOGID_SUBKEY_SEPARATOR}{subkey_suffix}"
+    return f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}{name}"
+
+
+def get_obj_subkey(objid: str, subkey_suffix: str) -> str:
+    """Given an obj's ID and a subkey suffix, return the subkey."""
+    from src import env
+
+    return f"{objid}{env.OBJ_SUBKEY_SEPARATOR}{subkey_suffix}"
 
 
 def logspace2dir(logspace: list[str]) -> Path:

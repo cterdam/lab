@@ -1,29 +1,20 @@
-"""Redis-backed group membership management with per-group logging.
-
-Groups are identified by gid (group ID) in format: g:groupname
-Redis keys:
-- {gid}/include: SET of included logids or gids
-- {gid}/exclude: SET of excluded logids or gids
-
-Groups are implicit - they exist if they have members.
-Each group gets its own log file via internal Logger instances.
-"""
-
 from enum import StrEnum
 
 from pydantic import Field
 
-from src import env
 from src.core.dataclass import Dataclass
 from src.core.logger import Logger
 from src.core.util import (
-    get_obj_id,
-    get_obj_subkey,
     gid_t,
     logid_t,
-    obj2name,
+    obj_id,
     obj_in_namespace,
+    obj_is_group,
+    obj_name,
+    obj_subkey,
 )
+
+# RELATION #####################################################################
 
 
 class Relation(StrEnum):
@@ -31,12 +22,6 @@ class Relation(StrEnum):
 
     INCLUDE = "include"
     EXCLUDE = "exclude"
-
-
-relation2suffix: dict[str, str] = {
-    Relation.INCLUDE: env.GID_INCLUDE_SUFFIX,
-    Relation.EXCLUDE: env.GID_EXCLUDE_SUFFIX,
-}
 
 
 class Step(Dataclass):
@@ -59,124 +44,99 @@ class Trace(Dataclass):
     verdict: bool = False
 
 
-class _GroupLogger(Logger):
-    """Internal Logger for per-group logging."""
+# GROUP LOGGING ################################################################
+
+
+class _GroupLog(Logger):
+    """Internal Logger for per-group logging.
+
+    Since the ground truth of group membership is stored in Redis, each group is
+    not typically managed by a separate Python object. Thus, special logger
+    objects are created for group-specific logs.
+    """
 
     logspace_part = "group"
 
 
-class _Loggers(dict[str, _GroupLogger]):
+class _Loggers(dict[str, _GroupLog]):
     """Auto-creating dict for group loggers."""
 
-    def __missing__(self, name: str) -> _GroupLogger:
-        self[name] = _GroupLogger(logname=name)
+    def __missing__(self, name: str) -> _GroupLog:
+        self[name] = _GroupLog(logname=name)
         return self[name]
 
 
-_loggers = _Loggers()
+_glog = _Loggers()
+
+# OTHER UTIL ###################################################################
 
 
-def _key(name: str, relation: Relation) -> str:
-    """Redis key for a group's relation set."""
-    return get_obj_subkey(
-        get_obj_id(env.GID_PREFIX, name),
-        relation2suffix[relation],
+def _membership_subkey(name: str, relation: Relation) -> str:
+    """Get the Redis subkey for a group's relation set."""
+    from src import env
+
+    return obj_subkey(
+        obj_id(env.GID_NAMESPACE, name),
+        {
+            Relation.INCLUDE: env.GROUP_INCLUDE_SUFFIX,
+            Relation.EXCLUDE: env.GROUP_EXCLUDE_SUFFIX,
+        }[relation],
     )
 
 
-# Public API
+# API ##########################################################################
 
 
-def add(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
+def add(groupname: str, member: logid_t | gid_t, relation: Relation) -> bool:
     """Add a relation between a group and a member."""
-    result = env.r.sadd(_key(name, relation), member) == 1
+    from src import env
+
+    result = env.r.sadd(_membership_subkey(groupname, relation), member) == 1
     if result:
-        _loggers[name].info(f"ADD {relation} {member}")
+        _glog[groupname].info(f"ADD {relation} {member}")
     return result
 
 
-def rm(name: str, member: logid_t | gid_t, relation: Relation) -> bool:
+def rm(groupname: str, member: logid_t | gid_t, relation: Relation) -> bool:
     """Remove a relation between a group and a member."""
-    result = env.r.srem(_key(name, relation), member) == 1
+    from src import env
+
+    result = env.r.srem(_membership_subkey(groupname, relation), member) == 1
     if result:
-        _loggers[name].info(f"RM {relation} {member}")
+        _glog[groupname].info(f"RM {relation} {member}")
     return result
 
 
-def members(name: str) -> set[logid_t]:
+def members(groupname: str) -> set[logid_t]:
     """Get resolved members of a group."""
-    included, excluded = _resolve(name, visited=set())
+    _glog[groupname].info("Resolving members")
+    included, excluded = _resolve(groupname, visited=set())
     return included - excluded
 
 
-def delete(name: str) -> int:
-    """Delete group's include and exclude sets."""
-    result = env.r.delete(
-        _key(name, Relation.INCLUDE),
-        _key(name, Relation.EXCLUDE),
-    )
-    if result:
-        _loggers[name].info("DELETE")
-        _loggers.pop(name, None)
-    return result
-
-
-def trace(name: str, member: logid_t) -> Trace:
-    """Trace how a member relates to a group.
-
-    Returns paths showing how the member is included / excluded,
-    plus the final verdict (using the same logic as members()).
-    """
-    paths = _trace_paths(name, member, steps=[], visited=set())
-    verdict = member in members(name)
-    return Trace(paths=paths, verdict=verdict)
-
-
-def _trace_paths(
-    name: str,
-    member: logid_t,
-    steps: list[Step],
-    visited: set[str],
-) -> list[Path]:
-    """Recursively trace paths to a member."""
-    if name in visited:
-        return []
-
-    visited = visited | {name}
-    paths: list[Path] = []
-
-    for relation in Relation:
-        for m in env.r.smembers(_key(name, relation)):
-            current_steps = steps + [Step(group=name, relation=relation)]
-            if m == member:
-                paths.append(Path(steps=current_steps))
-            elif obj_in_namespace(m, env.GID_PREFIX):
-                paths.extend(_trace_paths(obj2name(m), member, current_steps, visited))
-
-    return paths
-
-
-def _resolve(name: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:
+def _resolve(groupname: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:
     """Resolve members recursively with cycle detection."""
-    if name in visited:
-        _loggers[name].warning("circular reference detected")
+    from src import env
+
+    if groupname in visited:
+        _glog[groupname].warning("Circular reference detected")
         return set(), set()
 
-    visited = visited | {name}
+    visited |= {groupname}
     included: set[logid_t] = set()
     excluded: set[logid_t] = set()
 
-    for member in env.r.smembers(_key(name, Relation.INCLUDE)):
-        if obj_in_namespace(member, env.GID_PREFIX):
-            inc, exc = _resolve(obj2name(member), visited)
-            included |= inc
-            excluded |= exc
+    for member in env.r.smembers(_membership_subkey(groupname, Relation.INCLUDE)):
+        if obj_is_group(member):
+            inc_inc, inc_exc = _resolve(obj_name(member), visited)
+            included |= inc_inc
+            excluded |= inc_exc
         else:
             included.add(member)
 
-    for member in env.r.smembers(_key(name, Relation.EXCLUDE)):
-        if obj_in_namespace(member, env.GID_PREFIX):
-            exc_inc, exc_exc = _resolve(obj2name(member), visited)
+    for member in env.r.smembers(_membership_subkey(groupname, Relation.EXCLUDE)):
+        if obj_is_group(member):
+            exc_inc, exc_exc = _resolve(obj_name(member), visited)
             excluded |= exc_inc - exc_exc
         else:
             excluded.add(member)

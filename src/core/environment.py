@@ -237,10 +237,12 @@ class Environment(BaseModel):
     COUNTER_HASH_SUFFIX: str = Field(
         default="counters",
         min_length=1,
-        description=multiline("""
+        description=multiline(
+            """
             Counter hash suffix. String suffix to prepend to a logger's
             logid to form its counter hash name in Redis.
-            """),
+            """
+        ),
     )
 
     COUNTER_DUMP_LOCK_KEY: str = Field(
@@ -254,28 +256,30 @@ class Environment(BaseModel):
     SID_COUNTER_KEY: str = Field(
         default="sid",
         min_length=1,
-        description=multiline("""
+        description=multiline(
+            """
             Counter key for the globally shared serial ID generator. This ID is
             used as a global Redis counter for monotonically increasing IDs
             shared between different classes.
-            """),
+            """
+        ),
     )
 
     # GROUP ####################################################################
 
-    GID_PREFIX: str = Field(
+    GID_NAMESPACE: str = Field(
         default="g",
         min_length=1,
         description="Prefix for group IDs.",
     )
 
-    GID_INCLUDE_SUFFIX: str = Field(
+    GROUP_INCLUDE_SUFFIX: str = Field(
         default="include",
         min_length=1,
         description="Suffix for group include set keys in Redis.",
     )
 
-    GID_EXCLUDE_SUFFIX: str = Field(
+    GROUP_EXCLUDE_SUFFIX: str = Field(
         default="exclude",
         min_length=1,
         description="Suffix for group exclude set keys in Redis.",

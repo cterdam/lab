@@ -14,8 +14,8 @@ from redis.client import Pipeline
 
 from src.core.util import (
     REPO_ROOT,
-    get_obj_id,
-    get_obj_subkey,
+    obj_id,
+    obj_subkey,
     logid_t,
     logspace2dir,
     multiline,
@@ -240,11 +240,11 @@ class Logger:
             if (logspace_part := cls.__dict__.get("logspace_part"))
         ]
         self.logname = logname
-        self.logid = get_obj_id(
-            namespace=env.NAMESPACE_DELIMITER.join(self.logspace), name=logname
+        self.logid = obj_id(
+            namespace=env.NAMESPACE_DELIMITER.join(self.logspace), objname=logname
         )
         self.logdir = logspace2dir(self.logspace)
-        self.counter_hash_key = get_obj_subkey(self.logid, env.COUNTER_HASH_SUFFIX)
+        self.counter_hash_key = obj_subkey(self.logid, env.COUNTER_HASH_SUFFIX)
 
         # Bind logger for this instance
         self._log = (
@@ -582,7 +582,7 @@ class Logger:
             logids = list(env.r.smembers(env.LOGID_SET_KEY))  # type: ignore
             with env.coup() as p:
                 for logid in logids:
-                    p.hgetall(get_obj_subkey(logid, env.COUNTER_HASH_SUFFIX))
+                    p.hgetall(obj_subkey(logid, env.COUNTER_HASH_SUFFIX))
                 counter_hashes = p.execute()
 
             for logid, counter_kvs in zip(logids, counter_hashes):

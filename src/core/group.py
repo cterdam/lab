@@ -8,7 +8,6 @@ from src.core.util import (
     gid_t,
     logid_t,
     obj_id,
-    obj_in_namespace,
     obj_is_group,
     obj_name,
     obj_subkey,
@@ -57,6 +56,12 @@ class _GroupLog(Logger):
 
     logspace_part = "group"
 
+    class logmsg(StrEnum):
+        ADD = "ADD {relation} {member}"
+        RM = "RM {relation} {member}"
+        RESOLVE = "Resolving members"
+        CIRCULAR = "Circular reference detected"
+
 
 class _Loggers(dict[str, _GroupLog]):
     """Auto-creating dict for group loggers."""
@@ -93,7 +98,9 @@ def add(groupname: str, member: logid_t | gid_t, relation: Relation) -> bool:
 
     result = env.r.sadd(_membership_subkey(groupname, relation), member) == 1
     if result:
-        _glog[groupname].info(f"ADD {relation} {member}")
+        _glog[groupname].info(
+            _GroupLog.logmsg.ADD.format(relation=relation, member=member)
+        )
     return result
 
 
@@ -103,13 +110,15 @@ def rm(groupname: str, member: logid_t | gid_t, relation: Relation) -> bool:
 
     result = env.r.srem(_membership_subkey(groupname, relation), member) == 1
     if result:
-        _glog[groupname].info(f"RM {relation} {member}")
+        _glog[groupname].info(
+            _GroupLog.logmsg.RM.format(relation=relation, member=member)
+        )
     return result
 
 
 def members(groupname: str) -> set[logid_t]:
     """Get resolved members of a group."""
-    _glog[groupname].info("Resolving members")
+    _glog[groupname].info(_GroupLog.logmsg.RESOLVE)
     included, excluded = _resolve(groupname, visited=set())
     return included - excluded
 
@@ -119,7 +128,7 @@ def _resolve(groupname: str, visited: set[str]) -> tuple[set[logid_t], set[logid
     from src import env
 
     if groupname in visited:
-        _glog[groupname].warning("Circular reference detected")
+        _glog[groupname].warning(_GroupLog.logmsg.CIRCULAR)
         return set(), set()
 
     visited |= {groupname}
@@ -128,9 +137,9 @@ def _resolve(groupname: str, visited: set[str]) -> tuple[set[logid_t], set[logid
 
     for member in env.r.smembers(_membership_subkey(groupname, Relation.INCLUDE)):
         if obj_is_group(member):
+            # Include the resolved members of the nested group
             inc_inc, inc_exc = _resolve(obj_name(member), visited)
-            included |= inc_inc
-            excluded |= inc_exc
+            included |= inc_inc - inc_exc
         else:
             included.add(member)
 

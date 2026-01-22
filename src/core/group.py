@@ -40,7 +40,7 @@ _glog = _Loggers()
 # OTHER UTIL ###################################################################
 
 
-def _key(groupname: str) -> str:
+def _group_key(groupname: str) -> str:
     """Get the Redis key for a group's membership ZSET."""
     from src import env
 
@@ -54,7 +54,7 @@ def add(groupname: str, member: logid_t | gid_t, weight: float) -> None:
     """Add/update member with weight. Positive=include, negative=exclude."""
     from src import env
 
-    env.r.zadd(_key(groupname), {member: weight})
+    env.r.zadd(_group_key(groupname), {member: weight})
     _glog[groupname].info(
         _GroupLog.logmsg.ADD.format(member=member, weight=weight)
     )
@@ -64,7 +64,7 @@ def rm(groupname: str, member: logid_t | gid_t) -> bool:
     """Remove member entirely."""
     from src import env
 
-    result = env.r.zrem(_key(groupname), member) == 1
+    result = env.r.zrem(_group_key(groupname), member) == 1
     if result:
         _glog[groupname].info(_GroupLog.logmsg.RM.format(member=member))
     return result
@@ -74,7 +74,7 @@ def children(groupname: str) -> dict[str, float]:
     """Get immediate children with their weights."""
     from src import env
 
-    return dict(env.r.zrange(_key(groupname), 0, -1, withscores=True))
+    return dict(env.r.zrange(_group_key(groupname), 0, -1, withscores=True))
 
 
 def descendants(groupname: str) -> dict[logid_t, float]:
@@ -96,7 +96,7 @@ def _resolve(groupname: str, visited: set[str]) -> dict[logid_t, float]:
         if obj_is_group(child):
             nested = _resolve(obj_name(child), visited)
             for m, s in nested.items():
-                if s > 0:  # only propagate actual members
+                if s > 0:
                     scores[m] = scores.get(m, 0) + weight * s
         else:
             scores[child] = scores.get(child, 0) + weight

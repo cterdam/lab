@@ -94,10 +94,8 @@ def _resolve(groupname: str, visited: set[str]) -> dict[logid_t, float]:
 
     for child, weight in children(groupname).items():
         if obj_is_group(child):
-            nested = _resolve(obj_name(child), visited)
-            for m, s in nested.items():
-                if s > 0:
-                    scores[m] = scores.get(m, 0) + weight * s
+            for m, s in _resolve(obj_name(child), visited).items():
+                scores[m] = scores.get(m, 0) + weight * s
         else:
             scores[child] = scores.get(child, 0) + weight
 

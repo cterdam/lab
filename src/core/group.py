@@ -1,8 +1,5 @@
 from enum import StrEnum
 
-from pydantic import Field
-
-from src.core.dataclass import Dataclass
 from src.core.logger import Logger
 from src.core.util import (
     gid_t,
@@ -13,36 +10,6 @@ from src.core.util import (
     obj_subkey,
 )
 
-# RELATION #####################################################################
-
-
-class Relation(StrEnum):
-    """Types of membership relations."""
-
-    INCLUDE = "include"
-    EXCLUDE = "exclude"
-
-
-class Step(Dataclass):
-    """A single step in a membership path."""
-
-    group: str
-    relation: Relation
-
-
-class Path(Dataclass):
-    """A path showing how a member relates to a group."""
-
-    steps: list[Step] = Field(default_factory=list)
-
-
-class Trace(Dataclass):
-    """Result of tracing a member's relationship to a group."""
-
-    paths: list[Path] = Field(default_factory=list)
-    verdict: bool = False
-
-
 # GROUP LOGGING ################################################################
 
 
@@ -50,21 +17,19 @@ class _GroupLog(Logger):
     """Internal Logger for per-group logging.
 
     Since the ground truth of group membership is stored in Redis, each group is
-    not typically managed by a separate Python object. Thus, special logger
+    not typically managed by a dedicated Python object. Thus, special logger
     objects are created for group-specific logs.
     """
 
     logspace_part = "group"
 
-    class logmsg(StrEnum):
+    class logmsg(StrEnum):  # type: ignore
         ADD = "ADD {relation} {member}"
         RM = "RM {relation} {member}"
-        RESOLVE = "Resolving members"
-        CIRCULAR = "Circular reference detected"
 
 
 class _Loggers(dict[str, _GroupLog]):
-    """Auto-creating dict for group loggers."""
+    """A default dict that maps group name to group logger."""
 
     def __missing__(self, name: str) -> _GroupLog:
         self[name] = _GroupLog(logname=name)
@@ -74,6 +39,13 @@ class _Loggers(dict[str, _GroupLog]):
 _glog = _Loggers()
 
 # OTHER UTIL ###################################################################
+
+
+class Relation(StrEnum):
+    """Types of membership relations."""
+
+    INCLUDE = "include"
+    EXCLUDE = "exclude"
 
 
 def _membership_subkey(name: str, relation: Relation) -> str:
@@ -116,38 +88,41 @@ def rm(groupname: str, member: logid_t | gid_t, relation: Relation) -> bool:
     return result
 
 
-def members(groupname: str) -> set[logid_t]:
-    """Get resolved members of a group."""
-    _glog[groupname].info(_GroupLog.logmsg.RESOLVE)
+def children(groupname: str, relation: Relation) -> set[logid_t]:
+    """Get immediate children of a group in a certain relation."""
+    from src import env
+
+    return env.r.smembers(_membership_subkey(groupname, relation))
+
+
+def descendants(groupname: str) -> set[logid_t]:
+    """Get all end members of a group via inheritance."""
     included, excluded = _resolve(groupname, visited=set())
     return included - excluded
 
 
 def _resolve(groupname: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:
     """Resolve members recursively with cycle detection."""
-    from src import env
 
     if groupname in visited:
-        _glog[groupname].warning(_GroupLog.logmsg.CIRCULAR)
         return set(), set()
 
     visited |= {groupname}
     included: set[logid_t] = set()
     excluded: set[logid_t] = set()
 
-    for member in env.r.smembers(_membership_subkey(groupname, Relation.INCLUDE)):
-        if obj_is_group(member):
-            # Include the resolved members of the nested group
-            inc_inc, inc_exc = _resolve(obj_name(member), visited)
+    for child in children(groupname, Relation.INCLUDE):
+        if obj_is_group(child):
+            inc_inc, inc_exc = _resolve(obj_name(child), visited)
             included |= inc_inc - inc_exc
         else:
-            included.add(member)
+            included.add(child)
 
-    for member in env.r.smembers(_membership_subkey(groupname, Relation.EXCLUDE)):
-        if obj_is_group(member):
-            exc_inc, exc_exc = _resolve(obj_name(member), visited)
+    for child in children(groupname, Relation.EXCLUDE):
+        if obj_is_group(child):
+            exc_inc, exc_exc = _resolve(obj_name(child), visited)
             excluded |= exc_inc - exc_exc
         else:
-            excluded.add(member)
+            excluded.add(child)
 
     return included, excluded

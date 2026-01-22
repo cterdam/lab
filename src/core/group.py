@@ -7,7 +7,6 @@ from src.core.util import (
     obj_id,
     obj_is_group,
     obj_name,
-    obj_subkey,
 )
 
 # GROUP LOGGING ################################################################
@@ -24,8 +23,8 @@ class _GroupLog(Logger):
     logspace_part = "group"
 
     class logmsg(StrEnum):  # type: ignore
-        ADD = "ADD {relation} {member}"
-        RM = "RM {relation} {member}"
+        ADD = "ADD {member} {weight}"
+        RM = "RM {member}"
 
 
 class _Loggers(dict[str, _GroupLog]):
@@ -41,88 +40,65 @@ _glog = _Loggers()
 # OTHER UTIL ###################################################################
 
 
-class Relation(StrEnum):
-    """Types of membership relations."""
-
-    INCLUDE = "include"
-    EXCLUDE = "exclude"
-
-
-def _membership_subkey(name: str, relation: Relation) -> str:
-    """Get the Redis subkey for a group's relation set."""
+def _key(groupname: str) -> str:
+    """Get the Redis key for a group's membership ZSET."""
     from src import env
 
-    return obj_subkey(
-        obj_id(env.GID_NAMESPACE, name),
-        {
-            Relation.INCLUDE: env.GROUP_INCLUDE_SUFFIX,
-            Relation.EXCLUDE: env.GROUP_EXCLUDE_SUFFIX,
-        }[relation],
-    )
+    return obj_id(env.GID_NAMESPACE, groupname)
 
 
 # API ##########################################################################
 
 
-def add(groupname: str, member: logid_t | gid_t, relation: Relation) -> bool:
-    """Add a relation between a group and a member."""
+def add(groupname: str, member: logid_t | gid_t, weight: float) -> None:
+    """Add/update member with weight. Positive=include, negative=exclude."""
     from src import env
 
-    result = env.r.sadd(_membership_subkey(groupname, relation), member) == 1
+    env.r.zadd(_key(groupname), {member: weight})
+    _glog[groupname].info(
+        _GroupLog.logmsg.ADD.format(member=member, weight=weight)
+    )
+
+
+def rm(groupname: str, member: logid_t | gid_t) -> bool:
+    """Remove member entirely."""
+    from src import env
+
+    result = env.r.zrem(_key(groupname), member) == 1
     if result:
-        _glog[groupname].info(
-            _GroupLog.logmsg.ADD.format(relation=relation, member=member)
-        )
+        _glog[groupname].info(_GroupLog.logmsg.RM.format(member=member))
     return result
 
 
-def rm(groupname: str, member: logid_t | gid_t, relation: Relation) -> bool:
-    """Remove a relation between a group and a member."""
+def children(groupname: str) -> dict[str, float]:
+    """Get immediate children with their weights."""
     from src import env
 
-    result = env.r.srem(_membership_subkey(groupname, relation), member) == 1
-    if result:
-        _glog[groupname].info(
-            _GroupLog.logmsg.RM.format(relation=relation, member=member)
-        )
-    return result
+    return dict(env.r.zrange(_key(groupname), 0, -1, withscores=True))
 
 
-def children(groupname: str, relation: Relation) -> set[logid_t]:
-    """Get immediate children of a group in a certain relation."""
-    from src import env
-
-    return env.r.smembers(_membership_subkey(groupname, relation))
-
-
-def descendants(groupname: str) -> set[logid_t]:
-    """Get all end members of a group via inheritance."""
-    included, excluded = _resolve(groupname, visited=set())
-    return included - excluded
+def descendants(groupname: str) -> dict[logid_t, float]:
+    """Get all end members with resolved scores (positive only)."""
+    scores = _resolve(groupname, visited=set())
+    return {m: s for m, s in scores.items() if s > 0}
 
 
-def _resolve(groupname: str, visited: set[str]) -> tuple[set[logid_t], set[logid_t]]:
+def _resolve(groupname: str, visited: set[str]) -> dict[logid_t, float]:
     """Resolve members recursively with cycle detection."""
 
     if groupname in visited:
-        return set(), set()
+        return {}
 
     visited |= {groupname}
-    included: set[logid_t] = set()
-    excluded: set[logid_t] = set()
+    scores: dict[logid_t, float] = {}
 
-    for child in children(groupname, Relation.INCLUDE):
+    for child, weight in children(groupname).items():
         if obj_is_group(child):
-            inc_inc, inc_exc = _resolve(obj_name(child), visited)
-            included |= inc_inc - inc_exc
+            nested = _resolve(obj_name(child), visited)
+            for m, s in nested.items():
+                if s > 0:  # only propagate actual members
+                    scores[m] = scores.get(m, 0) + weight * s
         else:
-            included.add(child)
+            scores[child] = scores.get(child, 0) + weight
 
-    for child in children(groupname, Relation.EXCLUDE):
-        if obj_is_group(child):
-            exc_inc, exc_exc = _resolve(obj_name(child), visited)
-            excluded |= exc_inc - exc_exc
-        else:
-            excluded.add(child)
-
-    return included, excluded
+    return scores

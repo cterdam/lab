@@ -272,15 +272,3 @@ class Environment(BaseModel):
         min_length=1,
         description="Prefix for group IDs.",
     )
-
-    GROUP_INCLUDE_SUFFIX: str = Field(
-        default="include",
-        min_length=1,
-        description="Suffix for group include set keys in Redis.",
-    )
-
-    GROUP_EXCLUDE_SUFFIX: str = Field(
-        default="exclude",
-        min_length=1,
-        description="Suffix for group exclude set keys in Redis.",
-    )

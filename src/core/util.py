@@ -64,7 +64,14 @@ def next_sid() -> sid_t:
     return env.r.incr(env.SID_COUNTER_KEY)
 
 
-def obj_is_group(objid: str) -> bool:
+def get_gid(name: str) -> gid_t:
+    """Given a name, form the gid."""
+    from src import env
+
+    return obj_id(env.GID_NAMESPACE, name)
+
+
+def is_gid(objid: str) -> bool:
     """Given an obj's ID, determine whether it represents a group."""
     from src import env
 

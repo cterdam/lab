@@ -3,16 +3,15 @@ from enum import StrEnum
 from src.core.logger import Logger
 from src.core.util import (
     gid_t,
+    is_gid,
     logid_t,
-    obj_id,
-    obj_is_group,
     obj_name,
 )
 
 # CONSTANTS ####################################################################
 
 INC = 1
-BAN = -1
+EXC = -1
 
 # GROUP LOGGING ################################################################
 
@@ -32,78 +31,65 @@ class _GroupLog(Logger):
         RM = "RM {member} {weight}"
 
 
-class _Loggers(dict[str, _GroupLog]):
-    """A default dict that maps group name to group logger."""
+class _Loggers(dict[gid_t, _GroupLog]):
+    """A default dict that maps gid to group logger."""
 
-    def __missing__(self, name: str) -> _GroupLog:
-        self[name] = _GroupLog(logname=name)
-        return self[name]
+    def __missing__(self, gid: gid_t) -> _GroupLog:
+        self[gid] = _GroupLog(logname=obj_name(gid))
+        return self[gid]
 
 
 _glog = _Loggers()
 
-# OTHER UTIL ###################################################################
-
-
-def _group_key(groupname: str) -> str:
-    """Get the Redis key for a group's membership ZSET."""
-    from src import env
-
-    return obj_id(env.GID_NAMESPACE, groupname)
-
-
 # API ##########################################################################
 
 
-def add(groupname: str, member: logid_t | gid_t, weight: float) -> None:
-    """Add/update member with weight. Positive=include, negative=exclude."""
+def add(gid: gid_t, member: logid_t | gid_t, weight: float = INC) -> None:
+    """Add or update a member with weight."""
     from src import env
 
-    env.r.zadd(_group_key(groupname), {member: weight})
-    _glog[groupname].info(
-        _GroupLog.logmsg.ADD.format(member=member, weight=weight)
-    )
+    env.r.zadd(gid, {member: weight})
+    _glog[gid].info(_GroupLog.logmsg.ADD.format(member=member, weight=weight))
 
 
-def rm(groupname: str, member: logid_t | gid_t) -> bool:
-    """Remove member entirely."""
+def rm(gid: gid_t, member: logid_t | gid_t) -> bool:
+    """Remove a member entirely."""
     from src import env
 
-    weight = env.r.zscore(_group_key(groupname), member)
-    result = env.r.zrem(_group_key(groupname), member) == 1
+    weight = env.r.zscore(gid, member)
+    result = env.r.zrem(gid, member) == 1
     if result:
-        _glog[groupname].info(
-            _GroupLog.logmsg.RM.format(member=member, weight=weight)
-        )
+        _glog[gid].info(_GroupLog.logmsg.RM.format(member=member, weight=weight))
     return result
 
 
-def children(groupname: str) -> dict[str, float]:
+def children(gid: gid_t) -> dict[logid_t | gid_t, float]:
     """Get immediate children with their weights."""
     from src import env
 
-    return dict(env.r.zrange(_group_key(groupname), 0, -1, withscores=True))
+    return dict(env.r.zrange(gid, 0, -1, withscores=True))
 
 
-def resolve(groupname: str, visited: set[str] | None = None) -> dict[logid_t, float]:
-    """Resolve all members recursively with cycle detection."""
+def descendants(
+    gid: gid_t, visited: set[gid_t] | None = None
+) -> dict[logid_t | gid_t, float]:
+    """Resolve all members recursively"""
 
     if visited is None:
         visited = set()
 
-    if groupname in visited:
+    if gid in visited:
         return {}
 
-    visited |= {groupname}
-    direct: dict[logid_t, float] = {}
-    indirect: dict[logid_t, float] = {}
+    visited |= {gid}
+    direct: dict[logid_t | gid_t, float] = {}
+    indirect: dict[logid_t | gid_t, float] = {}
 
-    for child, weight in children(groupname).items():
-        if obj_is_group(child):
-            for m, s in resolve(obj_name(child), visited).items():
+    for child, weight in children(gid).items():
+        direct[child] = weight
+        if is_gid(child):
+            for m, s in descendants(child, visited).items():
                 if s > 0:
                     indirect[m] = indirect.get(m, 0) + weight * s
-        else:
-            direct[child] = weight
 
     return {**indirect, **direct}

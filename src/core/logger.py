@@ -14,11 +14,11 @@ from redis.client import Pipeline
 
 from src.core.util import (
     REPO_ROOT,
-    obj_id,
-    obj_subkey,
     logid_t,
     logspace2dir,
     multiline,
+    obj_id,
+    obj_subkey,
     prepr,
 )
 

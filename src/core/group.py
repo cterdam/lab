@@ -90,13 +90,15 @@ def _resolve(groupname: str, visited: set[str]) -> dict[logid_t, float]:
         return {}
 
     visited |= {groupname}
-    scores: dict[logid_t, float] = {}
+    direct: dict[logid_t, float] = {}
+    indirect: dict[logid_t, float] = {}
 
     for child, weight in children(groupname).items():
         if obj_is_group(child):
             for m, s in _resolve(obj_name(child), visited).items():
-                scores[m] = scores.get(m, 0) + weight * s
+                if s > 0:
+                    indirect[m] = indirect.get(m, 0) + weight * s
         else:
-            scores[child] = scores.get(child, 0) + weight
+            direct[child] = weight
 
-    return scores
+    return {**indirect, **direct}

@@ -9,6 +9,11 @@ from src.core.util import (
     obj_name,
 )
 
+# CONSTANTS ####################################################################
+
+INC = 1
+BAN = -1
+
 # GROUP LOGGING ################################################################
 
 
@@ -24,7 +29,7 @@ class _GroupLog(Logger):
 
     class logmsg(StrEnum):  # type: ignore
         ADD = "ADD {member} {weight}"
-        RM = "RM {member}"
+        RM = "RM {member} {weight}"
 
 
 class _Loggers(dict[str, _GroupLog]):
@@ -64,9 +69,12 @@ def rm(groupname: str, member: logid_t | gid_t) -> bool:
     """Remove member entirely."""
     from src import env
 
+    weight = env.r.zscore(_group_key(groupname), member)
     result = env.r.zrem(_group_key(groupname), member) == 1
     if result:
-        _glog[groupname].info(_GroupLog.logmsg.RM.format(member=member))
+        _glog[groupname].info(
+            _GroupLog.logmsg.RM.format(member=member, weight=weight)
+        )
     return result
 
 
@@ -77,14 +85,11 @@ def children(groupname: str) -> dict[str, float]:
     return dict(env.r.zrange(_group_key(groupname), 0, -1, withscores=True))
 
 
-def descendants(groupname: str) -> dict[logid_t, float]:
-    """Get all end members with resolved scores (positive only)."""
-    scores = _resolve(groupname, visited=set())
-    return {m: s for m, s in scores.items() if s > 0}
+def resolve(groupname: str, visited: set[str] | None = None) -> dict[logid_t, float]:
+    """Resolve all members recursively with cycle detection."""
 
-
-def _resolve(groupname: str, visited: set[str]) -> dict[logid_t, float]:
-    """Resolve members recursively with cycle detection."""
+    if visited is None:
+        visited = set()
 
     if groupname in visited:
         return {}
@@ -95,7 +100,7 @@ def _resolve(groupname: str, visited: set[str]) -> dict[logid_t, float]:
 
     for child, weight in children(groupname).items():
         if obj_is_group(child):
-            for m, s in _resolve(obj_name(child), visited).items():
+            for m, s in resolve(obj_name(child), visited).items():
                 if s > 0:
                     indirect[m] = indirect.get(m, 0) + weight * s
         else:

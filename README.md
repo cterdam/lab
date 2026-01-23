@@ -39,6 +39,9 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 ## Contribute
 
 - obj grouping
+  - clamp membership to [-1, 1]
+  - preemptively check for problems when adding
+
 - keep weak ref from logids to obj
   - remove logspace2dir
 

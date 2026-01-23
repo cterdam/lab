@@ -38,6 +38,12 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 
 ## Contribute
 
+- obj grouping
+- keep weak ref from logids to obj
+  - remove logspace2dir
+
+- Stop dumping counters to log file, only json
+
 - AddPlayer event
   - Group access ctrl for players
   - Different player groups inside state

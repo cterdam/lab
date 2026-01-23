@@ -14,10 +14,11 @@ from redis.client import Pipeline
 
 from src.core.util import (
     REPO_ROOT,
-    logid2subkey,
     logid_t,
     logspace2dir,
     multiline,
+    obj_id,
+    obj_subkey,
     prepr,
 )
 
@@ -121,7 +122,7 @@ class Logger:
             <level>[{level:^8}]</>
             <dim><cyan>{extra[logid]}{extra[logtag]}</></> |
             <dim><yellow>{extra[relpath]}:{line} <{function}></></>
-            """
+            """,
         )
         + "\n{message}"
     )
@@ -239,23 +240,20 @@ class Logger:
             if (logspace_part := cls.__dict__.get("logspace_part"))
         ]
         self.logname = logname
-        self.logid = multiline(
-            f"""
-            {env.LOGSPACE_DELIMITER.join(self.logspace)}
-            {env.LOGSPACE_LOGNAME_SEPARATOR}
-            {self.logname}
-            """,
-            continuous=True,
+        self.logid = obj_id(
+            namespace=env.NAMESPACE_DELIMITER.join(self.logspace), objname=logname
         )
         self.logdir = logspace2dir(self.logspace)
-        self.counter_hash_key = logid2subkey(self.logid, env.CHN_SUFFIX)
+        self.counter_hash_key = obj_subkey(self.logid, env.COUNTER_HASH_SUFFIX)
 
         # Bind logger for this instance
-        self.logname = logname
-        self._log = Logger._base_logger().bind(logid=self.logid)
-        self._log = self._log.patch(
-            lambda record: record["extra"].update(
-                logtag=f" [{self._logtag}]" if self._logtag else ""
+        self._log = (
+            Logger._base_logger()
+            .bind(logid=self.logid)
+            .patch(
+                lambda record: record["extra"].update(
+                    logtag=f" [{self._logtag}]" if self._logtag else ""
+                )
             )
         )
 
@@ -584,7 +582,7 @@ class Logger:
             logids = list(env.r.smembers(env.LOGID_SET_KEY))  # type: ignore
             with env.coup() as p:
                 for logid in logids:
-                    p.hgetall(logid2subkey(logid, env.CHN_SUFFIX))
+                    p.hgetall(obj_subkey(logid, env.COUNTER_HASH_SUFFIX))
                 counter_hashes = p.execute()
 
             for logid, counter_kvs in zip(logids, counter_hashes):
@@ -599,12 +597,12 @@ class Logger:
                 )
 
                 # Dump to file
-                logspace = logid.split(env.LOGSPACE_LOGNAME_SEPARATOR)[0].split(
-                    env.LOGSPACE_DELIMITER
+                logspace = logid.split(env.NAMESPACE_OBJ_SEPARATOR)[0].split(
+                    env.NAMESPACE_DELIMITER
                 )
                 logdir = logspace2dir(logspace)
                 logdir.mkdir(parents=True, exist_ok=True)
-                logname = logid.split(env.LOGSPACE_LOGNAME_SEPARATOR)[-1]
+                logname = logid.split(env.NAMESPACE_OBJ_SEPARATOR)[-1]
                 (logdir / f"{logname}_counters.json").write_text(msg)
 
         finally:

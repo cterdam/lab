@@ -10,11 +10,92 @@ from typing import Any, Callable, Coroutine, NamedTuple, TypeAlias, TypeVar
 
 import rich.pretty
 
+# CONSTANTS ####################################################################
+
 logid_t: TypeAlias = str
 sid_t: TypeAlias = int
+gid_t: TypeAlias = str
 
 # Root path of the repo inside the Docker container.
 REPO_ROOT: Path = Path("/gpt")
+
+# BOOKKEEPING ##################################################################
+
+
+def obj_id(namespace: str, objname: str) -> str:
+    """Given a namespace and a name, give the obj's complete ID."""
+    from src import env
+
+    return f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}{objname}"
+
+
+def obj_subkey(objid: str, subkey_suffix: str) -> str:
+    """Given an obj's ID and a subkey suffix, return the subkey."""
+    from src import env
+
+    return f"{objid}{env.OBJ_SUBKEY_SEPARATOR}{subkey_suffix}"
+
+
+def obj_in_namespace(s: str, namespace: str) -> bool:
+    """Check if a string is an obj's ID in the given namespace."""
+    from src import env
+
+    return s.startswith(f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}")
+
+
+def obj_name(objid: str) -> str:
+    """Extract the obj name from an obj ID."""
+    from src import env
+
+    return objid.split(env.NAMESPACE_OBJ_SEPARATOR, 1)[1]
+
+
+def logspace2dir(logspace: list[str]) -> Path:
+    """Given the logspace, get the corresponding actual dir path."""
+    from src import env
+
+    return env.log_dir.joinpath(*logspace)
+
+
+def next_sid() -> sid_t:
+    """Get the next serial ID from the environment."""
+    from src import env
+
+    return env.r.incr(env.SID_COUNTER_KEY)
+
+
+def get_gid(name: str) -> gid_t:
+    """Given a name, form the gid."""
+    from src import env
+
+    return obj_id(env.GID_NAMESPACE, name)
+
+
+def is_gid(objid: str) -> bool:
+    """Given an obj's ID, determine whether it represents a group."""
+    from src import env
+
+    return obj_in_namespace(objid, env.GID_NAMESPACE)
+
+
+# FORMATTING ###################################################################
+
+
+def prepr(
+    obj,
+    *,
+    max_width: int | None = None,
+    indent: int | None = None,
+):
+    """Pretty repr an arbitrary object for str output, using env defaults."""
+    from src import env
+
+    return rich.pretty.pretty_repr(
+        obj,
+        max_width=max_width or env.MAX_WIDTH,
+        indent_size=indent or env.INDENT,
+        expand_all=True,
+    )
 
 
 def multiline(s: str, oneline: bool = True, continuous: bool = False) -> str:
@@ -71,53 +152,22 @@ def as_filename(s: str) -> str:
 
 
 def randalnu(length: int = 4) -> str:
-    """Return a randomized alphanumeric string of the given length."""
+    """Return a randomized alphanumeric string of the given length.
+
+    This is used to generate a random run name.
+    """
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 
-def prepr(
-    obj,
-    *,
-    max_width: int | None = None,
-    indent: int | None = None,
-):
-    """Pretty repr an arbitrary object for str output, using env defaults."""
-    from src import env
-
-    return rich.pretty.pretty_repr(
-        obj,
-        max_width=max_width or env.MAX_WIDTH,
-        indent_size=indent or env.INDENT,
-        expand_all=True,
-    )
-
-
-def logid2subkey(logid: str, subkey_suffix: str) -> str:
-    """Given a logid and a subkey suffix, return the corresponding subkey.
-
-    The subkey represents a Redis entry owned by the logid.
-    """
-    from src import env
-
-    return f"{logid}{env.LOGID_SUBKEY_SEPARATOR}{subkey_suffix}"
-
-
-def logspace2dir(logspace: list[str]) -> Path:
-    from src import env
-
-    return env.log_dir.joinpath(*logspace)
-
-
-def next_sid() -> sid_t:
-    """Get the next serial ID from the environment."""
-    from src import env
-
-    return env.r.incr(env.SID_COUNTER_KEY)
-
-
 def str2int(s: str | None) -> int | None:
-    """Post-process a Redis HGET / HMGET result into int."""
+    """Convert a string to int.
+
+    This is used to post-process a Redis HGET / HMGET result into int.
+    """
     return int(s) if s is not None else None
+
+
+# FUNCTION TIMING ##############################################################
 
 
 def td2ms(delta: timedelta) -> int:
@@ -165,6 +215,8 @@ def atimed(
 
     return wrapper
 
+
+# CLASS HIERARCHY ##############################################################
 
 T = TypeVar("T")
 

@@ -62,34 +62,32 @@ class Environment(BaseModel):
         description="Maximum line length for string formatting.",
     )
 
-    # LOG ######################################################################
-
-    LOGSPACE_DELIMITER: str = Field(
+    NAMESPACE_DELIMITER: str = Field(
         default=".",
         min_length=1,
         description=multiline(
             """
-            Str delimiter between different parts of a logger's logspace when
-            representing them in a logid.
-            """
+            Str delimiter between different parts of a namespace, e.g. a
+            logger's logspace.
+            """,
         ),
     )
 
-    LOGSPACE_LOGNAME_SEPARATOR: str = Field(
+    NAMESPACE_OBJ_SEPARATOR: str = Field(
         default=":",
         min_length=1,
         description=multiline(
             """
-            Str connector between a logger's logspace and logname when
-            representing them in a logid.
-            """
+            Separator between a namespace and a member object in that namespace,
+            e.g. between a logger's logspace and its logname.
+            """,
         ),
     )
 
-    ROOT_LOGNAME: logid_t = Field(
-        default="root",
+    OBJ_SUBKEY_SEPARATOR: str = Field(
+        default="/",
         min_length=1,
-        description="logid for the root logger available as src.log",
+        description="Str connector between a obj's ID and its subkeys.",
     )
 
     # REDIS ####################################################################
@@ -222,7 +220,13 @@ class Environment(BaseModel):
         finally:
             await p.reset()
 
-    # - OTHER ------------------------------------------------------------------
+    # LOG ######################################################################
+
+    ROOT_LOGNAME: logid_t = Field(
+        default="root",
+        min_length=1,
+        description="logid for the root logger available as src.log",
+    )
 
     LOGID_SET_KEY: str = Field(
         default="logids",
@@ -230,23 +234,13 @@ class Environment(BaseModel):
         description="Redis key to retrieve the set of all logids.",
     )
 
-    CHN_SUFFIX: str = Field(
+    COUNTER_HASH_SUFFIX: str = Field(
         default="counters",
         min_length=1,
         description=multiline(
             """
-            Counter hash name suffix. String suffix to prepend to a logger's
+            Counter hash suffix. String suffix to prepend to a logger's
             logid to form its counter hash name in Redis.
-            """
-        ),
-    )
-
-    LOGID_SUBKEY_SEPARATOR: str = Field(
-        default="/",
-        min_length=1,
-        description=multiline(
-            """
-            Str connector between a logger's logid and its subkeys in Redis.
             """
         ),
     )
@@ -269,4 +263,12 @@ class Environment(BaseModel):
             shared between different classes.
             """
         ),
+    )
+
+    # GROUP ####################################################################
+
+    GID_NAMESPACE: str = Field(
+        default="g",
+        min_length=1,
+        description="Prefix for group IDs.",
     )

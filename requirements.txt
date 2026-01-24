@@ -14,7 +14,7 @@ loguru
 rich
 
 # Devtools
-black
+black==25.1.0
 ipython
 isort
 pre-commit

@@ -2,7 +2,14 @@ import re
 
 import pytest
 
-from src.core.util import as_filename, descendant_classes, get_gid, is_gid, is_logid, randalnu
+from src.core.util import (
+    as_filename,
+    descendant_classes,
+    get_gid,
+    is_gid,
+    is_logid,
+    randalnu,
+)
 from src.lib.game.event import Event, GameEnd, GameStart, Interrupt, Speech
 
 

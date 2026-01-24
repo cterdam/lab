@@ -75,7 +75,21 @@ def is_gid(objid: str) -> bool:
     """Given an obj's ID, determine whether it represents a group."""
     from src import env
 
+    if not isinstance(objid, str) or not objid:
+        return False
     return obj_in_namespace(objid, env.GID_NAMESPACE)
+
+
+def is_logid(objid: str) -> bool:
+    """Check if a string is a valid object ID (belongs to a namespace)."""
+    from src import env
+
+    if not isinstance(objid, str) or not objid:
+        return False
+    if env.NAMESPACE_OBJ_SEPARATOR not in objid:
+        return False
+    namespace = objid.split(env.NAMESPACE_OBJ_SEPARATOR, 1)[0]
+    return len(namespace) >= 1
 
 
 # FORMATTING ###################################################################

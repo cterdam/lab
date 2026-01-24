@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from src.core.util import as_filename, descendant_classes, randalnu
+from src.core.util import as_filename, descendant_classes, get_gid, is_gid, is_logid, randalnu
 from src.lib.game.event import Event, GameEnd, GameStart, Interrupt, Speech
 
 
@@ -184,3 +184,57 @@ def test_descendant_classes_with_game_event():
 
     # Should not include GameEvent itself
     assert "GameEvent" not in result
+
+
+def test_is_gid_valid():
+    """Test is_gid with valid group IDs."""
+    gid = get_gid("mygroup")
+    assert is_gid(gid) is True
+
+
+def test_is_gid_invalid_format():
+    """Test is_gid with invalid format."""
+    assert is_gid("not_a_gid") is False
+    assert is_gid("wrong:namespace") is False
+
+
+def test_is_gid_empty():
+    """Test is_gid with empty string."""
+    assert is_gid("") is False
+
+
+def test_is_gid_non_string():
+    """Test is_gid with non-string types."""
+    assert is_gid(None) is False
+    assert is_gid(123) is False
+    assert is_gid([]) is False
+
+
+def test_is_logid_valid():
+    """Test is_logid with valid object IDs."""
+    assert is_logid("namespace:name") is True
+    assert is_logid("g:group1") is True
+    assert is_logid("logger:main") is True
+
+
+def test_is_logid_invalid_no_separator():
+    """Test is_logid with no separator."""
+    assert is_logid("noseparator") is False
+
+
+def test_is_logid_empty():
+    """Test is_logid with empty string."""
+    assert is_logid("") is False
+
+
+def test_is_logid_non_string():
+    """Test is_logid with non-string types."""
+    assert is_logid(None) is False
+    assert is_logid(123) is False
+    assert is_logid({}) is False
+
+
+def test_is_logid_gid_is_logid():
+    """Test that gids are also valid logids."""
+    gid = get_gid("mygroup")
+    assert is_logid(gid) is True

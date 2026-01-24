@@ -1,3 +1,5 @@
+import pytest
+
 from src.core import group
 from src.core.util import get_gid
 
@@ -48,6 +50,71 @@ def test_add_negative_weight():
     result = group.children(gid)
 
     assert result[member] == group.EXC
+
+
+def test_add_weight_clamping_upper():
+    """Weight values above 1 are clamped to 1."""
+    gid = get_gid("test_clamp_upper")
+    member = "member1"
+
+    group.add(gid, member, 5.0)
+    result = group.children(gid)
+
+    assert result[member] == 1.0
+
+
+def test_add_weight_clamping_lower():
+    """Weight values below -1 are clamped to -1."""
+    gid = get_gid("test_clamp_lower")
+    member = "member1"
+
+    group.add(gid, member, -10.0)
+    result = group.children(gid)
+
+    assert result[member] == -1.0
+
+
+def test_add_weight_within_range_not_clamped():
+    """Weight values within [-1, 1] are not modified."""
+    gid = get_gid("test_no_clamp")
+    member = "member1"
+
+    group.add(gid, member, 0.7)
+    result = group.children(gid)
+
+    assert result[member] == 0.7
+
+
+def test_add_empty_gid_raises():
+    """Adding with empty gid raises AssertionError."""
+    with pytest.raises(AssertionError):
+        group.add("", "member1")
+
+
+def test_add_invalid_gid_format_raises():
+    """Adding with invalid gid format raises AssertionError."""
+    invalid_gid = "not_a_valid_gid_format"
+
+    with pytest.raises(AssertionError):
+        group.add(invalid_gid, "member1")
+
+
+def test_rm_invalid_gid_raises():
+    """Removing with invalid gid raises AssertionError."""
+    with pytest.raises(AssertionError):
+        group.rm("invalid", "member1")
+
+
+def test_children_invalid_gid_raises():
+    """Getting children with invalid gid raises AssertionError."""
+    with pytest.raises(AssertionError):
+        group.children("invalid")
+
+
+def test_descendants_invalid_gid_raises():
+    """Getting descendants with invalid gid raises AssertionError."""
+    with pytest.raises(AssertionError):
+        group.descendants("invalid")
 
 
 def test_rm_existing_member():

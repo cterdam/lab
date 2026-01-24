@@ -10,13 +10,16 @@ from src.core.util import (
 
 # CONSTANTS ####################################################################
 
+# Canonical value for fully included members
 INC = 1
+
+# Canonical value for fully excluded members
 EXC = -1
 
 # GROUP LOGGING ################################################################
 
 
-class _GroupLog(Logger):
+class _GroupLogger(Logger):
     """Internal Logger for per-group logging.
 
     Since the ground truth of group membership is stored in Redis, each group is
@@ -27,53 +30,88 @@ class _GroupLog(Logger):
     logspace_part = "group"
 
     class logmsg(StrEnum):  # type: ignore
-        ADD = "ADD {member} {weight}"
-        RM = "RM {member} {weight}"
+        ADD = "ADD {member} {weight} -> {result}"
+        RM = "RM {member} {weight} -> {result}"
 
 
-class _Loggers(dict[gid_t, _GroupLog]):
+class _GroupLoggers(dict[gid_t, _GroupLogger]):
     """A default dict that maps gid to group logger."""
 
-    def __missing__(self, gid: gid_t) -> _GroupLog:
-        self[gid] = _GroupLog(logname=obj_name(gid))
+    def __missing__(self, gid: gid_t) -> _GroupLogger:
+        self[gid] = _GroupLogger(logname=obj_name(gid))
         return self[gid]
 
 
-_glog = _Loggers()
+_glog = _GroupLoggers()
 
 # API ##########################################################################
 
 
-def add(gid: gid_t, member: logid_t | gid_t, weight: float = INC) -> None:
-    """Add or update a member with weight."""
+def add(gid: gid_t, member: logid_t | gid_t, weight: float = INC) -> bool:
+    """Add or update a member with weight.
+
+    Returns:
+        Whether the add operation was successful.
+    """
     from src import env
 
-    env.r.zadd(gid, {member: weight})
-    _glog[gid].info(_GroupLog.logmsg.ADD.format(member=member, weight=weight))
+    # Check args
+    assert is_gid(gid)
+
+    # Clamp weight
+    clamped_weight = max(-1.0, min(1.0, weight))
+    if clamped_weight != weight:
+        _glog[gid].warning(
+            f"Weight clamped from {weight} to {clamped_weight} for member {member}"
+        )
+
+    # Add member
+    result = env.r.zadd(gid, {member: clamped_weight})
+    _glog[gid].info(
+        _GroupLogger.logmsg.ADD.format(
+            member=member,
+            weight=clamped_weight,
+            result=result,
+        )
+    )
+    return bool(result)
 
 
 def rm(gid: gid_t, member: logid_t | gid_t) -> bool:
-    """Remove a member entirely."""
+    """Remove a member entirely.
+
+    Returns:
+
+    """
     from src import env
 
-    weight = env.r.zscore(gid, member)
-    result = env.r.zrem(gid, member) == 1
-    if result:
-        _glog[gid].info(_GroupLog.logmsg.RM.format(member=member, weight=weight))
-    return result
+    assert is_gid(gid)
+
+    result = env.r.zrem(gid, member)
+    _glog[gid].info(
+        _GroupLogger.logmsg.RM.format(
+            member=member,
+            weight=env.r.zscore(gid, member),
+            result=result,
+        )
+    )
+    return bool(result)
 
 
 def children(gid: gid_t) -> dict[logid_t | gid_t, float]:
-    """Get immediate children with their weights."""
+    """Get immediate children with weights of a group."""
     from src import env
 
+    assert is_gid(gid)
     return dict(env.r.zrange(gid, 0, -1, withscores=True))
 
 
 def descendants(
     gid: gid_t, visited: set[gid_t] | None = None
 ) -> dict[logid_t | gid_t, float]:
-    """Resolve all members recursively"""
+    """Resolve all direct and indirect members recursively."""
+
+    assert is_gid(gid)
 
     if visited is None:
         visited = set()

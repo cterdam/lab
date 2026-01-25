@@ -1,6 +1,8 @@
+import weakref
 from contextlib import asynccontextmanager, contextmanager
 from functools import cached_property
 from pathlib import Path
+from typing import Any
 
 import redis
 import redis.asyncio
@@ -222,16 +224,16 @@ class Environment(BaseModel):
 
     # LOG ######################################################################
 
+    # Mapping from lid to alive Logger objects.
+    loggers: weakref.WeakValueDictionary[Lid, Any] = weakref.WeakValueDictionary()
+
+    # Set of all lids created in this run (in this process).
+    lids: set[Lid] = set()
+
     ROOT_LOGNAME: Lid = Field(
         default="root",
         min_length=1,
         description="lid for the root logger available as src.log",
-    )
-
-    LID_SET_KEY: str = Field(
-        default="lids",
-        min_length=1,
-        description="Redis key to retrieve the set of all lids.",
     )
 
     COUNTER_HASH_SUFFIX: str = Field(

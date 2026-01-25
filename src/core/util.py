@@ -31,14 +31,14 @@ def obj_id(namespace: str, objname: str) -> str:
     """Given a namespace and a name, give the obj's complete ID."""
     from src import env
 
-    return f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}{objname}"
+    return f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}{safestr(objname)}"
 
 
 def obj_subkey(objid: str, subkey_suffix: str) -> str:
     """Given an obj's ID and a subkey suffix, return the subkey."""
     from src import env
 
-    return f"{objid}{env.OBJ_SUBKEY_SEPARATOR}{subkey_suffix}"
+    return f"{objid}{env.OBJ_SUBKEY_SEPARATOR}{safestr(subkey_suffix)}"
 
 
 def obj_in_namespace(s: str, namespace: str) -> bool:
@@ -46,6 +46,13 @@ def obj_in_namespace(s: str, namespace: str) -> bool:
     from src import env
 
     return s.startswith(f"{namespace}{env.NAMESPACE_OBJ_SEPARATOR}")
+
+
+def obj_namespace(objid: str) -> str:
+    """Extract the namespace from an obj ID."""
+    from src import env
+
+    return objid.split(env.NAMESPACE_OBJ_SEPARATOR, 1)[0]
 
 
 def obj_name(objid: str) -> str:
@@ -162,6 +169,8 @@ def safestr(s: str) -> str:
         >>> safestr("mistral‑ai/mixtral‑8x7b‑inst/💡")
         'mistral_ai_mixtral_8x7b_inst'
     """
+    if not s:
+        return s
     out = re.sub(r"[^A-Za-z0-9_-]+", "_", s)
     out = re.sub(r"_+", "_", out)
     out = out.strip("_")

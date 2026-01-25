@@ -18,8 +18,11 @@ from src.core.util import (
     logspace2dir,
     multiline,
     obj_id,
+    obj_name,
+    obj_namespace,
     obj_subkey,
     prepr,
+    safestr,
 )
 
 
@@ -175,13 +178,6 @@ class Logger:
         # Counter logging
         COUNT_SET = "# [{counter_key}] <- ({set_val})"
         COUNT_INCR = "# [{counter_key}] += ({incr_val})"
-        COUNT_TALLY = multiline(
-            """
-            Shutting down; Tallying counters.
-            {counters}
-            """,
-            oneline=False,
-        )
 
     # LOGGING METHODS ##########################################################
 
@@ -233,15 +229,16 @@ class Logger:
         super().__init__(*args, **kwargs)
         from src import env
 
-        # Store logging-related attributes
+        # Store attributes
         self.logspace = [
             logspace_part
             for cls in reversed(self.__class__.__mro__)
             if (logspace_part := cls.__dict__.get("logspace_part"))
         ]
-        self.logname = logname
+        self.logname = safestr(logname)
         self.lid = obj_id(
-            namespace=env.NAMESPACE_DELIMITER.join(self.logspace), objname=logname
+            namespace=env.NAMESPACE_DELIMITER.join(self.logspace),
+            objname=logname,
         )
         self.logdir = logspace2dir(self.logspace)
         self.counter_hash_key = obj_subkey(self.lid, env.COUNTER_HASH_SUFFIX)
@@ -258,8 +255,10 @@ class Logger:
         )
 
         # Check for duplicate lid
-        if env.r.sadd(env.LID_SET_KEY, self.lid) == 0:
+        if self.lid in env.loggers:
             self._log.warning(f"Duplicate lid: {self.lid}")
+        env.loggers[self.lid] = self
+        env.lids.add(self.lid)
 
         # Add file sinks
         only_self = lambda record: record["extra"]["lid"] == self.lid
@@ -579,7 +578,7 @@ class Logger:
             return  # Ensure only one process does this
 
         try:
-            lids = list(env.r.smembers(env.LID_SET_KEY))  # type: ignore
+            lids = list(env.lids)
             with env.coup() as p:
                 for lid in lids:
                     p.hgetall(obj_subkey(lid, env.COUNTER_HASH_SUFFIX))
@@ -588,22 +587,10 @@ class Logger:
             for lid, counter_kvs in zip(lids, counter_hashes):
                 if not counter_kvs:
                     continue
-                msg = Logger.logmsg.COUNT_TALLY.format(counters=prepr(counter_kvs))
-
-                # Send log entry
-                Logger._base_logger().bind(lid=lid, logtag="").log(
-                    Logger._counter_lvl.name,
-                    msg,
-                )
-
-                # Dump to file
-                logspace = lid.split(env.NAMESPACE_OBJ_SEPARATOR)[0].split(
-                    env.NAMESPACE_DELIMITER
-                )
-                logdir = logspace2dir(logspace)
+                logdir = logspace2dir(obj_namespace(lid).split(env.NAMESPACE_DELIMITER))
                 logdir.mkdir(parents=True, exist_ok=True)
-                logname = lid.split(env.NAMESPACE_OBJ_SEPARATOR)[-1]
-                (logdir / f"{logname}_counters.json").write_text(msg)
+                logname = obj_name(lid)
+                (logdir / f"{logname}_counters.json").write_text(prepr(counter_kvs))
 
         finally:
             env.cr.delete(env.COUNTER_DUMP_LOCK_KEY)

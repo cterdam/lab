@@ -6,7 +6,7 @@ from src.core.environment import Environment
 from src.core.util import REPO_ROOT, prepr
 
 
-def set_logger() -> Logger:
+def set_root_logger() -> Logger:
     """Prepare src logger."""
 
     # Remove default sink
@@ -28,6 +28,6 @@ def setup_msg() -> None:
 
 arg: Arguments = Arguments(_env_file=[REPO_ROOT / "args"])  # type: ignore
 env: Environment = Environment()
-log: Logger = set_logger()
+log: Logger = set_root_logger()
 
 setup_msg()

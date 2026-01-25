@@ -52,7 +52,7 @@
 ## Redis
 
 - The codebase uses Redis as a single source of truth.
-- The collection of all loggers is under `env.LID_SET_KEY`.
+- The collection of all alive loggers is accessible via `env.lids`.
 - The counters of each logger are collected under its own hash.
 - Each module might include a `coke` module which contains its COunter KEys.
 

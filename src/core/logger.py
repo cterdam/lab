@@ -14,7 +14,7 @@ from redis.client import Pipeline
 
 from src.core.util import (
     REPO_ROOT,
-    logid_t,
+    Lid,
     logspace2dir,
     multiline,
     obj_id,
@@ -52,11 +52,11 @@ class Logger:
             classes.
         - logname (str):
             Name of this logger, unique in its logspace.
-        - logid (logid):
+        - lid (Lid):
             A string ID for this instance for the purpose of logging, produced
             from its logspace and logname and unique across this run.
         - _log (loguru Logger):
-            Underlying logger that logs with the instance's logid.
+            Underlying logger that logs with the instance's lid.
 
     - logging methods:
         - trace
@@ -88,7 +88,7 @@ class Logger:
     - If providing a class attr `logspace_part`, logs of instances of the
       subclass will be stored down one hierarchy determined by this attr.
     - If overriding `def _logtag()`, logs of instances of the subclass will
-      display short contextual info alongside the logid for log entries emitted
+      display short contextual info alongside the lid for log entries emitted
       with a non-empty return value for this func.
     - If having a custom logging level, it can be registered by calling
       `Logger.add_lvl`.
@@ -105,8 +105,8 @@ class Logger:
     # Each descendant class can add a layer in its log dir path by overriding
     logspace_part: str | None = None
 
-    # Logid. Globally unique identifier for this object.
-    logid: logid_t
+    # Lid. Globally unique identifier for this object.
+    lid: Lid
 
     # Counter Hash Name. The redis key containing the instance's counters.
     counter_hash_key: str
@@ -120,7 +120,7 @@ class Logger:
             """
             <dim><green>{time:YYYY-MM-DD HH:mm:ss!UTC}</></>
             <level>[{level:^8}]</>
-            <dim><cyan>{extra[logid]}{extra[logtag]}</></> |
+            <dim><cyan>{extra[lid]}{extra[logtag]}</></> |
             <dim><yellow>{extra[relpath]}:{line} <{function}></></>
             """,
         )
@@ -217,7 +217,7 @@ class Logger:
 
     @property
     def _logtag(self) -> str | None:
-        """Return any contextual info for logging alongside the logid.
+        """Return any contextual info for logging alongside the lid.
 
         If returning None, no contextual info will be displayed.
         """
@@ -240,16 +240,16 @@ class Logger:
             if (logspace_part := cls.__dict__.get("logspace_part"))
         ]
         self.logname = logname
-        self.logid = obj_id(
+        self.lid = obj_id(
             namespace=env.NAMESPACE_DELIMITER.join(self.logspace), objname=logname
         )
         self.logdir = logspace2dir(self.logspace)
-        self.counter_hash_key = obj_subkey(self.logid, env.COUNTER_HASH_SUFFIX)
+        self.counter_hash_key = obj_subkey(self.lid, env.COUNTER_HASH_SUFFIX)
 
         # Bind logger for this instance
         self._log = (
             Logger._base_logger()
-            .bind(logid=self.logid)
+            .bind(lid=self.lid)
             .patch(
                 lambda record: record["extra"].update(
                     logtag=f" [{self._logtag}]" if self._logtag else ""
@@ -257,12 +257,12 @@ class Logger:
             )
         )
 
-        # Check for duplicate logid
-        if env.r.sadd(env.LOGID_SET_KEY, self.logid) == 0:
-            self._log.warning(f"Duplicate logid: {self.logid}")
+        # Check for duplicate lid
+        if env.r.sadd(env.LID_SET_KEY, self.lid) == 0:
+            self._log.warning(f"Duplicate lid: {self.lid}")
 
         # Add file sinks
-        only_self = lambda record: record["extra"]["logid"] == self.logid
+        only_self = lambda record: record["extra"]["lid"] == self.lid
         Logger.add_sink(
             self.logdir / f"{logname}.txt",
             filter=only_self,
@@ -579,30 +579,30 @@ class Logger:
             return  # Ensure only one process does this
 
         try:
-            logids = list(env.r.smembers(env.LOGID_SET_KEY))  # type: ignore
+            lids = list(env.r.smembers(env.LID_SET_KEY))  # type: ignore
             with env.coup() as p:
-                for logid in logids:
-                    p.hgetall(obj_subkey(logid, env.COUNTER_HASH_SUFFIX))
+                for lid in lids:
+                    p.hgetall(obj_subkey(lid, env.COUNTER_HASH_SUFFIX))
                 counter_hashes = p.execute()
 
-            for logid, counter_kvs in zip(logids, counter_hashes):
+            for lid, counter_kvs in zip(lids, counter_hashes):
                 if not counter_kvs:
                     continue
                 msg = Logger.logmsg.COUNT_TALLY.format(counters=prepr(counter_kvs))
 
                 # Send log entry
-                Logger._base_logger().bind(logid=logid, logtag="").log(
+                Logger._base_logger().bind(lid=lid, logtag="").log(
                     Logger._counter_lvl.name,
                     msg,
                 )
 
                 # Dump to file
-                logspace = logid.split(env.NAMESPACE_OBJ_SEPARATOR)[0].split(
+                logspace = lid.split(env.NAMESPACE_OBJ_SEPARATOR)[0].split(
                     env.NAMESPACE_DELIMITER
                 )
                 logdir = logspace2dir(logspace)
                 logdir.mkdir(parents=True, exist_ok=True)
-                logname = logid.split(env.NAMESPACE_OBJ_SEPARATOR)[-1]
+                logname = lid.split(env.NAMESPACE_OBJ_SEPARATOR)[-1]
                 (logdir / f"{logname}_counters.json").write_text(msg)
 
         finally:

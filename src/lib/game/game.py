@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from src import log
-from src.core import Logger, logid_t
+from src.core import Lid, Logger
 from src.lib.game.event import (
     Event,
     EventStage,
@@ -24,8 +24,8 @@ class Game(Logger):
 
     logspace_part = "game"
 
-    # Mapping from player's logid to player object
-    players: dict[logid_t, Player]
+    # Mapping from player's lid to player object
+    players: dict[Lid, Player]
 
     # The game state should contain enough information to reconstruct the game
     _state_lock: asyncio.Lock
@@ -62,7 +62,7 @@ class Game(Logger):
             yield self._state
 
     def add_player(self, player: Player):
-        self.players[player.logid] = player
+        self.players[player.lid] = player
 
     async def start(self):
         """Enter the event loop."""
@@ -129,11 +129,11 @@ class Game(Logger):
             case _:
                 await self._handle_unknown(e)
 
-    async def _send_notif(self, e: Event) -> dict[logid_t, list[Event]]:
+    async def _send_notif(self, e: Event) -> dict[Lid, list[Event]]:
         """Send notification of an event to players and collect valid reacts.
 
         Returns:
-            A dict mapping each viewer logid to a list of their reacts. Note the
+            A dict mapping each viewer lid to a list of their reacts. Note the
             list could be empty if the reacts returned by the viewer are all
             invalid and are filtered out.
         """
@@ -148,23 +148,23 @@ class Game(Logger):
             )
 
         # Send notif
-        viewer_logids = await self.event2viewers(e)
+        viewer_lids = await self.event2viewers(e)
         tasks = [
-            self.players[viewer_logid].ack_event(
+            self.players[viewer_lid].ack_event(
                 e, can_react=can_react, can_interrupt=can_interrupt
             )
-            for viewer_logid in viewer_logids
+            for viewer_lid in viewer_lids
         ]
         react_lists = await asyncio.gather(*tasks)
 
         # Filter out wrong reacts
         filtered_reacts = []
-        for viewer_logid, react_list in zip(viewer_logids, react_lists):
+        for viewer_lid, react_list in zip(viewer_lids, react_lists):
             filtered = []
             for react in react_list:
                 if not can_react:
                     continue
-                if react.src != viewer_logid:
+                if react.src != viewer_lid:
                     continue
                 if e.sid not in react.blocks:
                     continue
@@ -178,17 +178,17 @@ class Game(Logger):
                 filtered.append(react)
             filtered_reacts.append(filtered)
 
-        viewer2reacts = dict(zip(viewer_logids, filtered_reacts))
+        viewer2reacts = dict(zip(viewer_lids, filtered_reacts))
         return viewer2reacts
 
     async def _process_reacts(
-        self, e: Event, viewer2reacts: dict[logid_t, list[Event]]
+        self, e: Event, viewer2reacts: dict[Lid, list[Event]]
     ) -> None:
         """Given an event and viewer reacts, select and process reacts.
 
         Args:
             e (GameEvent): The event invoking viewer reacts.
-            viewer2reacts (dict): A mapping from each viewer's logid to a list
+            viewer2reacts (dict): A mapping from each viewer's lid to a list
             of their react events.
         """
 
@@ -236,13 +236,13 @@ class Game(Logger):
 
     async def _sample_reacts(
         self,
-        viewer2reacts: dict[logid_t, list[Event]],
+        viewer2reacts: dict[Lid, list[Event]],
     ) -> list[Event]:
         """Select reacts based on the limit.
 
         Args:
             e: The event being reacted to.
-            viewer2reacts: Mapping from viewer logid to their reacts.
+            viewer2reacts: Mapping from viewer lid to their reacts.
 
         Returns: A list of selected reacts.
         """
@@ -291,7 +291,7 @@ class Game(Logger):
     async def _add_event(self, e: Event):
         """Add an event to the queue."""
         if not e.src:
-            e.src = self.logid
+            e.src = self.lid
 
         async with self.state() as state:
             heapq.heappush(
@@ -325,8 +325,8 @@ class Game(Logger):
         async with self.state() as state:
             state.history.append(e.model_copy(deep=True))
 
-    async def event2viewers(self, e: Event) -> list[logid_t]:
-        """Given an event, return the list of player logids who can see it."""
+    async def event2viewers(self, e: Event) -> list[Lid]:
+        """Given an event, return the list of player lids who can see it."""
         if e.visible is None:
             return list(self.players.keys())
         else:

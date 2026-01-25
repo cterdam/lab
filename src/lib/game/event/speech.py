@@ -1,6 +1,6 @@
 from pydantic import Field
 
-from src.core import logid_t
+from src.core import Lid
 from src.core.util import multiline
 from src.lib.game.event.event import Event
 
@@ -8,7 +8,7 @@ from src.lib.game.event.event import Event
 class Speech(Event):
     """In-game talk from a player to other players."""
 
-    audience: list[logid_t] = Field(description="Listeners of this speech.")
+    audience: list[Lid] = Field(description="Listeners of this speech.")
     content: str = Field(description="Content of the speech.")
 
 

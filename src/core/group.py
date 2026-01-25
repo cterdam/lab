@@ -2,9 +2,9 @@ from enum import StrEnum
 
 from src.core.logger import Logger
 from src.core.util import (
-    gid_t,
-    is_gid,
-    logid_t,
+    Gid,
+    Lid,
+    isGid,
     obj_name,
 )
 
@@ -34,10 +34,10 @@ class _GroupLogger(Logger):
         RM = "RM {member} {weight} -> {result}"
 
 
-class _GroupLoggers(dict[gid_t, _GroupLogger]):
+class _GroupLoggers(dict[Gid, _GroupLogger]):
     """A default dict that maps gid to group logger."""
 
-    def __missing__(self, gid: gid_t) -> _GroupLogger:
+    def __missing__(self, gid: Gid) -> _GroupLogger:
         self[gid] = _GroupLogger(logname=obj_name(gid))
         return self[gid]
 
@@ -47,7 +47,7 @@ _glog = _GroupLoggers()
 # API ##########################################################################
 
 
-def add(gid: gid_t, member: logid_t | gid_t, weight: float = INC) -> bool:
+def add(gid: Gid, member: Lid | Gid, weight: float = INC) -> bool:
     """Add or update a member with weight.
 
     Returns:
@@ -56,7 +56,7 @@ def add(gid: gid_t, member: logid_t | gid_t, weight: float = INC) -> bool:
     from src import env
 
     # Check args
-    assert is_gid(gid)
+    assert isGid(gid)
 
     # Clamp weight
     clamped_weight = max(-1.0, min(1.0, weight))
@@ -77,7 +77,7 @@ def add(gid: gid_t, member: logid_t | gid_t, weight: float = INC) -> bool:
     return bool(result)
 
 
-def rm(gid: gid_t, member: logid_t | gid_t) -> bool:
+def rm(gid: Gid, member: Lid | Gid) -> bool:
     """Remove a member entirely.
 
     Returns:
@@ -85,7 +85,7 @@ def rm(gid: gid_t, member: logid_t | gid_t) -> bool:
     """
     from src import env
 
-    assert is_gid(gid)
+    assert isGid(gid)
 
     result = env.r.zrem(gid, member)
     _glog[gid].info(
@@ -98,20 +98,18 @@ def rm(gid: gid_t, member: logid_t | gid_t) -> bool:
     return bool(result)
 
 
-def children(gid: gid_t) -> dict[logid_t | gid_t, float]:
+def children(gid: Gid) -> dict[Lid | Gid, float]:
     """Get immediate children with weights of a group."""
     from src import env
 
-    assert is_gid(gid)
+    assert isGid(gid)
     return dict(env.r.zrange(gid, 0, -1, withscores=True))
 
 
-def descendants(
-    gid: gid_t, visited: set[gid_t] | None = None
-) -> dict[logid_t | gid_t, float]:
+def descendants(gid: Gid, visited: set[Gid] | None = None) -> dict[Lid | Gid, float]:
     """Resolve all direct and indirect members recursively."""
 
-    assert is_gid(gid)
+    assert isGid(gid)
 
     if visited is None:
         visited = set()
@@ -120,12 +118,12 @@ def descendants(
         return {}
 
     visited |= {gid}
-    direct: dict[logid_t | gid_t, float] = {}
-    indirect: dict[logid_t | gid_t, float] = {}
+    direct: dict[Lid | Gid, float] = {}
+    indirect: dict[Lid | Gid, float] = {}
 
     for child, weight in children(gid).items():
         direct[child] = weight
-        if is_gid(child):
+        if isGid(child):
             for m, s in descendants(child, visited).items():
                 if s > 0:
                     indirect[m] = indirect.get(m, 0) + weight * s

@@ -3,37 +3,35 @@ import re
 import pytest
 
 from src.core.util import (
-    as_filename,
     descendant_classes,
-    get_gid,
-    is_gid,
-    is_logid,
+    isGid,
+    isLid,
     randalnu,
+    safestr,
+    toGid,
 )
 from src.lib.game.event import Event, GameEnd, GameStart, Interrupt, Speech
 
 
 def test_as_filename_basic():
-    assert as_filename("openai/gpt-4.1") == "openai_gpt-4_1"
+    assert safestr("openai/gpt-4.1") == "openai_gpt-4_1"
 
 
 def test_as_filename_emojis_symbols():
-    assert (
-        as_filename("mistral‑ai/mixtral‑8x7b‑inst/💡") == "mistral_ai_mixtral_8x7b_inst"
-    )
+    assert safestr("mistral‑ai/mixtral‑8x7b‑inst/💡") == "mistral_ai_mixtral_8x7b_inst"
 
 
 def test_as_filename_strips_extra_underscores():
-    assert as_filename("///hello///") == "hello"
+    assert safestr("///hello///") == "hello"
 
 
 def test_as_filename_consecutive_special_chars():
-    assert as_filename("hello!!world") == "hello_world"
+    assert safestr("hello!!world") == "hello_world"
 
 
 def test_as_filename_invalid():
     with pytest.raises(ValueError):
-        as_filename("💡💡💡")
+        safestr("💡💡💡")
 
 
 def test_randalnu_default_length():
@@ -195,53 +193,53 @@ def test_descendant_classes_with_game_event():
 
 def test_is_gid_valid():
     """Test is_gid with valid group IDs."""
-    gid = get_gid("mygroup")
-    assert is_gid(gid) is True
+    gid = toGid("mygroup")
+    assert isGid(gid) is True
 
 
 def test_is_gid_invalid_format():
     """Test is_gid with invalid format."""
-    assert is_gid("not_a_gid") is False
-    assert is_gid("wrong:namespace") is False
+    assert isGid("not_a_gid") is False
+    assert isGid("wrong:namespace") is False
 
 
 def test_is_gid_empty():
     """Test is_gid with empty string."""
-    assert is_gid("") is False
+    assert isGid("") is False
 
 
 def test_is_gid_non_string():
     """Test is_gid with non-string types."""
-    assert is_gid(None) is False
-    assert is_gid(123) is False
-    assert is_gid([]) is False
+    assert isGid(None) is False
+    assert isGid(123) is False
+    assert isGid([]) is False
 
 
-def test_is_logid_valid():
-    """Test is_logid with valid object IDs."""
-    assert is_logid("namespace:name") is True
-    assert is_logid("g:group1") is True
-    assert is_logid("logger:main") is True
+def test_is_lid_valid():
+    """Test isLid with valid object IDs."""
+    assert isLid("namespace:name") is True
+    assert isLid("g:group1") is True
+    assert isLid("logger:main") is True
 
 
-def test_is_logid_invalid_no_separator():
-    """Test is_logid with no separator."""
-    assert is_logid("noseparator") is False
+def test_is_lid_invalid_no_separator():
+    """Test isLid with no separator."""
+    assert isLid("noseparator") is False
 
 
-def test_is_logid_empty():
-    """Test is_logid with empty string."""
-    assert is_logid("") is False
+def test_is_lid_empty():
+    """Test isLid with empty string."""
+    assert isLid("") is False
 
 
-def test_is_logid_non_string():
-    """Test is_logid with non-string types."""
-    assert is_logid(None) is False
-    assert is_logid(123) is False
-    assert is_logid({}) is False
+def test_is_lid_non_string():
+    """Test isLid with non-string types."""
+    assert isLid(None) is False
+    assert isLid(123) is False
+    assert isLid({}) is False
 
 
-def test_is_logid_gid_is_logid():
-    """Test that gids are also valid logids."""
-    gid = get_gid("mygroup")
-    assert is_logid(gid) is True
+def test_is_lid_gid_is_lid():
+    """Test that gids are also valid lids."""
+    gid = toGid("mygroup")
+    assert isLid(gid) is True

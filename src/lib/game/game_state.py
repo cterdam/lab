@@ -3,7 +3,7 @@ from enum import StrEnum
 from pydantic import Field
 
 from src.core import Dataclass
-from src.core.util import multiline, sid_t
+from src.core.util import Sid, multiline
 from src.lib.game.event import Event
 
 
@@ -27,7 +27,7 @@ class GameState(Dataclass):
         description="Current stage of the game lifecycle.",
     )
 
-    event_queue: list[tuple[int, sid_t, Event]] = Field(
+    event_queue: list[tuple[int, Sid, Event]] = Field(
         default_factory=list,
         description=multiline(
             """

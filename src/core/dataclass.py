@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.core.util import multiline, next_sid, prepr, sid_t
+from src.core.util import Sid, multiline, nextSid, prepr
 
 
 class Dataclass(BaseModel):
@@ -25,8 +25,8 @@ class Dataclass(BaseModel):
         ),
     )
 
-    sid: sid_t = Field(
-        default_factory=next_sid,
+    sid: Sid = Field(
+        default_factory=nextSid,
         description=multiline(
             """
             Auto generated monotonically increasing serial ID.

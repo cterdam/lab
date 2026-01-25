@@ -12,9 +12,14 @@ import rich.pretty
 
 # CONSTANTS ####################################################################
 
-logid_t: TypeAlias = str
-sid_t: TypeAlias = int
-gid_t: TypeAlias = str
+# Log ID
+Lid: TypeAlias = str
+
+# Serial ID
+Sid: TypeAlias = int
+
+# Group ID
+Gid: TypeAlias = str
 
 # Root path of the repo inside the Docker container.
 REPO_ROOT: Path = Path("/gpt")
@@ -57,21 +62,21 @@ def logspace2dir(logspace: list[str]) -> Path:
     return env.log_dir.joinpath(*logspace)
 
 
-def next_sid() -> sid_t:
+def nextSid() -> Sid:
     """Get the next serial ID from the environment."""
     from src import env
 
     return env.r.incr(env.SID_COUNTER_KEY)
 
 
-def get_gid(name: str) -> gid_t:
+def toGid(name: str) -> Gid:
     """Given a name, form the gid."""
     from src import env
 
     return obj_id(env.GID_NAMESPACE, name)
 
 
-def is_gid(objid: str) -> bool:
+def isGid(objid: str) -> bool:
     """Given an obj's ID, determine whether it represents a group."""
     from src import env
 
@@ -80,7 +85,7 @@ def is_gid(objid: str) -> bool:
     return obj_in_namespace(objid, env.GID_NAMESPACE)
 
 
-def is_logid(objid: str) -> bool:
+def isLid(objid: str) -> bool:
     """Check if a string is a valid object ID (belongs to a namespace)."""
     from src import env
 
@@ -147,14 +152,14 @@ def multiline(s: str, oneline: bool = True, continuous: bool = False) -> str:
     return result.strip()
 
 
-def as_filename(s: str) -> str:
+def safestr(s: str) -> str:
     """
     Convert any str into a filesystem‑safe filename.
 
     Examples:
-        >>> to_safe_filename("openai/gpt-4.1")
+        >>> safestr("openai/gpt-4.1")
         'openai_gpt-4_1'
-        >>> to_safe_filename("mistral‑ai/mixtral‑8x7b‑inst/💡")
+        >>> safestr("mistral‑ai/mixtral‑8x7b‑inst/💡")
         'mistral_ai_mixtral_8x7b_inst'
     """
     out = re.sub(r"[^A-Za-z0-9_-]+", "_", s)

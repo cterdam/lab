@@ -38,7 +38,7 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 
 ## Contribute
 
-- keep weak ref from logids to obj
+- keep weak ref from lids to obj
   - remove logspace2dir
 
 - Stop dumping counters to log file, only json

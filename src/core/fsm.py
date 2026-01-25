@@ -95,7 +95,7 @@ class FSM(Logger):
 
     @property
     def _logtag(self) -> str:
-        """Always display the current state alongside logid in logs."""
+        """Always display the current state alongside lid in logs."""
         return self._fsm.state
 
     @final

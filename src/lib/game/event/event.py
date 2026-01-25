@@ -3,8 +3,8 @@ from typing import Any
 
 from pydantic import Field
 
-from src.core import Dataclass, logid_t
-from src.core.util import multiline, sid_t
+from src.core import Dataclass, Lid
+from src.core.util import Sid, multiline
 
 SerializedEvent = dict[str, Any]
 
@@ -26,7 +26,7 @@ class Event(Dataclass):
         description="Current stage of the event in its lifecycle.",
     )
 
-    blocks: list[sid_t] = Field(
+    blocks: list[Sid] = Field(
         default_factory=list,
         description=multiline(
             """
@@ -36,7 +36,7 @@ class Event(Dataclass):
         ),
     )
 
-    requires: list[sid_t] = Field(
+    requires: list[Sid] = Field(
         default_factory=list,
         description=multiline(
             """
@@ -46,24 +46,24 @@ class Event(Dataclass):
         ),
     )
 
-    src: logid_t | None = Field(
+    src: Lid | None = Field(
         default=None,
         description=multiline(
             """
             Source of this event. If the event is a speech, this is the speaker.
             If the event is a battle, this is the attacker. If the event is
-            environmental and external to any player, this is the game's logid.
-            If None, will be set to the game's logid when the game adds it to
+            environmental and external to any player, this is the game's lid.
+            If None, will be set to the game's lid when the game adds it to
             the event queue.
             """
         ),
     )
 
-    visible: list[logid_t] | None = Field(
+    visible: list[Lid] | None = Field(
         default=None,
         description=multiline(
             """
-            List of player logids who can see this event. If None, the event is
+            List of player lids who can see this event. If None, the event is
             visible to all players. If empty list, the event is visible to no
             players.
             """

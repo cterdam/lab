@@ -6,7 +6,7 @@ import redis
 import redis.asyncio
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from src.core.util import REPO_ROOT, logid_t, multiline, randalnu, str2int
+from src.core.util import REPO_ROOT, Lid, multiline, randalnu, str2int
 
 
 class Environment(BaseModel):
@@ -222,16 +222,16 @@ class Environment(BaseModel):
 
     # LOG ######################################################################
 
-    ROOT_LOGNAME: logid_t = Field(
+    ROOT_LOGNAME: Lid = Field(
         default="root",
         min_length=1,
-        description="logid for the root logger available as src.log",
+        description="lid for the root logger available as src.log",
     )
 
-    LOGID_SET_KEY: str = Field(
-        default="logids",
+    LID_SET_KEY: str = Field(
+        default="lids",
         min_length=1,
-        description="Redis key to retrieve the set of all logids.",
+        description="Redis key to retrieve the set of all lids.",
     )
 
     COUNTER_HASH_SUFFIX: str = Field(
@@ -240,7 +240,7 @@ class Environment(BaseModel):
         description=multiline(
             """
             Counter hash suffix. String suffix to prepend to a logger's
-            logid to form its counter hash name in Redis.
+            lid to form its counter hash name in Redis.
             """
         ),
     )

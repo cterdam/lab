@@ -2,7 +2,7 @@ from functools import cached_property
 
 import openai
 
-from src.core.util import as_filename, atimed, timed
+from src.core.util import atimed, safestr, timed
 from src.lib.model.txt import LM
 from src.lib.model.txt.api.openai.openai_lm_gentxt_params import OpenAILMGentxtParams
 from src.lib.model.txt.api.openai.openai_lm_gentxt_result import OpenAILMGentxtResult
@@ -25,7 +25,7 @@ class OpenAILM(LM):
     ):
         super().__init__(
             *args,
-            logname=logname or as_filename(params.model_name),
+            logname=logname or safestr(params.model_name),
             **kwargs,
         )
         self._model_name = params.model_name

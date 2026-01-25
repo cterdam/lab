@@ -1,12 +1,12 @@
 import pytest
 
 from src.core import group
-from src.core.util import get_gid
+from src.core.util import toGid
 
 
 def test_add_and_children_default_weight():
     """Adding a member uses INC=1 by default."""
-    gid = get_gid("test_add_default")
+    gid = toGid("test_add_default")
     member = "member1"
 
     group.add(gid, member)
@@ -18,7 +18,7 @@ def test_add_and_children_default_weight():
 
 def test_add_and_children_custom_weight():
     """Adding a member with custom weight."""
-    gid = get_gid("test_add_custom")
+    gid = toGid("test_add_custom")
     member = "member1"
     weight = 0.5
 
@@ -31,7 +31,7 @@ def test_add_and_children_custom_weight():
 
 def test_add_updates_existing_member():
     """Adding an existing member updates its weight."""
-    gid = get_gid("test_add_update")
+    gid = toGid("test_add_update")
     member = "member1"
 
     group.add(gid, member, 0.3)
@@ -43,7 +43,7 @@ def test_add_updates_existing_member():
 
 def test_add_negative_weight():
     """Adding a member with negative weight (exclusion)."""
-    gid = get_gid("test_add_negative")
+    gid = toGid("test_add_negative")
     member = "member1"
 
     group.add(gid, member, group.EXC)
@@ -54,7 +54,7 @@ def test_add_negative_weight():
 
 def test_add_weight_clamping_upper():
     """Weight values above 1 are clamped to 1."""
-    gid = get_gid("test_clamp_upper")
+    gid = toGid("test_clamp_upper")
     member = "member1"
 
     group.add(gid, member, 5.0)
@@ -65,7 +65,7 @@ def test_add_weight_clamping_upper():
 
 def test_add_weight_clamping_lower():
     """Weight values below -1 are clamped to -1."""
-    gid = get_gid("test_clamp_lower")
+    gid = toGid("test_clamp_lower")
     member = "member1"
 
     group.add(gid, member, -10.0)
@@ -76,7 +76,7 @@ def test_add_weight_clamping_lower():
 
 def test_add_weight_within_range_not_clamped():
     """Weight values within [-1, 1] are not modified."""
-    gid = get_gid("test_no_clamp")
+    gid = toGid("test_no_clamp")
     member = "member1"
 
     group.add(gid, member, 0.7)
@@ -119,7 +119,7 @@ def test_descendants_invalid_gid_raises():
 
 def test_rm_existing_member():
     """Removing an existing member returns True."""
-    gid = get_gid("test_rm_existing")
+    gid = toGid("test_rm_existing")
     member = "member1"
 
     group.add(gid, member)
@@ -131,7 +131,7 @@ def test_rm_existing_member():
 
 def test_rm_nonexistent_member():
     """Removing a nonexistent member returns False."""
-    gid = get_gid("test_rm_nonexistent")
+    gid = toGid("test_rm_nonexistent")
 
     result = group.rm(gid, "nonexistent_member")
 
@@ -140,7 +140,7 @@ def test_rm_nonexistent_member():
 
 def test_children_empty_group():
     """Empty group returns empty dict."""
-    gid = get_gid("test_children_empty")
+    gid = toGid("test_children_empty")
 
     result = group.children(gid)
 
@@ -149,7 +149,7 @@ def test_children_empty_group():
 
 def test_children_multiple_members():
     """Group with multiple members returns all with weights."""
-    gid = get_gid("test_children_multiple")
+    gid = toGid("test_children_multiple")
 
     group.add(gid, "m1", 1.0)
     group.add(gid, "m2", 0.5)
@@ -165,7 +165,7 @@ def test_children_multiple_members():
 
 def test_descendants_flat_group():
     """Flat group without nesting."""
-    gid = get_gid("test_desc_flat")
+    gid = toGid("test_desc_flat")
 
     group.add(gid, "m1", 1.0)
     group.add(gid, "m2", 0.5)
@@ -178,8 +178,8 @@ def test_descendants_flat_group():
 
 def test_descendants_nested_groups():
     """Nested group resolution."""
-    parent = get_gid("test_desc_parent")
-    child = get_gid("test_desc_child")
+    parent = toGid("test_desc_parent")
+    child = toGid("test_desc_child")
 
     group.add(child, "m1", 1.0)
     group.add(parent, child, 1.0)
@@ -194,8 +194,8 @@ def test_descendants_nested_groups():
 
 def test_descendants_weight_multiplication():
     """Nested weights are multiplied."""
-    parent = get_gid("test_desc_weight_mult_parent")
-    child = get_gid("test_desc_weight_mult_child")
+    parent = toGid("test_desc_weight_mult_parent")
+    child = toGid("test_desc_weight_mult_child")
 
     group.add(child, "m1", 0.8)
     group.add(parent, child, 0.5)
@@ -207,8 +207,8 @@ def test_descendants_weight_multiplication():
 
 def test_descendants_direct_overrides_indirect():
     """Direct membership overrides indirect."""
-    parent = get_gid("test_desc_override_parent")
-    child = get_gid("test_desc_override_child")
+    parent = toGid("test_desc_override_parent")
+    child = toGid("test_desc_override_child")
 
     group.add(child, "m1", 1.0)
     group.add(parent, child, 1.0)
@@ -221,8 +221,8 @@ def test_descendants_direct_overrides_indirect():
 
 def test_descendants_only_positive_propagates():
     """Negative scores don't propagate through nested groups."""
-    parent = get_gid("test_desc_pos_prop_parent")
-    child = get_gid("test_desc_pos_prop_child")
+    parent = toGid("test_desc_pos_prop_parent")
+    child = toGid("test_desc_pos_prop_child")
 
     group.add(child, "m1", -1.0)  # banned in child
     group.add(parent, child, 1.0)
@@ -234,8 +234,8 @@ def test_descendants_only_positive_propagates():
 
 def test_descendants_cycle_detection():
     """Cycles don't cause infinite loops."""
-    g1 = get_gid("test_desc_cycle_1")
-    g2 = get_gid("test_desc_cycle_2")
+    g1 = toGid("test_desc_cycle_1")
+    g2 = toGid("test_desc_cycle_2")
 
     group.add(g1, g2, 1.0)
     group.add(g2, g1, 1.0)  # cycle
@@ -248,9 +248,9 @@ def test_descendants_cycle_detection():
 
 def test_descendants_multiple_paths():
     """Multiple paths sum their contributions."""
-    parent = get_gid("test_desc_multi_path_parent")
-    child1 = get_gid("test_desc_multi_path_child1")
-    child2 = get_gid("test_desc_multi_path_child2")
+    parent = toGid("test_desc_multi_path_parent")
+    child1 = toGid("test_desc_multi_path_child1")
+    child2 = toGid("test_desc_multi_path_child2")
 
     group.add(child1, "m1", 1.0)
     group.add(child2, "m1", 1.0)
@@ -265,9 +265,9 @@ def test_descendants_multiple_paths():
 
 def test_descendants_direct_overrides_multiple_indirect():
     """Direct membership overrides even with multiple indirect paths."""
-    parent = get_gid("test_desc_direct_multi_parent")
-    child1 = get_gid("test_desc_direct_multi_child1")
-    child2 = get_gid("test_desc_direct_multi_child2")
+    parent = toGid("test_desc_direct_multi_parent")
+    child1 = toGid("test_desc_direct_multi_child1")
+    child2 = toGid("test_desc_direct_multi_child2")
 
     group.add(child1, "m1", 1.0)
     group.add(child2, "m1", 1.0)
@@ -282,9 +282,9 @@ def test_descendants_direct_overrides_multiple_indirect():
 
 def test_descendants_deep_nesting():
     """Deep hierarchy with weight multiplication."""
-    g1 = get_gid("test_desc_deep_1")
-    g2 = get_gid("test_desc_deep_2")
-    g3 = get_gid("test_desc_deep_3")
+    g1 = toGid("test_desc_deep_1")
+    g2 = toGid("test_desc_deep_2")
+    g3 = toGid("test_desc_deep_3")
 
     group.add(g3, "m1", 1.0)
     group.add(g2, g3, 0.5)
@@ -321,10 +321,10 @@ def test_diamond_inheritance():
 
     m1 = 0.4 * 1.0 * 1.0 = 0.4
     """
-    a = get_gid("test_diamond_a")
-    b = get_gid("test_diamond_b")
-    c = get_gid("test_diamond_c")
-    d = get_gid("test_diamond_d")
+    a = toGid("test_diamond_a")
+    b = toGid("test_diamond_b")
+    c = toGid("test_diamond_c")
+    d = toGid("test_diamond_d")
 
     group.add(d, "m1", 1.0)
     group.add(b, d, 1.0)
@@ -357,10 +357,10 @@ def test_diamond_with_one_path_blocked():
 
     m1 = 1.0 * 1.0 * 1.0 = 1.0 (through B only)
     """
-    a = get_gid("test_diamond_blocked_a")
-    b = get_gid("test_diamond_blocked_b")
-    c = get_gid("test_diamond_blocked_c")
-    d = get_gid("test_diamond_blocked_d")
+    a = toGid("test_diamond_blocked_a")
+    b = toGid("test_diamond_blocked_b")
+    c = toGid("test_diamond_blocked_c")
+    d = toGid("test_diamond_blocked_d")
 
     group.add(d, "m1", 1.0)
     group.add(b, d, 1.0)
@@ -393,10 +393,10 @@ def test_diamond_with_negative_edge_to_parent():
 
     m1 = -0.5 * 1.0 * 1.0 = -0.5
     """
-    a = get_gid("test_diamond_neg_edge_a")
-    b = get_gid("test_diamond_neg_edge_b")
-    c = get_gid("test_diamond_neg_edge_c")
-    d = get_gid("test_diamond_neg_edge_d")
+    a = toGid("test_diamond_neg_edge_a")
+    b = toGid("test_diamond_neg_edge_b")
+    c = toGid("test_diamond_neg_edge_c")
+    d = toGid("test_diamond_neg_edge_d")
 
     group.add(d, "m1", 1.0)
     group.add(b, d, 1.0)
@@ -429,11 +429,11 @@ def test_triple_diamond():
 
     m1 = 0.2 * 1.0 * 1.0 = 0.2
     """
-    a = get_gid("test_triple_diamond_a")
-    b = get_gid("test_triple_diamond_b")
-    c = get_gid("test_triple_diamond_c")
-    d = get_gid("test_triple_diamond_d")
-    e = get_gid("test_triple_diamond_e")
+    a = toGid("test_triple_diamond_a")
+    b = toGid("test_triple_diamond_b")
+    c = toGid("test_triple_diamond_c")
+    d = toGid("test_triple_diamond_d")
+    e = toGid("test_triple_diamond_e")
 
     group.add(e, "m1", 1.0)
     group.add(b, e, 1.0)
@@ -477,13 +477,13 @@ def test_double_diamond_stacked():
     D's m1 = 0.4 * 1.0 * 1.0 = 0.4
     A's m1 = 0.5 * 1.0 * 0.4 = 0.2
     """
-    a = get_gid("test_double_diamond_a")
-    b = get_gid("test_double_diamond_b")
-    c = get_gid("test_double_diamond_c")
-    d = get_gid("test_double_diamond_d")
-    e = get_gid("test_double_diamond_e")
-    f = get_gid("test_double_diamond_f")
-    g = get_gid("test_double_diamond_g")
+    a = toGid("test_double_diamond_a")
+    b = toGid("test_double_diamond_b")
+    c = toGid("test_double_diamond_c")
+    d = toGid("test_double_diamond_d")
+    e = toGid("test_double_diamond_e")
+    f = toGid("test_double_diamond_f")
+    g = toGid("test_double_diamond_g")
 
     group.add(g, "m1", 1.0)
     group.add(e, g, 1.0)
@@ -516,10 +516,10 @@ def test_complex_mixed_include_exclude():
     m1: B=1, C doesn't propagate (negative), D=0.5. Total=1.5
     m2: B=1, D=1. Total=2.0
     """
-    a = get_gid("test_complex_mixed_a")
-    b = get_gid("test_complex_mixed_b")
-    c = get_gid("test_complex_mixed_c")
-    d = get_gid("test_complex_mixed_d")
+    a = toGid("test_complex_mixed_a")
+    b = toGid("test_complex_mixed_b")
+    c = toGid("test_complex_mixed_c")
+    d = toGid("test_complex_mixed_d")
 
     group.add(b, "m1", 1.0)
     group.add(b, "m2", 1.0)
@@ -542,11 +542,11 @@ def test_deep_chain_with_alternating_weights():
 
     m1 = 0.8 * 0.5 * 0.9 * 0.4 * 1.0 = 0.144
     """
-    a = get_gid("test_deep_chain_a")
-    b = get_gid("test_deep_chain_b")
-    c = get_gid("test_deep_chain_c")
-    d = get_gid("test_deep_chain_d")
-    e = get_gid("test_deep_chain_e")
+    a = toGid("test_deep_chain_a")
+    b = toGid("test_deep_chain_b")
+    c = toGid("test_deep_chain_c")
+    d = toGid("test_deep_chain_d")
+    e = toGid("test_deep_chain_e")
 
     group.add(e, "m1", 1.0)
     group.add(d, e, 0.4)
@@ -569,10 +569,10 @@ def test_parallel_chains_converging():
 
     m1 = 0.3 * 0.8 * 1.0 = 0.24
     """
-    a = get_gid("test_parallel_chains_a")
-    b = get_gid("test_parallel_chains_b")
-    c = get_gid("test_parallel_chains_c")
-    d = get_gid("test_parallel_chains_d")
+    a = toGid("test_parallel_chains_a")
+    b = toGid("test_parallel_chains_b")
+    c = toGid("test_parallel_chains_c")
+    d = toGid("test_parallel_chains_d")
 
     group.add(d, "m1", 1.0)
     group.add(b, d, 0.6)
@@ -608,14 +608,14 @@ def test_lattice_structure():
 
     m1 = 1.0 * 0.5 * 1.0 * 1.0 = 0.5
     """
-    a = get_gid("test_lattice_a")
-    b = get_gid("test_lattice_b")
-    c = get_gid("test_lattice_c")
-    d = get_gid("test_lattice_d")
-    e = get_gid("test_lattice_e")
-    f = get_gid("test_lattice_f")
-    g = get_gid("test_lattice_g")
-    h = get_gid("test_lattice_h")
+    a = toGid("test_lattice_a")
+    b = toGid("test_lattice_b")
+    c = toGid("test_lattice_c")
+    d = toGid("test_lattice_d")
+    e = toGid("test_lattice_e")
+    f = toGid("test_lattice_f")
+    g = toGid("test_lattice_g")
+    h = toGid("test_lattice_h")
 
     group.add(h, "m1", 1.0)
     group.add(e, h, 1.0)
@@ -644,11 +644,11 @@ def test_exclude_at_intermediate_level():
 
     m1 = 1.0 * 1.0 * 1.0 = 1.0 (through E only)
     """
-    a = get_gid("test_exclude_intermediate_a")
-    b = get_gid("test_exclude_intermediate_b")
-    c = get_gid("test_exclude_intermediate_c")
-    d = get_gid("test_exclude_intermediate_d")
-    e = get_gid("test_exclude_intermediate_e")
+    a = toGid("test_exclude_intermediate_a")
+    b = toGid("test_exclude_intermediate_b")
+    c = toGid("test_exclude_intermediate_c")
+    d = toGid("test_exclude_intermediate_d")
+    e = toGid("test_exclude_intermediate_e")
 
     group.add(c, "m1", -1.0)
     group.add(e, "m1", 1.0)
@@ -680,10 +680,10 @@ def test_direct_override_deep_in_hierarchy():
 
     m1 = 1.0*0.1 + 1.0*1.0*1.0 = 1.1
     """
-    a = get_gid("test_direct_deep_a")
-    b = get_gid("test_direct_deep_b")
-    c = get_gid("test_direct_deep_c")
-    d = get_gid("test_direct_deep_d")
+    a = toGid("test_direct_deep_a")
+    b = toGid("test_direct_deep_b")
+    c = toGid("test_direct_deep_c")
+    d = toGid("test_direct_deep_d")
 
     group.add(b, "m1", 0.1)
     group.add(d, "m1", 1.0)
@@ -714,10 +714,10 @@ def test_cycle_in_diamond():
         |
        m1
     """
-    a = get_gid("test_cycle_diamond_a")
-    b = get_gid("test_cycle_diamond_b")
-    c = get_gid("test_cycle_diamond_c")
-    d = get_gid("test_cycle_diamond_d")
+    a = toGid("test_cycle_diamond_a")
+    b = toGid("test_cycle_diamond_b")
+    c = toGid("test_cycle_diamond_c")
+    d = toGid("test_cycle_diamond_d")
 
     group.add(d, "m1", 1.0)
     group.add(b, d, 1.0)

@@ -22,7 +22,7 @@
   - The `logspace` is a list representing the hierarchy of names passed on by
     ancestor classes.
   - The `logname` is unique within its `logspace`.
-  - The `logid` is produced from the `logspace` and `logname` and is unique
+  - The `lid` is produced from the `logspace` and `logname` and is unique
     across the run.
   - The `logspace` and `logname` determine the location in `out/$RUN_ID/log`
     where the logger instance dumps its logs.
@@ -41,7 +41,7 @@
 ## Redis
 
 - The codebase uses Redis as a single source of truth.
-- The collection of all loggers is under `env.LOGID_SET_KEY`.
+- The collection of all loggers is under `env.LID_SET_KEY`.
 - The counters of each logger are collected under its own hash.
 - Each module might include a `coke` module which contains its COunter KEys.
 

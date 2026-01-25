@@ -38,6 +38,17 @@
   - `ERROR` -> Unexpected outcomes that cause a non-essential function to fail.
   - `CRITICAL` -> Unexpected outcomes that cause the entire app to fail.
 
+### Groups
+
+- Each group has a `gid` which is also used as the Redis key for the group.
+- Groups can contain any string ID, such as `lid` or other `gid`.
+- Membership in a group is represented by a real number. A negative value is
+  exclusion.
+
+### Serial ID
+
+- The serial ID is an ever-increasing number ID.
+
 ## Redis
 
 - The codebase uses Redis as a single source of truth.

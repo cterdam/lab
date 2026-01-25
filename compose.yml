@@ -14,19 +14,19 @@ services:
 
   app:
     build: .
-    image: gpt
+    image: lab
     depends_on:
       - redis
     tty: true
     stdin_open: true
     env_file: .env
     volumes:
-      - ./out:/gpt/out
+      - ./out:/lab/out
     command: python -m src
 
   test:
     build: .
-    image: gpt
+    image: lab
     depends_on:
       - redis
     tty: true

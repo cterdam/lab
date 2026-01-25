@@ -1,4 +1,4 @@
-# **G**eneral Ra**p**id Proto**t**yping
+# **L**arge **A**gile **B**ox
 
 ## You should use a monorepo
 

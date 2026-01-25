@@ -22,7 +22,7 @@ Sid: TypeAlias = int
 Gid: TypeAlias = str
 
 # Root path of the repo inside the Docker container.
-REPO_ROOT: Path = Path("/gpt")
+REPO_ROOT: Path = Path("/lab")
 
 # BOOKKEEPING ##################################################################
 

@@ -16,7 +16,8 @@ services:
     build: .
     image: lab
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     tty: true
     stdin_open: true
     env_file: .env
@@ -28,7 +29,8 @@ services:
     build: .
     image: lab
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     tty: true
     stdin_open: true
     env_file: .env

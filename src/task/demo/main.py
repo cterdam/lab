@@ -2,6 +2,8 @@ import asyncio
 import time
 
 from src import env, log
+from src.core import group
+from src.core.util import toGid
 from src.lib.data.word_bank import WordBank
 from src.lib.game.event.misc import GameEnd
 from src.lib.game.game import Game
@@ -76,6 +78,10 @@ def main():
     model = OpenAILM(params=OpenAILMInitParams(model_name="gpt-4.1"))
 
     run_sync(n_tasks, wb, model)
+
+    group.add(toGid("RandomGroup"), "member1")
+    log.info(group.children(toGid("NonexistentGroup")))
+    group.rm(toGid("NonexistentGroup"), "member2")
 
     log.biset({"abc": 1, "def": 2, "ghi": 30})
     log.incr("abc")

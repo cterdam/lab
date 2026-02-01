@@ -77,14 +77,14 @@ def test_can_provide_other_fields_during_initialization():
 
 def test_cls_set_correctly_for_different_classes():
     """Test that cls is set correctly for different Dataclass subclasses."""
-    from src.core.func_result import FuncResult
+    from src.core.func_result import Timed
     from src.lib.game.game_init_params import GameInitParams
 
     game_params = GameInitParams()
     assert game_params.cls == "src.lib.game.game_init_params.GameInitParams"
 
-    func_result = FuncResult(duration=timedelta(seconds=1))
-    assert func_result.cls == "src.core.func_result.FuncResult"
+    timed_result = Timed[SampleDataclass](data=SampleDataclass())
+    assert timed_result.cls == "src.core.func_result.Timed[SampleDataclass]"
 
 
 def test_cls_matches_during_assignment_validation():

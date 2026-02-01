@@ -195,55 +195,6 @@ def str2int(s: str | None) -> int | None:
     return int(s) if s is not None else None
 
 
-# FUNCTION TIMING ##############################################################
-
-
-def td2ms(delta: timedelta) -> int:
-    """Convert a timedelta to microseconds."""
-    return int(delta.total_seconds() * 1_000_000)
-
-
-class TimedOutput(NamedTuple):
-    """Result of a timed function call."""
-
-    duration: timedelta
-    output: Any
-
-
-def timed(func: Callable) -> Callable[..., TimedOutput]:
-    """Wraps a sync function to return its duration and result."""
-
-    @wraps(func)
-    def wrapper(*args, **kwargs) -> TimedOutput:
-        start_time = time.perf_counter()
-        output = func(*args, **kwargs)
-        seconds_elapsed = time.perf_counter() - start_time
-        return TimedOutput(
-            duration=timedelta(seconds=seconds_elapsed),
-            output=output,
-        )
-
-    return wrapper
-
-
-def atimed(
-    func: Callable[..., Coroutine[Any, Any, Any]],
-) -> Callable[..., Coroutine[Any, Any, TimedOutput]]:
-    """Wraps an async function to return its duration and result."""
-
-    @wraps(func)
-    async def wrapper(*args, **kwargs) -> TimedOutput:
-        start_time = time.perf_counter()
-        output = await func(*args, **kwargs)
-        seconds_elapsed = time.perf_counter() - start_time
-        return TimedOutput(
-            duration=timedelta(seconds=seconds_elapsed),
-            output=output,
-        )
-
-    return wrapper
-
-
 # CLASS HIERARCHY ##############################################################
 
 T = TypeVar("T")

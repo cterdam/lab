@@ -2,7 +2,6 @@ from functools import cached_property
 
 import openai
 
-from src.core.util import atimed, safestr, timed
 from src.lib.model.txt import LM
 from src.lib.model.txt.api.openai.openai_lm_gentxt_params import OpenAILMGentxtParams
 from src.lib.model.txt.api.openai.openai_lm_gentxt_result import OpenAILMGentxtResult
@@ -25,7 +24,7 @@ class OpenAILM(LM):
     ):
         super().__init__(
             *args,
-            logname=logname or safestr(params.model_name),
+            logname=logname or params.model_name,
             **kwargs,
         )
         self._model_name = params.model_name
@@ -39,9 +38,9 @@ class OpenAILM(LM):
     def _aclient(self) -> openai.AsyncOpenAI:
         return openai.AsyncOpenAI(api_key=self._api_key.get_secret_value())
 
-    def _do_gentxt(self, params: OpenAILMGentxtParams) -> OpenAILMGentxtResult:
+    def _gentxt(self, params: OpenAILMGentxtParams) -> OpenAILMGentxtResult:
 
-        duration, response = timed(self._client.responses.create)(
+        response = self._client.responses.create(
             input=params.prompt,
             model=self._model_name,
             instructions=params.system_prompt,
@@ -52,14 +51,13 @@ class OpenAILM(LM):
 
         return OpenAILMGentxtResult(
             output_str=response.output_text,
-            n_input_tokens=response.usage.input_tokens,
-            n_output_tokens=response.usage.output_tokens,
-            duration=duration,
+            n_input_tokens=response.usage.input_tokens,  # type:ignore
+            n_output_tokens=response.usage.output_tokens,  # type:ignore
         )
 
-    async def _do_agentxt(self, params: OpenAILMGentxtParams) -> OpenAILMGentxtResult:
+    async def _agentxt(self, params: OpenAILMGentxtParams) -> OpenAILMGentxtResult:
 
-        duration, response = await atimed(self._aclient.responses.create)(
+        response = await self._aclient.responses.create(
             input=params.prompt,
             model=self._model_name,
             instructions=params.system_prompt,
@@ -70,7 +68,6 @@ class OpenAILM(LM):
 
         return OpenAILMGentxtResult(
             output_str=response.output_text,
-            n_input_tokens=response.usage.input_tokens,
-            n_output_tokens=response.usage.output_tokens,
-            duration=duration,
+            n_input_tokens=response.usage.input_tokens,  # type:ignore
+            n_output_tokens=response.usage.output_tokens,  # type:ignore
         )

@@ -1,9 +1,9 @@
 from pydantic import Field
 
-from src.core import FuncResult
+from src.core.dataclass import Dataclass
 
 
-class LMGentxtResult(FuncResult):
+class LMGentxtResult(Dataclass):
     """Result from language model generation."""
 
     output_str: str = Field(

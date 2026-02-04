@@ -1,9 +1,14 @@
+from src.core.util import Lid
 from src.lib.game.event.event import Event
 
 
 class GameStart(Event):
-    """Event emitted when the game starts."""
+    pass
 
 
 class GameEnd(Event):
-    """Event emitted when the game ends."""
+    pass
+
+
+class AddPlayer(Event):
+    player_lid: Lid

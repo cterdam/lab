@@ -2,11 +2,14 @@ import asyncio
 import heapq
 import random
 from contextlib import asynccontextmanager
+from enum import StrEnum
 from typing import AsyncIterator
 
-from src import log
-from src.core import Lid, Logger
+from src import env, log
+from src.core import Gid, Lid, Logger, group
+from src.core.util import obj_subkey, toGid
 from src.lib.game.event import (
+    AddPlayer,
     Event,
     EventStage,
     GameEnd,
@@ -24,10 +27,19 @@ class Game(Logger):
 
     logspace_part = "game"
 
+    class gona(StrEnum):
+        """GrOup NAme.
+
+        Logical names for groups managed within the game.
+        """
+
+        ALL_PLAYERS = "all_players"
+
     # Mapping from player's lid to player object
     players: dict[Lid, Player]
 
-    # The game state should contain enough information to reconstruct the game
+    # The game state should contain enough information to reconstruct the game.
+    # It should only be accessed via state(), not directly.
     _state_lock: asyncio.Lock
     _state: GameState
 
@@ -61,9 +73,6 @@ class Game(Logger):
         async with self._state_lock:
             yield self._state
 
-    def add_player(self, player: Player):
-        self.players[player.lid] = player
-
     async def start(self):
         """Enter the event loop."""
 
@@ -85,6 +94,22 @@ class Game(Logger):
             await self._process_event(e)
             async with self.state() as state:
                 ongoing = state.stage == GameStage.ONGOING
+
+    async def add_player(self, player: Player):
+        """Add a player to the game.
+
+        If the game loop is already rolling, the event is enqueued.
+        Otherwise, the event is processed immediately.
+        """
+        e = AddPlayer(player_lid=player.lid)
+
+        async with self.state() as state:
+            ongoing = state.stage == GameStage.ONGOING
+
+        if ongoing:
+            await self._add_event(e)
+        else:
+            await self._process_event(e)
 
     # EVENT PROCESSING #########################################################
 
@@ -122,12 +147,14 @@ class Game(Logger):
     async def _handle_event(self, e: Event):
         """Pick a handler function for event-specific handling."""
         match e:
+            case AddPlayer():
+                await self._handle_AddPlayer(e)
             case GameStart():
                 await self._handle_GameStart(e)
             case GameEnd():
                 await self._handle_GameEnd(e)
             case _:
-                await self._handle_unknown(e)
+                raise ValueError(f"Unknown event: {e}")
 
     async def _send_notif(self, e: Event) -> dict[Lid, list[Event]]:
         """Send notification of an event to players and collect valid reacts.
@@ -219,6 +246,12 @@ class Game(Logger):
 
     # HANDLER FUNCS ############################################################
 
+    async def _handle_AddPlayer(self, e: AddPlayer):
+        player = env.loggers[e.player_lid]
+        self.players[player.lid] = player
+        self.grpadd(Game.gona.ALL_PLAYERS, player.lid)
+        self.info(f"Added player: {player.lid}")
+
     async def _handle_GameStart(self, _: GameStart):
         async with self.state() as state:
             state.stage = GameStage.ONGOING
@@ -229,8 +262,19 @@ class Game(Logger):
             state.stage = GameStage.ENDED
         self.info("Game ending")
 
-    async def _handle_unknown(self, e: Event):
-        raise ValueError(f"Unknown event: {e}")
+    # OBJ GROUPING #############################################################
+
+    def _getgid(self, name: str) -> Gid:
+        """Derive the GID for a group."""
+        return toGid(obj_subkey(self.lid, name))
+
+    def grpadd(self, groupname: str, obj: Lid):
+        """Add an obj to a group."""
+        group.add(self._getgid(groupname), obj)
+
+    def grprm(self, groupname: str, obj: Lid):
+        """Remove an obj from a group."""
+        group.rm(self._getgid(groupname), obj)
 
     # UTILS ####################################################################
 

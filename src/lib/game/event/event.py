@@ -1,12 +1,9 @@
 from enum import StrEnum
-from typing import Any
 
 from pydantic import Field
 
 from src.core import Dataclass, Lid
 from src.core.util import Sid, multiline
-
-SerializedEvent = dict[str, Any]
 
 
 class EventStage(StrEnum):

@@ -76,11 +76,11 @@ def nextSid() -> Sid:
     return env.r.incr(env.SID_COUNTER_KEY)
 
 
-def toGid(name: str) -> Gid:
+def toGid(groupname: str) -> Gid:
     """Given a name, form the gid."""
     from src import env
 
-    return obj_id(env.GID_NAMESPACE, name)
+    return obj_id(env.GID_NAMESPACE, groupname)
 
 
 def isGid(objid: str) -> bool:

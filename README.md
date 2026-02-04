@@ -38,12 +38,14 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 
 ## Contribute
 
-- AddPlayer event
-
 - Loguru PR
   - Similar issue: <https://github.com/empicano/aiomqtt/issues/52>
   - Almost all asyncio objects are not thread safe:
     <https://docs.python.org/3/library/asyncio-dev.html>
+
+- Game: merge event stages handled and final
+- Game: make event visibility include and exclude
+- Game: add some more coke
 
 - random number generator obj
 - set random seeds

@@ -21,7 +21,7 @@ def run_sync(n_tasks: int, wb: WordBank, model: OpenAILM):
     for i in range(n_tasks):
         prompt = f"In 10 words, what is {wb.pick_word()}"
         result = model.gentxt(OpenAILMGentxtParams(prompt=prompt))
-        log.info(f"Sync [{i+1}/{n_tasks}] {result.output_str}")
+        log.info(f"Sync [{i+1}/{n_tasks}] {result.data.output_str}")
         log.incr("sync_success")
     duration = time.time() - start
 
@@ -38,7 +38,7 @@ async def run_async(n_tasks: int, wb: WordBank, model: OpenAILM):
     duration = time.time() - start
 
     for i, res in enumerate(results, 1):
-        log.info(f"Async [{i}/{n_tasks}] {res.output_str}")
+        log.info(f"Async [{i}/{n_tasks}] {res.data.output_str}")
         log.incr("async_success")
 
     log.success(f"Async run took {duration:.2f}s")
@@ -78,6 +78,9 @@ def main():
     model = OpenAILM(params=OpenAILMInitParams(model_name="gpt-4.1"))
 
     run_sync(n_tasks, wb, model)
+
+    del wb
+    del model
 
     group.add(toGid("RandomGroup"), "member1")
     log.info(group.children(toGid("NonexistentGroup")))

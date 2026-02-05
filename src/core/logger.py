@@ -2,6 +2,7 @@ import atexit
 import inspect
 import os
 import textwrap
+import weakref
 from enum import StrEnum
 from functools import cache, wraps
 from typing import final
@@ -113,6 +114,9 @@ class Logger:
 
     # Counter Hash Name. The redis key containing the instance's counters.
     counter_hash_key: str
+
+    # Sinks. List of loguru sink IDs owned by this instance.
+    sinks: list[int]
 
     # Allow all logs for downstream sinks
     _LOG_LEVEL = 0
@@ -230,6 +234,7 @@ class Logger:
         from src import env
 
         # Store attributes
+        self.sinks = []
         self.logspace = [
             logspace_part
             for cls in reversed(self.__class__.__mro__)
@@ -244,12 +249,15 @@ class Logger:
         self.counter_hash_key = obj_subkey(self.lid, env.COUNTER_HASH_SUFFIX)
 
         # Bind logger for this instance
+        weak_self = weakref.ref(self)
         self._log = (
             Logger._base_logger()
             .bind(lid=self.lid)
             .patch(
                 lambda record: record["extra"].update(
-                    logtag=f" [{self._logtag}]" if self._logtag else ""
+                    logtag=(
+                        f" [{s._logtag}]" if (s := weak_self()) and s._logtag else ""
+                    )
                 )
             )
         )
@@ -261,12 +269,24 @@ class Logger:
         env.lids.add(self.lid)
 
         # Add file sinks
-        only_self = lambda record: record["extra"]["lid"] == self.lid
-        Logger.add_sink(
+        target_lid = self.lid
+        self.add_sink(
             self.logdir / f"{logname}.txt",
-            filter=only_self,
+            filter=lambda record: record["extra"]["lid"] == target_lid,
             colorize=True,
         )
+
+    def __del__(self):
+        """Remove the instance's sinks from loguru upon destruction."""
+        if hasattr(self, "sinks"):
+            for sinkid in self.sinks:
+                try:
+                    Logger.remove_sink(sinkid)
+                except:
+                    # Sink might have already been removed by loguru at exit
+                    pass
+        if hasattr(super(), "__del__"):
+            super().__del__()  # type: ignore
 
     @final
     @cache
@@ -297,8 +317,7 @@ class Logger:
         return logger
 
     @final
-    @staticmethod
-    def add_sink(sink, *args, **kwargs) -> int:
+    def add_sink(self, sink, *args, **kwargs) -> int:
         """Attach a sink to the underlying shared Loguru logger.
 
         Returns:
@@ -307,7 +326,10 @@ class Logger:
         kwargs.setdefault("level", Logger._LOG_LEVEL)
         kwargs.setdefault("format", Logger._LOG_FORMAT)
         kwargs["enqueue"] = True
-        return Logger._base_logger().add(sink, *args, **kwargs)
+        sinkid = Logger._base_logger().add(sink, *args, **kwargs)
+        self.sinks.append(sinkid)
+
+        return sinkid
 
     @final
     @staticmethod

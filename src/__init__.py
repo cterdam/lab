@@ -12,9 +12,16 @@ def set_root_logger() -> Logger:
     # Remove default sink
     Logger.remove_sink(0)
 
-    # Configure sinks
-    Logger.add_sink(sys.stderr, level=10)
-    Logger.add_sink(env.log_dir / "all.txt", colorize=True)
+    # Configure global sinks
+    base = Logger._base_logger()
+    base.add(sys.stderr, level=10, format=Logger._LOG_FORMAT, enqueue=True)
+    base.add(
+        env.log_dir / "all.txt",
+        level=Logger._LOG_LEVEL,
+        format=Logger._LOG_FORMAT,
+        colorize=True,
+        enqueue=True,
+    )
 
     return Logger(logname=env.ROOT_LOGNAME)
 

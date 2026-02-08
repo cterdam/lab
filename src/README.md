@@ -1,5 +1,14 @@
 # Developer's Guide
 
+## Style
+
+- Always apply the most minimal fix feasible.
+- Variable names should be one word if possible.
+- Each word should preferrably be one syllable.
+- Only when something is truly a composite concept should its name be more than
+  one word.
+- When applicable, use abbreviations. For example. `src` for "source".
+
 ## Core
 
 - The arguments are accessible with `from src import arg`. This contains

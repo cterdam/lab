@@ -269,10 +269,10 @@ class Logger:
         env.lids.add(self.lid)
 
         # Add file sinks
-        target_lid = self.lid
+        self_lid = self.lid
         self.add_sink(
             self.logdir / f"{logname}.txt",
-            filter=lambda record: record["extra"]["lid"] == target_lid,
+            filter=lambda record: record["extra"]["lid"] == self_lid,
             colorize=True,
         )
 

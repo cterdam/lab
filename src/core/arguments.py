@@ -12,6 +12,7 @@ class Arguments(BaseSettings):
     model_config = SettingsConfigDict(
         case_sensitive=True,
         cli_parse_args=True,
+        extra="ignore",
         frozen=True,
         validate_default=True,
     )
@@ -27,17 +28,6 @@ class Arguments(BaseSettings):
             """
             The task to perform. All tasks are implemented under src/task.
             """,
-        ),
-    )
-
-    run_name: str | None = Field(
-        default=None,
-        min_length=1,
-        description=multiline(
-            """
-            Name of the current run which will also used as output dir under
-            `out/`. If empty, a unique run name will be generated in its place.
-            """
         ),
     )
 

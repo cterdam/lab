@@ -1,3 +1,4 @@
+import os
 import weakref
 from contextlib import asynccontextmanager, contextmanager
 from functools import cached_property
@@ -8,7 +9,7 @@ import redis
 import redis.asyncio
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from src.core.util import REPO_ROOT, Lid, multiline, randalnu, str2int
+from src.core.util import REPO_ROOT, Lid, multiline, str2int
 
 
 class Environment(BaseModel):
@@ -21,28 +22,21 @@ class Environment(BaseModel):
 
     @computed_field
     @cached_property
-    def run_name(self) -> str:
-        """Name of the current run."""
-        # Lazy import to avoid circular import problem
-        from src import arg
+    def run_id(self) -> str:
+        """Unique identifier for the current run."""
+        return os.environ["RUN_ID"]
 
-        if arg.run_name:
-            return arg.run_name
-        else:
-            import getpass
-            from datetime import datetime, timezone
-
-            username: str = getpass.getuser()[:4]
-            timedate: str = datetime.now(timezone.utc).strftime("%y%m%d-%H%M%S")
-            randhash: str = randalnu(4)
-            uniqueid: str = f"{username}-{timedate}-{randhash}"
-            return uniqueid
+    @computed_field
+    @cached_property
+    def redis_insight(self) -> str:
+        """URL for RedisInsight."""
+        return f"http://{os.environ['REDIS_INSIGHT']}"
 
     @computed_field
     @cached_property
     def out_dir(self) -> Path:
         """Dir to hold all outputs of the current run."""
-        return REPO_ROOT / "out" / self.run_name
+        return REPO_ROOT / "out" / self.run_id
 
     @computed_field
     @cached_property

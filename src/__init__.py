@@ -26,15 +26,9 @@ def set_root_logger() -> Logger:
     return Logger(logname=env.ROOT_LOGNAME)
 
 
-def setup_msg() -> None:
-    """Emit setup msgs as logs."""
-    log.success(prepr(arg))
-    if not arg.run_name:
-        log.warning(f"Run name randomly initialized to {env.run_name}")
-
-
 arg: Arguments = Arguments(_env_file=[REPO_ROOT / "args"])  # type: ignore
 env: Environment = Environment()
 log: Logger = set_root_logger()
 
-setup_msg()
+log.success(prepr(arg))
+log.success(f"RedisInsight: {env.redis_insight}")

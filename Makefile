@@ -1,24 +1,25 @@
-.ONESHELL:
 .SILENT:
 .PHONY: run test clean
 
+define launch
+	NAME=$$(grep -sh '^run_name=' .env args | head -1 | cut -d= -f2-) && \
+	NAME=$${NAME:-$$(LC_ALL=C tr -dc a-z0-9 < /dev/urandom | head -c4)} && \
+	export RUN_ID="$$NAME-$$(date -u +%y%m%d-%H%M%S)" && \
+	docker compose -p $$RUN_ID up -d redis --quiet-pull >/dev/null 2>&1 && \
+	export REDIS_INSIGHT=$$(docker compose -p $$RUN_ID port redis 8001) && \
+	docker compose -p $$RUN_ID up --build $(1) -d --quiet-pull >/dev/null 2>&1 && \
+	docker logs -f $$(docker compose -p $$RUN_ID ps -aq $(1)); \
+	docker compose -p $$RUN_ID rm -f $(1) >/dev/null 2>&1
+endef
+
 test:
-	set -euo pipefail
-	trap 'docker compose down test >/dev/null 2>&1' EXIT INT TERM
-	docker compose down -v >/dev/null 2>&1
-	docker compose up --build test -d --quiet-pull >/dev/null 2>&1
-	docker logs -f $$(docker compose ps -q test)
-	docker compose down test >/dev/null 2>&1
+	$(call launch,test)
 
 run:
-	set -euo pipefail
-	trap 'docker compose down app >/dev/null 2>&1' EXIT INT TERM
-	docker compose down -v >/dev/null 2>&1
-	docker compose up --build app -d --quiet-pull >/dev/null 2>&1
-	docker logs -f $$(docker compose ps -q app)
-	docker compose down app >/dev/null 2>&1
+	$(call launch,app)
 
 clean:
+	docker compose ls -q | xargs -I{} docker compose -p {} down -v 2>/dev/null; true
 	rm -rf out/*
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete

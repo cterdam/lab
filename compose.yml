@@ -7,10 +7,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
-    volumes:
-      - redis-data:/data
     ports:
-      - "8001:8001"
+      - "0:8001"
 
   app:
     build: .
@@ -21,6 +19,9 @@ services:
     tty: true
     stdin_open: true
     env_file: .env
+    environment:
+      RUN_ID: "${RUN_ID}"
+      REDIS_INSIGHT: "${REDIS_INSIGHT:-}"
     volumes:
       - ./out:/lab/out
     command: python -m src
@@ -34,7 +35,7 @@ services:
     tty: true
     stdin_open: true
     env_file: .env
+    environment:
+      RUN_ID: "${RUN_ID}"
+      REDIS_INSIGHT: "${REDIS_INSIGHT:-}"
     command: pytest -n auto
-
-volumes:
-  redis-data:

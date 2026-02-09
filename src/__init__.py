@@ -31,4 +31,5 @@ env: Environment = Environment()
 log: Logger = set_root_logger()
 
 log.success(prepr(arg))
+log.success(f"Run ID: {env.run_id}")
 log.success(f"RedisInsight: {env.redis_insight}")

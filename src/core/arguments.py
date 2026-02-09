@@ -22,11 +22,23 @@ class Arguments(BaseSettings):
     task: Literal[
         "dry_run",
         "demo",
+        "algo",
     ] = Field(
         default="demo",
         description=multiline(
             """
             The task to perform. All tasks are implemented under src/task.
+            """,
+        ),
+    )
+
+    algo: str | None = Field(
+        default=None,
+        min_length=1,
+        description=multiline(
+            """
+            Name of the algo to launch (for task=algo). If empty, lists all
+            available algos and their parameters.
             """,
         ),
     )

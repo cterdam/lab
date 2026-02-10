@@ -12,7 +12,7 @@ def test_single_class():
     """MergedEnum on a class with its own _gona."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"
@@ -25,7 +25,7 @@ def test_inheritance():
     """Child merges parent's members with its own."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"
@@ -46,7 +46,7 @@ def test_deep_hierarchy():
     """Members accumulate across multiple levels."""
 
     class L0:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"
@@ -68,7 +68,7 @@ def test_child_without_own_part():
     """Child with no _gona inherits parent's merged enum."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"
@@ -87,7 +87,7 @@ def test_diamond():
     """Multiple inheritance merges from all branches."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"
@@ -110,7 +110,7 @@ def test_diamond_with_own_members():
     """Diamond class adds its own members too."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"
@@ -134,7 +134,7 @@ def test_multiple_inheritance_no_overlap():
     """Sibling classes have independent merged enums."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"
@@ -158,7 +158,7 @@ def test_strenum_type():
     """Merged enum preserves StrEnum type."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"
@@ -175,7 +175,7 @@ def test_intenum_type():
     """Merged enum preserves IntEnum type."""
 
     class Base:
-        vals = MergedEnum()
+        vals = MergedEnum("_vals")
 
         class _vals(IntEnum):
             X = 1
@@ -194,7 +194,7 @@ def test_plain_enum_type():
     """Works with plain Enum."""
 
     class Base:
-        kinds = MergedEnum()
+        kinds = MergedEnum("_kinds")
 
         class _kinds(Enum):
             FOO = "foo"
@@ -213,7 +213,7 @@ def test_instance_access():
     """Descriptor works on instances too."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"
@@ -234,7 +234,7 @@ def test_caching():
     """Same object returned on repeated access."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"
@@ -246,7 +246,7 @@ def test_per_class_caching():
     """Different classes get different cached enums."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"
@@ -265,32 +265,16 @@ def test_no_parts():
     """Returns None if no _gona defined anywhere."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
     assert Base.gona is None
-
-
-def test_custom_part_attr():
-    """Custom part attribute name."""
-
-    class Base:
-        groups = MergedEnum("_groups")
-
-        class _groups(StrEnum):
-            X = "x"
-
-    class Child(Base):
-        class _groups(StrEnum):
-            Y = "y"
-
-    assert set(Child.groups.__members__) == {"X", "Y"}
 
 
 def test_override_value():
     """Later class in MRO overrides a member's value."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a1"
@@ -307,7 +291,7 @@ def test_iteration():
     """Merged enum is iterable."""
 
     class Base:
-        gona = MergedEnum()
+        gona = MergedEnum("_gona")
 
         class _gona(StrEnum):
             A = "a"

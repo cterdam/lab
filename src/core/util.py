@@ -211,13 +211,12 @@ class MergedEnum:
 
     Args:
         part_attr: The name of the class attribute holding each class's
-            Enum contributions. Defaults to ``_{attr}`` where ``{attr}``
-            is the name this descriptor is assigned to.
+            Enum contributions.
 
     Example:
         >>> from enum import StrEnum
         >>> class Base:
-        ...     gona = MergedEnum()
+        ...     gona = MergedEnum("_gona")
         ...     class _gona(StrEnum):
         ...         A = "a"
         >>> class Child(Base):
@@ -227,14 +226,12 @@ class MergedEnum:
         [<gona.A: 'a'>, <gona.B: 'b'>]
     """
 
-    def __init__(self, part_attr: str | None = None):
+    def __init__(self, part_attr: str):
         self.part_attr = part_attr
         self._cache: dict[type, Enum | None] = {}
 
     def __set_name__(self, owner, name):
         self.name = name
-        if self.part_attr is None:
-            self.part_attr = f"_{name}"
 
     def __get__(self, obj, cls):
         if cls not in self._cache:

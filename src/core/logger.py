@@ -106,7 +106,7 @@ class Logger:
 
     # GrOup NAmes. Descriptor that merges _gona Enum parts across the MRO.
     # Subclasses define their own group names by declaring a nested _gona Enum.
-    gona = MergedEnum()
+    gona = MergedEnum("_gona")
 
     # To be supplied by the instance during init
     logname: str

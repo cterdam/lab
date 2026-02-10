@@ -32,13 +32,12 @@ class Arguments(BaseSettings):
         ),
     )
 
-    algo: str | None = Field(
-        default=None,
-        min_length=1,
+    algo: str = Field(
+        default="src.lib.algo.aswan.AswanNormal",
         description=multiline(
             """
-            Name of the algo to launch (for task=algo). If empty, lists all
-            available algos and their parameters.
+            Import path of the algo to launch (for task=algo),
+            e.g. src.lib.algo.aswan.AswanNormal.
             """,
         ),
     )

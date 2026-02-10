@@ -1,23 +1,19 @@
 import math
 import random
 
-from pydantic import Field
-
 from src.lib.algo.aswan.aswan import Aswan, AswanInput, AswanOutput
-
-
-class AswanSimInput(AswanInput):
-    """Extended input for simulation."""
-
-    num_simulations: int = Field(
-        default=1000, gt=0, description="Number of Monte Carlo simulations to run."
-    )
 
 
 class AswanSim(Aswan):
     """Uses Monte Carlo simulation to determine required rounds."""
 
-    async def _run(self, inp: AswanSimInput) -> AswanOutput:  # type: ignore
+    n_sims: int = 1000
+
+    def __init__(self, *args, n_sims: int = 1000, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.n_sims = n_sims
+
+    async def _run(self, inp: AswanInput) -> AswanOutput:
         n = inp.N
         m = min(inp.M, n)
         target_tagged = int(math.ceil(inp.y * n))
@@ -26,11 +22,11 @@ class AswanSim(Aswan):
         rounds = 1
         while True:
             successes = 0
-            for _ in range(inp.num_simulations):
+            for _ in range(self.n_sims):
                 if self._simulate(n, m, rounds) >= target_tagged:
                     successes += 1
 
-            if successes / inp.num_simulations >= inp.p:
+            if successes / self.n_sims >= inp.p:
                 return AswanOutput(x=rounds)
 
             rounds += 1

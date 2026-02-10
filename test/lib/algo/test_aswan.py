@@ -4,7 +4,6 @@ from src.lib.algo.aswan import (
     AswanInput,
     AswanNormal,
     AswanSim,
-    AswanSimInput,
 )
 
 
@@ -20,15 +19,14 @@ async def test_aswan_normal_basic():
 
 @pytest.mark.asyncio(scope="session")
 async def test_aswan_sim_basic():
-    algo = AswanSim(logname="test_sim")
+    algo = AswanSim(logname="test_sim", n_sims=100)
 
     # Smaller population for faster simulation
-    inp = AswanSimInput(
+    inp = AswanInput(
         N=50,
         M=5,
         p=0.90,
         y=0.7,
-        num_simulations=100,
     )
 
     outp = await algo.run(inp)

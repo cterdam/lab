@@ -1,5 +1,3 @@
-from abc import ABC
-
 from pydantic import Field
 
 from src.lib.algo.algo import Algo, Input, Output
@@ -20,7 +18,7 @@ class AswanOutput(Output):
     x: int = Field(ge=0, description="Minimum number of rounds required.")
 
 
-class Aswan(Algo[AswanInput, AswanOutput], ABC):
+class Aswan(Algo[AswanInput, AswanOutput]):
     """Interface for Aswan sampling algorithms."""
 
     logspace_part = "aswan"

@@ -103,7 +103,7 @@ def children(gid: Gid) -> dict[Lid | Gid, float]:
     from src import env
 
     assert isGid(gid)
-    return dict(env.r.zrange(gid, 0, -1, withscores=True))
+    return dict(env.r.zrange(gid, 0, -1, withscores=True))  # type: ignore
 
 
 def descendants(gid: Gid, visited: set[Gid] | None = None) -> dict[Lid | Gid, float]:

@@ -23,7 +23,7 @@ services:
       RUN_ID: "${RUN_ID}"
       REDIS_INSIGHT: "${REDIS_INSIGHT:-}"
     volumes:
-      - ./out:/lab/out
+      - ./out/${RUN_ID}:/lab/out/${RUN_ID}
     command: python -m src
 
   test:

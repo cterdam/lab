@@ -2,8 +2,9 @@
 
 ## Style
 
+- Use absolute imports.
 - Always apply the most minimal fix feasible.
-- Variable names should be one word if possible.
+- Variable names should be one word where possible.
 - Each word should preferrably be one syllable.
 - Only when something is truly a composite concept should its name be more than
   one word.
@@ -19,11 +20,13 @@
 
 ## Logging
 
-- When trying to print something, use logging.
+- To print something, use logging.
   - This can be achieved by using logging methods on a `Logger` object such as
     `src.log`
   - Each logger can also keep concurrency-safe counters.
-- When trying to printing an object, use `env.repr()` to format it.
+- To log an object, use `env.repr()` to format it.
+- To log a multi-line message, construct a multi-line string and log it in one
+  message. Do not emit multiple logs for the same message.
 
 ### Loggers
 

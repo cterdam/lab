@@ -1,1 +1,1 @@
-from .main import main
+from src.task.algo.main import main

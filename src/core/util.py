@@ -4,6 +4,7 @@ import string
 import textwrap
 import time
 from datetime import timedelta
+from enum import Enum
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Coroutine, NamedTuple, TypeAlias, TypeVar
@@ -193,6 +194,67 @@ def str2int(s: str | None) -> int | None:
     This is used to post-process a Redis HGET / HMGET result into int.
     """
     return int(s) if s is not None else None
+
+
+# ENUM MERGING #################################################################
+
+
+class MergedEnum:
+    """Descriptor that merges Enum parts across the MRO into one Enum.
+
+    Each class in the hierarchy defines its own contributions in a "part"
+    attribute (a nested Enum class). This descriptor merges all such parts
+    from the MRO into a single Enum, accessible as a class or instance
+    attribute.
+
+    The merged Enum is cached per class and computed lazily on first access.
+
+    Args:
+        part_attr: The name of the class attribute holding each class's
+            Enum contributions. Defaults to ``_{attr}`` where ``{attr}``
+            is the name this descriptor is assigned to.
+
+    Example:
+        >>> from enum import StrEnum
+        >>> class Base:
+        ...     gona = MergedEnum()
+        ...     class _gona(StrEnum):
+        ...         A = "a"
+        >>> class Child(Base):
+        ...     class _gona(StrEnum):
+        ...         B = "b"
+        >>> list(Child.gona)
+        [<gona.A: 'a'>, <gona.B: 'b'>]
+    """
+
+    def __init__(self, part_attr: str | None = None):
+        self.part_attr = part_attr
+        self._cache: dict[type, Enum | None] = {}
+
+    def __set_name__(self, owner, name):
+        self.name = name
+        if self.part_attr is None:
+            self.part_attr = f"_{name}"
+
+    def __get__(self, obj, cls):
+        if cls not in self._cache:
+            members = {}
+            enum_cls = None
+            for klass in reversed(cls.__mro__):
+                part = klass.__dict__.get(self.part_attr)
+                if isinstance(part, type) and issubclass(part, Enum):
+                    for m in part:
+                        members[m.name] = m.value
+                    if enum_cls is None:
+                        # Derive the Enum variant (e.g. StrEnum) from the
+                        # first part's MRO: skip the part itself, then find
+                        # the first Enum subclass that isn't Enum.
+                        for base in part.__mro__:
+                            if base is not part and base is not Enum and issubclass(base, Enum):
+                                enum_cls = base
+                                break
+            self._cache[cls] = (enum_cls or Enum)(self.name, members) if members else None
+        return self._cache[cls]
 
 
 # CLASS HIERARCHY ##############################################################

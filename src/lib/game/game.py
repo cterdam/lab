@@ -27,11 +27,8 @@ class Game(Logger):
 
     logspace_part = "game"
 
-    class gona(StrEnum):
-        """GrOup NAme.
-
-        Logical names for groups managed within the game.
-        """
+    class _gona(StrEnum):
+        """Group names managed within the game."""
 
         ALL_PLAYERS = "all_players"
 

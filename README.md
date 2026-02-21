@@ -38,23 +38,21 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 
 ## Contribute
 
+1. Game: Streamline event stages: combine handled and final, they shouldn't be
+   separate stages. Each event should just have TENTATIVE, PROCESSING, FINAL.
+2. Game: make event visibility include and exclude groups. These groups are
+   present in game.gona and will be used to decide who can see an event vs not,
+   when handling evens and getting reactions, etc.
+3. Game: add some more coke for various types of events in game
+
+4. Algo: Add doc instructions in the root README about what Algo can do, and in
+   src/README about the steps for adding a new Algo, similar to how the steps
+   for adding a new task is documented in README
+5. Algo: Remove the magic number in AswanNormal by making normal distribution
+   lookup a service in src/lib/model/ (is there a common python pkg for this?)
+
+- type validation: beartype, typeguard, deal
 - Loguru PR
   - Similar issue: <https://github.com/empicano/aiomqtt/issues/52>
   - Almost all asyncio objects are not thread safe:
     <https://docs.python.org/3/library/asyncio-dev.html>
-
-- Game: merge event stages handled and final, they shouldn't be separate
-- Game: make event visibility include and exclude groups
-- Game: add some more coke
-
-- Algo: Add doc instructions in the root README about what Algo can do, and in
-  src/README about the steps for adding a new Algo, similar to how the steps for
-  adding a new task is documented in README
-- Algo: Remove the magic number in AswanNormal by making normal distribution
-  lookup a service in src/lib/data/ (is there a common python pkg for this?)
-
-- random number generator obj
-- set random seeds
-- ttt game
-
-- type validation: beartype, typeguard, deal

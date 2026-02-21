@@ -28,8 +28,6 @@ class Game(Logger):
     logspace_part = "game"
 
     class _gona(StrEnum):
-        """Group names managed within the game."""
-
         ALL_PLAYERS = "all_players"
 
     # Mapping from player's lid to player object

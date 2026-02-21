@@ -22,14 +22,7 @@ async def test_aswan_normal_basic():
 async def test_aswan_sim_basic():
     algo = AswanSim(logname="test_sim")
 
-    # Smaller population for faster simulation
-    inp = AswanSimInput(
-        N=50,
-        M=5,
-        p=0.90,
-        y=0.7,
-        num_simulations=100,
-    )
+    inp = AswanSimInput(N=50, M=5, p=0.90, y=0.7, Ns=100)
 
     outp = await algo.run(inp)
     assert outp.data.x > 0

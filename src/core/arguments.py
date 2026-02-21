@@ -22,11 +22,22 @@ class Arguments(BaseSettings):
     task: Literal[
         "dry_run",
         "demo",
+        "algo",
     ] = Field(
         default="demo",
         description=multiline(
             """
             The task to perform. All tasks are implemented under src/task.
+            """,
+        ),
+    )
+
+    algo: str = Field(
+        default="src.lib.algo.aswan.AswanNormal",
+        description=multiline(
+            """
+            Import path of the algo to launch (for task=algo),
+            e.g. src.lib.algo.aswan.AswanNormal.
             """,
         ),
     )
@@ -40,3 +51,11 @@ class Arguments(BaseSettings):
         default=None,
         description="Default OpenAI API key.",
     )
+
+    # Algo params ##############################################################
+
+    M: int = Field(default=0)
+    N: int = Field(default=0)
+    Ns: int = Field(default=0)
+    p: float = Field(default=0)
+    y: float = Field(default=0)

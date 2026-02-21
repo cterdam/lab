@@ -28,6 +28,8 @@ class Algo(Logger, ABC, Generic[InputT, OutputT]):
 
     logspace_part = "algo"
 
+    input_type: type[InputT]
+
     class coke(StrEnum):
         INVOC = "invoc"
         MICROS = "micros"

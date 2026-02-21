@@ -30,9 +30,9 @@ class Algo(Logger, ABC, Generic[InputT, OutputT]):
 
     input_type: type[InputT]
 
-    class coke(StrEnum):
-        INVOC = "invoc"
-        MICROS = "micros"
+    class _coke(StrEnum):
+        ALGO_INVOC = "algo_invoc"
+        ALGO_MICROS = "algo_micros"
 
     @final
     @log.io()
@@ -40,8 +40,8 @@ class Algo(Logger, ABC, Generic[InputT, OutputT]):
         """Public API for algo run."""
         res: Timed[OutputT] = await atimed(self._run)(inp)
         async with env.acoup() as p:
-            await self.aincr(Algo.coke.INVOC, p=p)
-            await self.aincr(Algo.coke.MICROS, td2ms(res.time), p=p)
+            await self.aincr(self.coke.ALGO_INVOC, p=p)
+            await self.aincr(self.coke.ALGO_MICROS, td2ms(res.time), p=p)
         return res
 
     @abstractmethod

@@ -30,7 +30,7 @@ async def test_add_player_immediate():
 
     assert player1.lid in game.players
     # Check if added to 'all' group
-    all_members = group.children(game._getgid(Game.gona.ALL_PLAYERS))
+    all_members = group.children(game._getgid(game.gona.ALL_PLAYERS))
     assert player1.lid in all_members
 
 
@@ -64,7 +64,7 @@ async def test_add_player_queued():
     await game._process_event(e)
 
     assert player1.lid in game.players
-    assert player1.lid in group.children(game._getgid(Game.gona.ALL_PLAYERS))
+    assert player1.lid in group.children(game._getgid(game.gona.ALL_PLAYERS))
 
 
 @pytest.mark.asyncio

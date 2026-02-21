@@ -5,7 +5,7 @@ import textwrap
 import weakref
 from enum import StrEnum
 from functools import cache, wraps
-from typing import final
+from typing import Any, final
 
 import loguru
 from pydantic import BaseModel, Field
@@ -16,6 +16,7 @@ from redis.client import Pipeline
 from src.core.util import (
     REPO_ROOT,
     Lid,
+    MergedEnum,
     logspace2dir,
     multiline,
     obj_id,
@@ -96,9 +97,9 @@ class Logger:
       with a non-empty return value for this func.
     - If having a custom logging level, it can be registered by calling
       `Logger.add_lvl`.
-    - If having custom counter keys, these can be contained in a `coke` module.
-    - If having custom logging msgs, these can be contained in a `logmsg`
-      module.
+    - If having custom counter keys, these can be added to a `_coke` Enum.
+    - If having custom group names, these can be added to a `_gona` Enum.
+    - If having custom logging msgs, these can be added to a `_logmsg` Enum.
     """
 
     # GENERAL ATTRIBUTES #######################################################
@@ -109,14 +110,25 @@ class Logger:
     # Each descendant class can add a layer in its log dir path by overriding
     logspace_part: str | None = None
 
-    # Lid. Globally unique identifier for this object.
+    # Lid. Globally unique identifier for this object
     lid: Lid
 
-    # Counter Hash Name. The redis key containing the instance's counters.
+    # Counter Hash Name. The redis key containing the instance's counters
     counter_hash_key: str
 
-    # Sinks. List of loguru sink IDs owned by this instance.
+    # Sinks. List of loguru sink IDs owned by this instance
     sinks: list[int]
+
+    # COunter KEys
+    coke: Any = MergedEnum("_coke", StrEnum)
+
+    # GrOup NAmes
+    gona: Any = MergedEnum("_gona", StrEnum)
+
+    # Log messages
+    logmsg: Any = MergedEnum("_logmsg", StrEnum)
+
+    # Logging config -----------------------------------------------------------
 
     # Allow all logs for downstream sinks
     _LOG_LEVEL = 0
@@ -137,13 +149,12 @@ class Logger:
     # Add pad to stack trace depth for async func decorators
     _LOG_ASYNC_PAD = 6
 
-    # Params for configuring log levels ----------------------------------------
-
+    # Custom log levels
     _func_input_lvl = LogLevel(name="FINP <-", no=7, color="38758A")  # type: ignore
     _func_output_lvl = LogLevel(name="FOUT ->", no=7, color="4A6FA5")  # type: ignore
     _counter_lvl = LogLevel(name="COUNT", no=9, color="DAA520")  # type: ignore
 
-    # (lvl_name, lvl_no, lvl_fg, lvl_is_builtin) for each lvl
+    # (lvl_name, lvl_no, lvl_fg, lvl_is_builtin) for each level
     _LOG_LVLS = [
         LogLevel(name="TRACE", no=5, color="#505050"),  # type: ignore
         _func_input_lvl,
@@ -159,7 +170,7 @@ class Logger:
 
     # Special messages ---------------------------------------------------------
 
-    class logmsg(StrEnum):
+    class _logmsg(StrEnum):
 
         # Function input logging
         FUNC_INPUT = multiline(
@@ -417,7 +428,7 @@ class Logger:
 
         self._log.opt(depth=1).log(
             Logger._counter_lvl.name,
-            Logger.logmsg.COUNT_SET.format(
+            self.logmsg.COUNT_SET.format(
                 counter_key=k,
                 set_val=v,
             ),
@@ -447,7 +458,7 @@ class Logger:
             Logger._counter_lvl.name,
             "\n".join(
                 [
-                    Logger.logmsg.COUNT_SET.format(counter_key=k, set_val=v)
+                    self.logmsg.COUNT_SET.format(counter_key=k, set_val=v)
                     for k, v in mapping.items()
                 ]
             ),
@@ -471,7 +482,7 @@ class Logger:
 
         self._log.opt(depth=1).log(
             Logger._counter_lvl.name,
-            Logger.logmsg.COUNT_INCR.format(
+            self.logmsg.COUNT_INCR.format(
                 counter_key=k,
                 incr_val=v,
             ),
@@ -579,7 +590,7 @@ class Logger:
 
         self._log.opt(depth=1).log(
             Logger._counter_lvl.name,
-            Logger.logmsg.COUNT_INCR.format(
+            self.logmsg.COUNT_INCR.format(
                 counter_key=k,
                 incr_val=v,
             ),
@@ -659,7 +670,7 @@ class Logger:
                     if not is_init:
                         self._log.opt(depth=depth + Logger._LOG_ASYNC_PAD).log(
                             Logger._func_input_lvl.name,
-                            Logger.logmsg.FUNC_INPUT.format(
+                            self.logmsg.FUNC_INPUT.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -669,7 +680,7 @@ class Logger:
                     if is_init:
                         self._log.opt(depth=depth + Logger._LOG_ASYNC_PAD).log(
                             Logger._func_input_lvl.name,
-                            Logger.logmsg.FUNC_INPUT.format(
+                            self.logmsg.FUNC_INPUT.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -692,7 +703,7 @@ class Logger:
                     if not is_init:
                         self._log.opt(depth=depth).log(
                             Logger._func_input_lvl.name,
-                            Logger.logmsg.FUNC_INPUT.format(
+                            self.logmsg.FUNC_INPUT.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -702,7 +713,7 @@ class Logger:
                     if is_init:
                         self._log.opt(depth=depth).log(
                             Logger._func_input_lvl.name,
-                            Logger.logmsg.FUNC_INPUT.format(
+                            self.logmsg.FUNC_INPUT.format(
                                 class_name=self.__class__.__name__,
                                 func_name=func.__name__,
                                 func_args=prepr(func_args),
@@ -743,7 +754,7 @@ class Logger:
                     func_result = await func(*args, **kwargs)
                     self._log.opt(depth=depth + Logger._LOG_ASYNC_PAD).log(
                         Logger._func_output_lvl.name,
-                        Logger.logmsg.FUNC_OUTPUT.format(
+                        self.logmsg.FUNC_OUTPUT.format(
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             func_result=textwrap.indent(
@@ -768,7 +779,7 @@ class Logger:
                     func_result = func(*args, **kwargs)
                     self._log.opt(depth=depth).log(
                         Logger._func_output_lvl.name,
-                        Logger.logmsg.FUNC_OUTPUT.format(
+                        self.logmsg.FUNC_OUTPUT.format(
                             class_name=self.__class__.__name__,
                             func_name=func.__name__,
                             func_result=textwrap.indent(

@@ -14,13 +14,15 @@ class LM(Model):
 
     logspace_part = "txt"
 
-    class coke(StrEnum):
+    class _coke(StrEnum):
         GENTXT_INVOC = "gentxt_invoc"
         GENTXT_MICROS = "gentxt_micros"
+        GENTXT_INP_TOK = "gentxt_inp_tok"
+        GENTXT_OUT_TOK = "gentxt_out_tok"
         AGENTXT_INVOC = "agentxt_invoc"
         AGENTXT_MICROS = "agentxt_micros"
-        INPUT_TOKEN = "input_tokens"
-        OUTPUT_TOKEN = "output_tokens"
+        AGENTXT_INP_TOK = "agentxt_inp_tok"
+        AGENTXT_OUT_TOK = "agentxt_out_tok"
 
     @final
     @log.io()
@@ -28,10 +30,10 @@ class LM(Model):
         """Public API for synchronous text generation."""
         res: Timed[LMGentxtResult] = timed(self._gentxt)(*args, **kwargs)
         with env.coup() as p:
-            self.incr(LM.coke.GENTXT_INVOC, p=p)
-            self.incr(LM.coke.GENTXT_MICROS, td2ms(res.time), p=p)
-            self.incr(LM.coke.INPUT_TOKEN, res.data.n_input_tokens, p=p)
-            self.incr(LM.coke.OUTPUT_TOKEN, res.data.n_output_tokens, p=p)
+            self.incr(self.coke.GENTXT_INVOC, p=p)
+            self.incr(self.coke.GENTXT_MICROS, td2ms(res.time), p=p)
+            self.incr(self.coke.GENTXT_INP_TOK, res.data.n_input_tokens, p=p)
+            self.incr(self.coke.GENTXT_OUT_TOK, res.data.n_output_tokens, p=p)
         return res
 
     @abstractmethod
@@ -45,10 +47,10 @@ class LM(Model):
         """Public API for asynchronous text generation."""
         res: Timed[LMGentxtResult] = await atimed(self._agentxt)(*args, **kwargs)
         async with env.acoup() as p:
-            await self.aincr(LM.coke.AGENTXT_INVOC, p=p)
-            await self.aincr(LM.coke.AGENTXT_MICROS, td2ms(res.time), p=p)
-            await self.aincr(LM.coke.INPUT_TOKEN, res.data.n_input_tokens, p=p)
-            await self.aincr(LM.coke.OUTPUT_TOKEN, res.data.n_output_tokens, p=p)
+            await self.aincr(self.coke.AGENTXT_INVOC, p=p)
+            await self.aincr(self.coke.AGENTXT_MICROS, td2ms(res.time), p=p)
+            await self.aincr(self.coke.AGENTXT_INP_TOK, res.data.n_input_tokens, p=p)
+            await self.aincr(self.coke.AGENTXT_OUT_TOK, res.data.n_output_tokens, p=p)
         return res
 
     @abstractmethod

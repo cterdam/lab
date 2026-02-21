@@ -4,6 +4,7 @@ import string
 import textwrap
 import time
 from datetime import timedelta
+from enum import Enum, StrEnum
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Coroutine, NamedTuple, TypeAlias, TypeVar
@@ -193,6 +194,67 @@ def str2int(s: str | None) -> int | None:
     This is used to post-process a Redis HGET / HMGET result into int.
     """
     return int(s) if s is not None else None
+
+
+# MERGED ENUM ##################################################################
+
+
+class MergedEnum:
+    """Descriptor that merges Enum parts across the MRO into one Enum.
+
+    Each class in the hierarchy defines its own contributions in a "part"
+    attribute (a nested Enum class). This descriptor merges all such parts
+    from the MRO into a single Enum, accessible as a class or instance
+    attribute.
+
+    The merged Enum is cached per class and computed lazily on first access.
+
+    Args:
+        part_attr: The name of the class attribute holding each class's
+            Enum contributions.
+        enum_type: The Enum type used for the merged result. Defaults to Enum.
+
+    Example:
+        >>> from enum import StrEnum
+        >>> class Base:
+        ...     gona = MergedEnum("_gona", StrEnum)
+        ...     class _gona(StrEnum):
+        ...         A = "a"
+        >>> class Child(Base):
+        ...     class _gona(StrEnum):
+        ...         B = "b"
+        >>> list(Child.gona)
+        [<gona.A: 'a'>, <gona.B: 'b'>]
+    """
+
+    def __init__(self, part_attr: str, enum_type: type[Enum] = Enum):
+        self.part_attr = part_attr
+        self.enum_type = enum_type
+        self._cache: dict[type, Enum | None] = {}
+
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, obj, cls):
+        if cls not in self._cache:
+            members = {}
+            for klass in reversed(cls.__mro__):
+                part = klass.__dict__.get(self.part_attr)
+                if isinstance(part, type) and issubclass(part, Enum):
+                    for m in part:
+                        if m.name in members:
+                            raise ValueError(
+                                f"Duplicate {self.part_attr} key {m.name!r}"
+                                f" in {klass.__name__}"
+                            )
+                        if m.value in members.values():
+                            raise ValueError(
+                                f"Duplicate {self.part_attr} value {m.value!r}"
+                                f" for key {m.name!r} in {klass.__name__}"
+                            )
+                        members[m.name] = m.value
+            self._cache[cls] = self.enum_type(self.name, members) if members else None
+        return self._cache[cls]
 
 
 # CLASS HIERARCHY ##############################################################

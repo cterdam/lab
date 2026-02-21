@@ -34,7 +34,7 @@ class FSM(Logger):
     # Add depth to skip all transitions internals when logging
     _FSM_LOG_DEPTH_PAD = 12
 
-    class logmsg(StrEnum):  # type: ignore
+    class _logmsg(StrEnum):
 
         FSM_INIT = multiline(
             """
@@ -80,14 +80,14 @@ class FSM(Logger):
         # Save graph txt repr of FSM structure
         self._log.log(
             FSM._fsm_lvl.name,
-            FSM.logmsg.FSM_INIT.format(graphtxt=self._fsm.get_graph().draw(None)),
+            self.logmsg.FSM_INIT.format(graphtxt=self._fsm.get_graph().draw(None)),
         )
 
     def _log_state_change(self, event: EventData) -> None:
         """Automatically log state changes."""
         self._log.opt(depth=FSM._FSM_LOG_DEPTH_PAD).log(
             FSM._fsm_lvl.name,
-            FSM.logmsg.FSM_STATE_CHANGE.format(
+            self.logmsg.FSM_STATE_CHANGE.format(
                 source=event.transition.source,  # type: ignore
                 dest=event.transition.dest,  # type: ignore
             ),

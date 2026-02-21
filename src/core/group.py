@@ -29,7 +29,7 @@ class _GroupLogger(Logger):
 
     logspace_part = "group"
 
-    class logmsg(StrEnum):  # type: ignore
+    class _logmsg(StrEnum):
         ADD = "ADD {member} {weight} -> {result}"
         RM = "RM {member} {weight} -> {result}"
 

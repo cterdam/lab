@@ -27,11 +27,8 @@ class Game(Logger):
 
     logspace_part = "game"
 
-    class gona(StrEnum):
-        """GrOup NAme.
-
-        Logical names for groups managed within the game.
-        """
+    class _gona(StrEnum):
+        """Group names managed within the game."""
 
         ALL_PLAYERS = "all_players"
 
@@ -249,7 +246,7 @@ class Game(Logger):
     async def _handle_AddPlayer(self, e: AddPlayer):
         player = env.loggers[e.player_lid]
         self.players[player.lid] = player
-        self.grpadd(Game.gona.ALL_PLAYERS, player.lid)
+        self.grpadd(self.gona.ALL_PLAYERS, player.lid)
         self.info(f"Added player: {player.lid}")
 
     async def _handle_GameStart(self, _: GameStart):

@@ -43,9 +43,15 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
   - Almost all asyncio objects are not thread safe:
     <https://docs.python.org/3/library/asyncio-dev.html>
 
-- Game: merge event stages handled and final
-- Game: make event visibility include and exclude
+- Game: merge event stages handled and final, they shouldn't be separate
+- Game: make event visibility include and exclude groups
 - Game: add some more coke
+
+- Algo: Add doc instructions in the root README about what Algo can do, and in
+  src/README about the steps for adding a new Algo, similar to how the steps for
+  adding a new task is documented in README
+- Algo: Remove the magic number in AswanNormal by making normal distribution
+  lookup a service in src/lib/data/ (is there a common python pkg for this?)
 
 - random number generator obj
 - set random seeds

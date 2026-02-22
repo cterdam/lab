@@ -10,8 +10,7 @@ class EventStage(StrEnum):
     """Stage of an event in its lifecycle."""
 
     TENTATIVE = "tentative"
-    HANDLING = "handling"
-    HANDLED = "handled"
+    PROCESSING = "processing"
     FINAL = "final"
 
 

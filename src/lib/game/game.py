@@ -33,8 +33,8 @@ class Game(Logger):
     # Mapping from player's lid to player object
     players: dict[Lid, Player]
 
-    # The game state should contain enough information to reconstruct the game.
-    # It should only be accessed via state(), not directly.
+    # The game state contains all static dataclass about the game
+    # It should only be accessed via state(), not directly
     _state_lock: asyncio.Lock
     _state: GameState
 
@@ -119,19 +119,16 @@ class Game(Logger):
         await self._record_event(e)
         await self._notify_event(e)
 
-        # Start handling
-        e.stage = EventStage.HANDLING
+        # Handle and gather finishing reacts
+        e.stage = EventStage.PROCESSING
         await self._record_event(e)
         await self._handle_event(e)
-
-        # Gather finishing reacts
-        e.stage = EventStage.HANDLED
-        await self._record_event(e)
         await self._notify_event(e)
 
         # Finalize record
         e.stage = EventStage.FINAL
         await self._record_event(e)
+        await self._notify_event(e)
 
     async def _notify_event(self, e: Event):
         """Notify an event to all visible players."""

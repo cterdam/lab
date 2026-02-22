@@ -21,8 +21,8 @@ event from the queue and processing it.
 
 ### Reacts
 
-The game will send notif of each event to relevant players. At various stages,
-players can react to the events by returning a list of react events.
+The game will send notif of each event to relevant players. Players can react to
+the events by returning a list of react events.
 
 An interrupt is a special kind of react that only applies to speech events. It
 takes precedence over other kind of reacts.

@@ -9,6 +9,8 @@
 - Only when something is truly a composite concept should its name be more than
   one word.
 - When applicable, use abbreviations. For example. `src` for "source".
+- Do not write duplicate code. If some code elsewhere already solves the
+  problem, reuse it to the extent possible.
 
 ## Core
 

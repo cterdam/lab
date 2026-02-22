@@ -43,11 +43,8 @@ manager to ensure concurrency safety.
 ## History
 
 Each event is snapshotted on the game's history multiple times throughout that
-event's life cycle. This gives the nice property that the first snapshot of an
-event will have the stage `TENTATIVE`, and the last snapshot of the same event
-will have the stage `FINAL`. The region between them represents exactly this
-event's full life cycle, including any and all subevents invoked during its
-processing.
+event's life cycle. Each occurrence of the same event in history will show
+different stages.
 
 ### Extending the Game
 

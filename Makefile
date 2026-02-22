@@ -20,6 +20,7 @@ run:
 
 clean:
 	docker compose ls -q | xargs -I{} docker compose -p {} down -v 2>/dev/null; true
+	docker network prune -f 2>/dev/null; true
 	rm -rf out/*
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete

@@ -5,7 +5,6 @@ import pytest
 from src.core.util import (
     descendant_classes,
     isGid,
-    isLid,
     randalnu,
     safestr,
     toGid,
@@ -213,33 +212,3 @@ def test_is_gid_non_string():
     assert isGid(None) is False
     assert isGid(123) is False
     assert isGid([]) is False
-
-
-def test_is_lid_valid():
-    """Test isLid with valid object IDs."""
-    assert isLid("namespace:name") is True
-    assert isLid("g:group1") is True
-    assert isLid("logger:main") is True
-
-
-def test_is_lid_invalid_no_separator():
-    """Test isLid with no separator."""
-    assert isLid("noseparator") is False
-
-
-def test_is_lid_empty():
-    """Test isLid with empty string."""
-    assert isLid("") is False
-
-
-def test_is_lid_non_string():
-    """Test isLid with non-string types."""
-    assert isLid(None) is False
-    assert isLid(123) is False
-    assert isLid({}) is False
-
-
-def test_is_lid_gid_is_lid():
-    """Test that gids are also valid lids."""
-    gid = toGid("mygroup")
-    assert isLid(gid) is True

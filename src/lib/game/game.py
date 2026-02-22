@@ -7,7 +7,6 @@ from typing import AsyncIterator
 
 from src import env, log
 from src.core import Gid, Lid, Logger, group
-from src.core.util import obj_subkey, toGid
 from src.lib.game.event import (
     AddPlayer,
     Event,
@@ -167,7 +166,7 @@ class Game(Logger):
             )
 
         # Send notif
-        viewer_lids = await self.event2viewers(e)
+        viewer_lids = group.deslid(e.vis)
         tasks = [
             self.players[viewer_lid].ack_event(
                 e, can_react=can_react, can_interrupt=can_interrupt
@@ -241,7 +240,7 @@ class Game(Logger):
     async def _handle_AddPlayer(self, e: AddPlayer):
         player = env.loggers[e.player_lid]
         self.players[player.lid] = player
-        self.grpadd(self.gona.ALL_PLAYERS, player.lid)
+        group.add(self.gid(self.gona.ALL_PLAYERS), player.lid)
         self.info(f"Added player: {player.lid}")
 
     async def _handle_GameStart(self, _: GameStart):
@@ -253,20 +252,6 @@ class Game(Logger):
         async with self.state() as state:
             state.stage = GameStage.ENDED
         self.info("Game ending")
-
-    # OBJ GROUPING #############################################################
-
-    def _getgid(self, name: str) -> Gid:
-        """Derive the GID for a group."""
-        return toGid(obj_subkey(self.lid, name))
-
-    def grpadd(self, groupname: str, obj: Lid):
-        """Add an obj to a group."""
-        group.add(self._getgid(groupname), obj)
-
-    def grprm(self, groupname: str, obj: Lid):
-        """Remove an obj from a group."""
-        group.rm(self._getgid(groupname), obj)
 
     # UTILS ####################################################################
 
@@ -360,10 +345,3 @@ class Game(Logger):
         """
         async with self.state() as state:
             state.history.append(e.model_copy(deep=True))
-
-    async def event2viewers(self, e: Event) -> list[Lid]:
-        """Given an event, return the list of player lids who can see it."""
-        if e.visible is None:
-            return list(self.players.keys())
-        else:
-            return e.visible

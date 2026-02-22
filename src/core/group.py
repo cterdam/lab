@@ -29,7 +29,7 @@ class _GroupLogger(Logger):
 
     logspace_part = "group"
 
-    class _logmsg(StrEnum):
+    class _logmsg(StrEnum):  # type:ignore
         ADD = "ADD {member} {weight} -> {result}"
         RM = "RM {member} {weight} -> {result}"
 
@@ -78,10 +78,10 @@ def add(gid: Gid, member: Lid | Gid, weight: float = INC) -> bool:
 
 
 def rm(gid: Gid, member: Lid | Gid) -> bool:
-    """Remove a member entirely.
+    """Remove a member from a group.
 
     Returns:
-
+        Whether the rm operation was successful.
     """
     from src import env
 
@@ -106,22 +106,22 @@ def children(gid: Gid) -> dict[Lid | Gid, float]:
     return dict(env.r.zrange(gid, 0, -1, withscores=True))  # type: ignore
 
 
-def descendants(gid: Gid, visited: set[Gid] | None = None) -> dict[Lid | Gid, float]:
-    """Resolve all direct and indirect members recursively."""
+def resolve(
+    members: dict[Lid | Gid, float],
+    visited: set[Gid] | None = None,
+) -> dict[Lid | Gid, float]:
+    """Resolve a membership dict as an ephemeral group.
 
-    assert isGid(gid)
+    Expands any Gid entries by recursively fetching their children and
+    propagating weights. Direct entries override indirect ones.
 
-    if visited is None:
-        visited = set()
-
-    if gid in visited:
-        return {}
-
-    visited |= {gid}
+    Returns:
+        A dict mapping descendant Lids and Gids to their resolved weights.
+    """
     direct: dict[Lid | Gid, float] = {}
     indirect: dict[Lid | Gid, float] = {}
 
-    for child, weight in children(gid).items():
+    for child, weight in members.items():
         direct[child] = weight
         if isGid(child):
             for m, s in descendants(child, visited).items():
@@ -129,3 +129,25 @@ def descendants(gid: Gid, visited: set[Gid] | None = None) -> dict[Lid | Gid, fl
                     indirect[m] = indirect.get(m, 0) + weight * s
 
     return {**indirect, **direct}
+
+
+def descendants(
+    gid: Gid,
+    visited: set[Gid] | None = None,
+) -> dict[Lid | Gid, float]:
+    """Resolve all direct and indirect members of a stored group recursively.
+
+    Returns:
+        A dict mapping descendant Lids and Gids to their resolved weights.
+    """
+    if visited is None:
+        visited = set()
+    if gid in visited:
+        return {}
+    visited |= {gid}
+    return resolve(children(gid), visited)
+
+
+def deslid(members: dict[Lid | Gid, float]) -> list[Lid]:
+    """Resolve a membership dict and return only Lids with positive weight."""
+    return [lid for lid, w in resolve(members).items() if not isGid(lid) and w > 0]

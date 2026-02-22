@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 from src.core import group
@@ -30,7 +28,7 @@ async def test_add_player_immediate():
 
     assert player1.lid in game.players
     # Check if added to 'all' group
-    all_members = group.children(game._getgid(game.gona.ALL_PLAYERS))
+    all_members = group.children(game.gid(game.gona.ALL_PLAYERS))
     assert player1.lid in all_members
 
 
@@ -64,7 +62,7 @@ async def test_add_player_queued():
     await game._process_event(e)
 
     assert player1.lid in game.players
-    assert player1.lid in group.children(game._getgid(game.gona.ALL_PLAYERS))
+    assert player1.lid in group.children(game.gid(game.gona.ALL_PLAYERS))
 
 
 @pytest.mark.asyncio
@@ -78,11 +76,10 @@ async def test_arbitrary_grouping():
 
     # Custom logical group
     team_name = "blue_team"
-    game.grpadd(team_name, player.lid)
-
-    team_gid = game._getgid(team_name)
+    team_gid = game.gid(team_name)
+    group.add(team_gid, player.lid)
     assert player.lid in group.children(team_gid)
 
     # Remove from group
-    game.grprm(team_name, player.lid)
+    group.rm(team_gid, player.lid)
     assert player.lid not in group.children(team_gid)

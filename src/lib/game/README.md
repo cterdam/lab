@@ -46,6 +46,20 @@ Each event is snapshotted on the game's history multiple times throughout that
 event's life cycle. Each occurrence of the same event in history will show
 different stages.
 
+### Visibility
+
+Event visibility is controlled by config on `Event`. It is a mapping from child
+Lid or Gid to weights - the same format as group membership. It is resolved on
+the fly as an ephemeral group via group mechanisms.
+
+- `{}` (default): visible to no one (empty group).
+- Positive weight includes, negative weight excludes.
+
+```python
+# Example: Everyone except player_b
+Event(vis={game.getgid(game.gona.ALL_PLAYERS): INC, player_b.lid: EXC})
+```
+
 ### Extending the Game
 
 To create a custom game:

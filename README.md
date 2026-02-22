@@ -40,9 +40,9 @@ A monorepo solves the diamond dependency problem. A good codebase is reusable.
 
 1. Game: Streamline event stages: combine handled and final, they shouldn't be
    separate stages. Each event should just have TENTATIVE, PROCESSING, FINAL.
-2. Game: make event visibility include and exclude groups. These groups are
+2. ~~Game: make event visibility include and exclude groups. These groups are
    present in game.gona and will be used to decide who can see an event vs not,
-   when handling evens and getting reactions, etc.
+   when handling evens and getting reactions, etc.~~
 3. Game: add some more coke for various types of events in game
 
 4. Algo: Add doc instructions in the root README about what Algo can do, and in

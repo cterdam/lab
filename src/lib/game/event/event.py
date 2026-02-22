@@ -2,8 +2,8 @@ from enum import StrEnum
 
 from pydantic import Field
 
-from src.core import Dataclass, Lid
-from src.core.util import Sid, multiline
+from src.core import Dataclass, Gid, Lid, Sid
+from src.core.util import multiline
 
 
 class EventStage(StrEnum):
@@ -55,13 +55,15 @@ class Event(Dataclass):
         ),
     )
 
-    visible: list[Lid] | None = Field(
-        default=None,
+    vis: dict[Lid | Gid, float] = Field(
+        default_factory=dict,
         description=multiline(
             """
-            List of player lids who can see this event. If None, the event is
-            visible to all players. If empty list, the event is visible to no
-            players.
+            Visibility group for this event. Maps Gid or Lid to weights, same
+            format as group membership. Resolved like group.resolve():
+            sub-groups are expanded with weight propagation, and direct entries
+            override indirect ones. Only resolved Lids with positive weight can
+            see the event. Empty dict means visible to no one.
             """
         ),
     )

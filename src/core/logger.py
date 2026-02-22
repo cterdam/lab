@@ -15,6 +15,7 @@ from redis.client import Pipeline
 
 from src.core.util import (
     REPO_ROOT,
+    Gid,
     Lid,
     MergedEnum,
     logspace2dir,
@@ -25,6 +26,7 @@ from src.core.util import (
     obj_subkey,
     prepr,
     safestr,
+    toGid,
 )
 
 
@@ -627,6 +629,13 @@ class Logger:
 
         finally:
             env.cr.delete(env.COUNTER_DUMP_LOCK_KEY)
+
+    # UTILS ####################################################################
+
+    @final
+    def gid(self, groupname: str) -> Gid:
+        """Derive the GID for a group under this logger."""
+        return toGid(obj_subkey(self.lid, groupname))
 
     # FUNC CALL DECORATORS #####################################################
 

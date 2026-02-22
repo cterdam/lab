@@ -1,4 +1,5 @@
 import math
+from statistics import NormalDist
 
 from src.lib.algo.aswan.aswan import Aswan, AswanInput, AswanOutput
 
@@ -6,13 +7,17 @@ from src.lib.algo.aswan.aswan import Aswan, AswanInput, AswanOutput
 class AswanNormal(Aswan):
     """Uses Normal Approximation to estimate required rounds."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._norm = NormalDist()
+
     async def _run(self, inp: AswanInput) -> AswanOutput:
         n, m, p, y = inp.N, inp.M, inp.p, inp.y
 
         if m >= n:
             return AswanOutput(x=1)
 
-        z_p = self._get_z_score(p)
+        z_p = self._norm.inv_cdf(p)
         k = n * (1 - y)
         q_per_round = 1 - (m / n)
 
@@ -32,14 +37,3 @@ class AswanNormal(Aswan):
                 break
 
         return AswanOutput(x=x)
-
-    def _get_z_score(self, p: float) -> float:
-        """Approximate inverse CDF of standard normal."""
-        if p < 0.5:
-            return -self._get_z_score(1 - p)
-        t = math.sqrt(-2.0 * math.log(1.0 - p))
-        z = t - (
-            (2.515517 + 0.802853 * t + 0.010328 * t * t)
-            / (1.0 + 1.432788 * t + 0.189269 * t * t + 0.001308 * t * t * t)
-        )
-        return z

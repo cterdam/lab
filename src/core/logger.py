@@ -256,7 +256,7 @@ class Logger:
         self.logname = safestr(logname)
         self.lid = obj_id(
             namespace=env.NAMESPACE_DELIMITER.join(self.logspace),
-            objname=logname,
+            objname=self.logname,
         )
         self.logdir = logspace2dir(self.logspace)
         self.counter_hash_key = obj_subkey(self.lid, env.COUNTER_HASH_SUFFIX)

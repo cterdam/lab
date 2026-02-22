@@ -1,5 +1,5 @@
 run_name=test_aswan
-task=algo
+task=demo
 algo=src.lib.algo.aswan.AswanSim
 N=100
 M=10

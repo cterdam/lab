@@ -38,7 +38,7 @@ class Algo(Logger, ABC, Generic[InputT, OutputT]):
     @log.io()
     async def run(self, inp: InputT) -> Timed:
         """Public API for algo run."""
-        res: Timed[OutputT] = await atimed(self._run)(inp)
+        res: Timed = await atimed(self._run)(inp)
         async with env.acoup() as p:
             await self.aincr(self.coke.ALGO_INVOC, p=p)
             await self.aincr(self.coke.ALGO_MICROS, td2ms(res.time), p=p)

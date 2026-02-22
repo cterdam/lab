@@ -26,9 +26,9 @@ class LM(Model):
 
     @final
     @log.io()
-    def gentxt(self, *args, **kwargs) -> Timed[LMGentxtResult]:
+    def gentxt(self, *args, **kwargs) -> Timed:
         """Public API for synchronous text generation."""
-        res: Timed[LMGentxtResult] = timed(self._gentxt)(*args, **kwargs)
+        res: Timed = timed(self._gentxt)(*args, **kwargs)
         with env.coup() as p:
             self.incr(self.coke.GENTXT_INVOC, p=p)
             self.incr(self.coke.GENTXT_MICROS, td2ms(res.time), p=p)
@@ -43,9 +43,9 @@ class LM(Model):
 
     @final
     @log.io()
-    async def agentxt(self, *args, **kwargs) -> Timed[LMGentxtResult]:
+    async def agentxt(self, *args, **kwargs) -> Timed:
         """Public API for asynchronous text generation."""
-        res: Timed[LMGentxtResult] = await atimed(self._agentxt)(*args, **kwargs)
+        res: Timed = await atimed(self._agentxt)(*args, **kwargs)
         async with env.acoup() as p:
             await self.aincr(self.coke.AGENTXT_INVOC, p=p)
             await self.aincr(self.coke.AGENTXT_MICROS, td2ms(res.time), p=p)

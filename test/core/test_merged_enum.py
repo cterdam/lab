@@ -296,7 +296,7 @@ def test_duplicate_value_raises():
         class _gona(StrEnum):
             B = "shared"
 
-    with pytest.raises(ValueError, match="Duplicate.*value"):
+    with pytest.raises(ValueError, match="duplicate values found"):
         Child.gona
 
 

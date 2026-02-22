@@ -2,12 +2,10 @@ import random
 import re
 import string
 import textwrap
-import time
-from datetime import timedelta
-from enum import Enum, StrEnum
-from functools import wraps
+from enum import Enum, unique
+from functools import cache
 from pathlib import Path
-from typing import Any, Callable, Coroutine, NamedTuple, TypeAlias, TypeVar
+from typing import TypeAlias, TypeVar
 
 import rich.pretty
 
@@ -216,31 +214,36 @@ class MergedEnum:
     def __init__(self, part_attr: str, enum_type: type[Enum] = Enum):
         self.part_attr = part_attr
         self.enum_type = enum_type
-        self._cache: dict[type, Enum | None] = {}
 
     def __set_name__(self, owner, name):
         self.name = name
 
     def __get__(self, obj, cls):
-        if cls not in self._cache:
-            members = {}
-            for klass in reversed(cls.__mro__):
-                part = klass.__dict__.get(self.part_attr)
-                if isinstance(part, type) and issubclass(part, Enum):
-                    for m in part:
-                        if m.name in members:
-                            raise ValueError(
-                                f"Duplicate {self.part_attr} key {m.name!r}"
-                                f" in {klass.__name__}"
-                            )
-                        if m.value in members.values():
-                            raise ValueError(
-                                f"Duplicate {self.part_attr} value {m.value!r}"
-                                f" for key {m.name!r} in {klass.__name__}"
-                            )
-                        members[m.name] = m.value
-            self._cache[cls] = self.enum_type(self.name, members) if members else None
-        return self._cache[cls]
+        return self._resolve(cls)
+
+    @cache
+    def _resolve(self, cls) -> Enum | None:
+        """Walk the MRO and collect members into a merged Enum."""
+        members = {}
+        for klass in reversed(cls.__mro__):
+            part = klass.__dict__.get(self.part_attr)
+            if part is None:
+                continue
+            assert isinstance(part, type) and issubclass(part, Enum)
+            for m in part:
+                # Duplicate-key check is manual (functional Enum API
+                # silently overwrites). Duplicate values handled by unique().
+                if m.name in members:
+                    raise ValueError(
+                        f"Duplicate {self.part_attr} key {m.name!r}"
+                        f" in {klass.__name__}"
+                    )
+                members[m.name] = m.value
+        return (
+            unique(self.enum_type(self.name, members))  # type:ignore
+            if members
+            else None
+        )
 
 
 # CLASS HIERARCHY ##############################################################

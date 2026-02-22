@@ -47,7 +47,7 @@ _glog = _GroupLoggers()
 # API ##########################################################################
 
 
-def add(gid: Gid, member: Lid | Gid, weight: float = INC) -> bool:
+def add(gid: Gid, member: Lid | Gid, weight: int | float = INC) -> bool:
     """Add or update a member with weight.
 
     Returns:

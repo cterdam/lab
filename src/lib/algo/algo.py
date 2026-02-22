@@ -36,7 +36,7 @@ class Algo(Logger, ABC, Generic[InputT, OutputT]):
 
     @final
     @log.io()
-    async def run(self, inp: InputT) -> Timed[OutputT]:
+    async def run(self, inp: InputT) -> Timed:
         """Public API for algo run."""
         res: Timed[OutputT] = await atimed(self._run)(inp)
         async with env.acoup() as p:

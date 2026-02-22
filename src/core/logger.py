@@ -373,7 +373,7 @@ class Logger:
     # - SYNCHRONOUS ------------------------------------------------------------
 
     @final
-    def iget(self, k: str, *, p: Pipeline | None = None) -> int | None:
+    def iget(self, k: str, *, p: Pipeline | None = None) -> int | Pipeline | None:
         """Int GET.
 
         Get a counter value by key under this logger, or None if key absent.
@@ -392,7 +392,9 @@ class Logger:
         return result  # type: ignore
 
     @final
-    def biget(self, ks: list[str], *, p: Pipeline | None = None) -> list[int | None]:
+    def biget(
+        self, ks: list[str], *, p: Pipeline | None = None
+    ) -> list[int | None] | Pipeline:
         """Batch Int GET.
 
         Get a list of counter values by keys under this logger, or None for each
@@ -411,7 +413,9 @@ class Logger:
         return result  # type: ignore
 
     @final
-    def iset(self, k: str, v: int | float, *, p: Pipeline | None = None) -> int:
+    def iset(
+        self, k: str, v: int | float, *, p: Pipeline | None = None
+    ) -> int | Pipeline:
         """Int SET.
 
         Set a counter value under this logger by key, regardless of prior value.
@@ -439,7 +443,9 @@ class Logger:
         return result  # type: ignore
 
     @final
-    def biset(self, mapping: dict[str, int], *, p: Pipeline | None = None) -> int:
+    def biset(
+        self, mapping: dict[str, int], *, p: Pipeline | None = None
+    ) -> int | Pipeline:
         """Batch Int SET.
 
         Set a list of counter values under this logger by keys, regardless of
@@ -469,7 +475,7 @@ class Logger:
         return result  # type: ignore
 
     @final
-    def incr(self, k: str, v: int = 1, *, p: Pipeline | None = None) -> int:
+    def incr(self, k: str, v: int = 1, *, p: Pipeline | None = None) -> int | Pipeline:
         """Int iNCRement.
 
         Increment a counter by key under this logger.
@@ -495,7 +501,9 @@ class Logger:
     # - ASYNCHRONOUS -----------------------------------------------------------
 
     @final
-    async def aiget(self, k: str, *, p: AsyncPipeline | None = None) -> int | None:
+    async def aiget(
+        self, k: str, *, p: AsyncPipeline | None = None
+    ) -> int | AsyncPipeline | None:
         """Async Int GET.
 
         Get a counter value by key under this logger, or None if key absent.
@@ -516,7 +524,7 @@ class Logger:
     @final
     async def abiget(
         self, ks: list[str], *, p: AsyncPipeline | None = None
-    ) -> list[int | None]:
+    ) -> list[int | None] | AsyncPipeline:
         """Async Batch Int GET.
 
         Get a list of counter values by keys under this logger, or None for each
@@ -537,7 +545,7 @@ class Logger:
     @final
     async def aiset(
         self, k: str, v: int | float, *, p: AsyncPipeline | None = None
-    ) -> int:
+    ) -> int | AsyncPipeline:
         """Async Int SET.
 
         Set a counter value under this logger by key, regardless of prior value.
@@ -558,7 +566,7 @@ class Logger:
     @final
     async def abiset(
         self, mapping: dict[str, int], *, p: AsyncPipeline | None = None
-    ) -> int:
+    ) -> int | AsyncPipeline:
         """Async Batch Int SET.
 
         Set a list of counter values under this logger by keys, regardless of
@@ -577,7 +585,9 @@ class Logger:
         return result  # type: ignore
 
     @final
-    async def aincr(self, k: str, v: int = 1, *, p: AsyncPipeline | None = None) -> int:
+    async def aincr(
+        self, k: str, v: int = 1, *, p: AsyncPipeline | None = None
+    ) -> int | AsyncPipeline:
         """Async Int iNCRement.
 
         Increment a counter by key under this logger.

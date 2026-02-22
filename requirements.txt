@@ -13,6 +13,9 @@ transitions
 loguru
 rich
 
+# Runtime checks
+beartype
+
 # Devtools
 black==25.1.0
 ipython

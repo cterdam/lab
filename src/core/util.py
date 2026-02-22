@@ -88,8 +88,6 @@ def isGid(objid: str) -> bool:
     """Given an obj's ID, determine whether it represents a group."""
     from src import env
 
-    if not isinstance(objid, str) or not objid:
-        return False
     return obj_in_namespace(objid, env.GID_NAMESPACE)
 
 

@@ -207,8 +207,7 @@ def test_is_gid_empty():
     assert isGid("") is False
 
 
-def test_is_gid_non_string():
-    """Test is_gid with non-string types."""
-    assert isGid(None) is False
-    assert isGid(123) is False
-    assert isGid([]) is False
+def test_is_gid_non_gid_string():
+    """Test is_gid with strings that are not Gids."""
+    assert isGid("hello") is False
+    assert isGid("some:thing") is False

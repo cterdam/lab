@@ -1,6 +1,5 @@
 import time
 from datetime import timedelta
-from functools import wraps
 from typing import Any, Callable, Coroutine, Generic, TypeVar
 
 from pydantic import Field
@@ -28,7 +27,6 @@ class Timed(Dataclass, Generic[T]):
 def timed(func: Callable[..., T]) -> Callable[..., Timed[T]]:
     """Decorator to wrap a sync function's return value in Timed[T]."""
 
-    @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Timed[T]:
         start = time.perf_counter()
         result = func(*args, **kwargs)
@@ -43,7 +41,6 @@ def atimed(
 ) -> Callable[..., Coroutine[Any, Any, Timed[T]]]:
     """Decorator to wrap an async function's return value in Timed[T]."""
 
-    @wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Timed[T]:
         start = time.perf_counter()
         result = await func(*args, **kwargs)

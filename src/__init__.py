@@ -1,9 +1,13 @@
 import sys
 
+from beartype.claw import beartype_this_package
+
 from src.core import Logger
 from src.core.arguments import Arguments
 from src.core.environment import Environment
 from src.core.util import REPO_ROOT, prepr
+
+beartype_this_package()
 
 
 def set_root_logger() -> Logger:

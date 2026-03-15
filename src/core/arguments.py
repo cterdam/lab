@@ -27,7 +27,6 @@ class Arguments(BaseSettings):
         "dry_run",
         "demo",
         "algo",
-        "validate_all_yaml",
     ] = Field(
         default="demo",
         description=multiline(

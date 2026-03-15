@@ -80,7 +80,7 @@
 All arguments are defined as fields in `src/core/arguments.py`. They are
 resolved in the following priority order (highest wins):
 
-1. **CLI flags** — `--task=validate`
+1. **CLI flags** — `--task=algo`
 2. **Environment variables** — in `.env`
 3. **Args file** — in the `args` file at repo root
 4. **Defaults** — the `default` value in each `Field()`
@@ -92,12 +92,11 @@ In practice, most arguments are set in `args`. API keys go in `.env`.
 The `args` file is baked into the Docker image at build time (`COPY . .`).
 The `.env` file is loaded at runtime via `env_file: .env` in `compose.yml`.
 
-Some arguments also have infrastructure side effects beyond the Python process.
-These are extracted from `args` by the `Makefile` and exported as environment
-variables for `docker compose`. For example, `input_dir` is bind-mounted
-read-only into the container at the same path so that the process can read host
-files. When adding an argument that needs similar treatment, update the
-`Makefile` and `compose.yml` accordingly.
+Some arguments may have infrastructure side effects beyond the Python process
+(e.g. a host path that needs bind-mounting into the container). These are
+extracted from `args` by the `Makefile` and exported as environment variables
+for `docker compose`. When adding such an argument, update the `Makefile` and
+`compose.yml` accordingly.
 
 ## Tasks
 

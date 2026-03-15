@@ -1,6 +1,4 @@
 run_name=validate_doc
-task=validate_all_yaml
-input_dir=/Users/joshlee/cterdam/doc
 algo=src.lib.algo.aswan.AswanSim
 N=100
 M=10

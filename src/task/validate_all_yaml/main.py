@@ -10,11 +10,16 @@ from src import arg, log
 
 
 def build_registry(root: Path) -> Registry:
-    """Walk root for schema.json files; register those with $id."""
+    """Walk root for all JSON files with a $id; register them for $ref resolution."""
     resources: list[tuple[str, Resource]] = []
-    for schema_path in root.rglob("schema.json"):
-        with open(schema_path) as f:
-            schema = json.load(f)
+    for json_path in root.rglob("*.json"):
+        with open(json_path) as f:
+            try:
+                schema = json.load(f)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                continue
+        if not isinstance(schema, dict):
+            continue
         schema_id = schema.get("$id")
         if schema_id:
             resource = Resource.from_contents(schema, default_specification=DRAFT202012)

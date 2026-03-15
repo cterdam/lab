@@ -5,6 +5,7 @@ define launch
 	NAME=$$(grep -sh '^run_name=' .env args | head -1 | cut -d= -f2-) && \
 	NAME=$${NAME:-$$(LC_ALL=C tr -dc a-z0-9 < /dev/urandom | head -c4)} && \
 	export RUN_ID="$$NAME-$$(date -u +%y%m%d-%H%M%S)" && \
+	export TARGET_DIR=$$(grep -sh '^input_dir=' .env args | head -1 | cut -d= -f2-) && \
 	docker compose -p $$RUN_ID up -d redis --quiet-pull >/dev/null 2>&1 && \
 	export REDIS_INSIGHT=$$(docker compose -p $$RUN_ID port redis 8001) && \
 	docker compose -p $$RUN_ID up --build $(1) -d --quiet-pull >/dev/null 2>&1 && \

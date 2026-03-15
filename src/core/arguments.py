@@ -1,13 +1,17 @@
+from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, RedisDsn, SecretStr
+from pydantic import DirectoryPath, Field, RedisDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.core.util import multiline
 
 
 class Arguments(BaseSettings):
-    """All args optional."""
+    """All args optional.
+
+    For type annotations, use available Pydantic primitives as much as possible.
+    """
 
     model_config = SettingsConfigDict(
         case_sensitive=True,
@@ -23,6 +27,7 @@ class Arguments(BaseSettings):
         "dry_run",
         "demo",
         "algo",
+        "validate_all_yaml",
     ] = Field(
         default="demo",
         description=multiline(
@@ -40,6 +45,11 @@ class Arguments(BaseSettings):
             e.g. src.lib.algo.aswan.AswanNormal.
             """,
         ),
+    )
+
+    input_dir: DirectoryPath = Field(
+        default=Path("."),
+        description="Target directory path for relevant tasks.",
     )
 
     REDIS_URL: RedisDsn = Field(

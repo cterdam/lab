@@ -1,9 +1,11 @@
 # Data
+jsonschema
 redis
 redis-om
 pydantic
 pydantic-extra-types
 pydantic-settings
+pyyaml
 
 # Model
 openai

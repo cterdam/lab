@@ -23,6 +23,7 @@ services:
       RUN_ID: "${RUN_ID}"
       REDIS_INSIGHT: "${REDIS_INSIGHT:-}"
     volumes:
+      - ${TARGET_DIR:-.}:${TARGET_DIR:-/tmp/empty}:ro
       - ./out/${RUN_ID}:/lab/out/${RUN_ID}
     command: python -m src
 
@@ -38,4 +39,5 @@ services:
     environment:
       RUN_ID: "${RUN_ID}"
       REDIS_INSIGHT: "${REDIS_INSIGHT:-}"
+      input_dir: "."
     command: pytest -n auto

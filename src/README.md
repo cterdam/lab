@@ -11,6 +11,10 @@
 - When applicable, use abbreviations. For example. `src` for "source".
 - Do not write duplicate code. If some code elsewhere already solves the
   problem, reuse it to the extent possible.
+- READMEs should document things that are not obvious from reading the code.
+  Avoid enumerating facts that are already clear from signatures, types, or
+  defaults (e.g. listing every argument with its type). Focus on the "why",
+  non-obvious interactions, and gotchas.
 
 ## Core
 
@@ -27,8 +31,9 @@
     `src.log`
   - Each logger can also keep concurrency-safe counters.
 - To log an object, use `env.repr()` to format it.
-- To log a multi-line message, construct a multi-line string and log it in one
-  message. Do not emit multiple logs for the same message.
+- One logical message = one log call. Never split a message across multiple
+  log calls. If the message has multiple parts (e.g. a summary and details),
+  construct a single multi-line string and log it in one call.
 
 ### Loggers
 
@@ -70,6 +75,36 @@
 - The counters of each logger are collected under its own hash.
 - Each module might include a `coke` module which contains its COunter KEys.
 
+## Arguments
+
+All arguments are defined as fields in `src/core/arguments.py`. They are
+resolved in the following priority order (highest wins):
+
+1. **CLI flags** — `--task=validate`
+2. **Environment variables** — in `.env`
+3. **Args file** — in the `args` file at repo root
+4. **Defaults** — the `default` value in each `Field()`
+
+In practice, most arguments are set in `args`. API keys go in `.env`.
+
+### How arguments reach the container
+
+The `args` file is baked into the Docker image at build time (`COPY . .`).
+The `.env` file is loaded at runtime via `env_file: .env` in `compose.yml`.
+
+Some arguments also have infrastructure side effects beyond the Python process.
+These are extracted from `args` by the `Makefile` and exported as environment
+variables for `docker compose`. For example, `input_dir` is bind-mounted
+read-only into the container at the same path so that the process can read host
+files. When adding an argument that needs similar treatment, update the
+`Makefile` and `compose.yml` accordingly.
+
+## Tasks
+
+Each task lives in `src/task/<name>/` and exposes a `main()` function.
+The dispatcher in `src/__main__.py` dynamically imports `src.task.<arg.task>`
+and calls `main()`. Each task directory contains its own `README.md`.
+
 ## Extend
 
 - To add a new arg option:
@@ -77,6 +112,8 @@
   - An arg with the same name will be added automatically.
   - The arg value could be provided in `.env` or `args` at repo root.
   - The parsed value will be accessible from `src.arg`
+  - If the arg has infrastructure side effects (e.g. a host path that needs
+    mounting), also update the `Makefile` and `compose.yml`.
 
 - To add a new task:
   - Create task dir with `cp -r src/task/dry_run src/task/<new_task_name>`

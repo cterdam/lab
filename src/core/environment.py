@@ -248,9 +248,9 @@ class Environment(BaseModel):
     )
 
     ERR_COKE_PREFIX: str = Field(
-        default="err_",
+        default="err",
         min_length=1,
-        description="Prefix for error counter keys in _coke enums.",
+        description="Namespace for error counter keys in _coke enums.",
     )
 
     # SERIAL ID ################################################################

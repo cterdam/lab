@@ -7,6 +7,7 @@ from typing import AsyncIterator
 
 from src import env, log
 from src.core import Gid, Lid, Logger, group
+from src.core.util import obj_id
 from src.lib.game.event import (
     AddPlayer,
     Event,
@@ -27,8 +28,8 @@ class Game(Logger):
     logspace_part = "game"
 
     class _coke(StrEnum):
-        ERR_LID_MISSING = f"{env.ERR_COKE_PREFIX}lid_missing"
-        ERR_NOT_PLAYER = f"{env.ERR_COKE_PREFIX}not_player"
+        ERR_LID_MISSING = obj_id(env.ERR_COKE_PREFIX, "lid_missing")
+        ERR_NOT_PLAYER = obj_id(env.ERR_COKE_PREFIX, "not_player")
 
     class _gona(StrEnum):
         ALL = "all"

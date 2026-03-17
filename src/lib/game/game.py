@@ -27,10 +27,13 @@ class Game(Logger):
     logspace_part = "game"
 
     class _gona(StrEnum):
+        ALL = "all"
         ALL_PLAYERS = "all_players"
+        ALL_ASSETS = "all_assets"
 
-    # Mapping from player's lid to player object
-    players: dict[Lid, Player]
+    # Strong references to owned Logger objects to prevent GC.
+    # Access to objects should go through groups + env.loggers, not this set.
+    _owned: set
 
     # The game state contains all static dataclass about the game
     # It should only be accessed via state(), not directly
@@ -46,8 +49,12 @@ class Game(Logger):
         **kwargs,
     ):
         super().__init__(*args, logname=logname, **kwargs)
-        self.players = dict()
+        self._owned = set()
         self._state_lock = asyncio.Lock()
+
+        # Set up group nesting: ALL -> {ALL_PLAYERS, ALL_ASSETS}
+        group.add(self.gid(self.gona.ALL), self.gid(self.gona.ALL_PLAYERS))
+        group.add(self.gid(self.gona.ALL), self.gid(self.gona.ALL_ASSETS))
         self._state = GameState(
             max_react_per_event=params.max_react_per_event,
             max_successive_interrupt=params.max_successive_interrupt,
@@ -165,19 +172,24 @@ class Game(Logger):
                 < state.max_successive_interrupt
             )
 
-        # Send notif
+        # Send notif to players (only Players can ack events)
         viewer_lids = group.deslid(e.vis)
-        tasks = [
-            self.players[viewer_lid].ack_event(
-                e, can_react=can_react, can_interrupt=can_interrupt
-            )
-            for viewer_lid in viewer_lids
-        ]
+        tasks = []
+        player_lids = []
+        for lid in viewer_lids:
+            obj = env.loggers.get(lid)
+            if isinstance(obj, Player):
+                tasks.append(
+                    obj.ack_event(
+                        e, can_react=can_react, can_interrupt=can_interrupt
+                    )
+                )
+                player_lids.append(lid)
         react_lists = await asyncio.gather(*tasks)
 
         # Filter out wrong reacts
         filtered_reacts = []
-        for viewer_lid, react_list in zip(viewer_lids, react_lists):
+        for viewer_lid, react_list in zip(player_lids, react_lists):
             filtered = []
             for react in react_list:
                 if not can_react:
@@ -196,7 +208,7 @@ class Game(Logger):
                 filtered.append(react)
             filtered_reacts.append(filtered)
 
-        viewer2reacts = dict(zip(viewer_lids, filtered_reacts))
+        viewer2reacts = dict(zip(player_lids, filtered_reacts))
         return viewer2reacts
 
     async def _process_reacts(
@@ -238,10 +250,7 @@ class Game(Logger):
     # HANDLER FUNCS ############################################################
 
     async def _handle_AddPlayer(self, e: AddPlayer):
-        player = env.loggers[e.player_lid]
-        self.players[player.lid] = player
-        group.add(self.gid(self.gona.ALL_PLAYERS), player.lid)
-        self.info(f"Added player: {player.lid}")
+        self._add_player(e.player_lid)
 
     async def _handle_GameStart(self, _: GameStart):
         async with self.state() as state:
@@ -252,6 +261,22 @@ class Game(Logger):
         async with self.state() as state:
             state.stage = GameStage.ENDED
         self.info("Game ending")
+
+    # ONBOARDING HELPERS #######################################################
+
+    def _add_player(self, lid: Lid):
+        """Register a player: hold strong ref and add to ALL_PLAYERS group."""
+        player = env.loggers[lid]
+        self._owned.add(player)
+        group.add(self.gid(self.gona.ALL_PLAYERS), lid)
+        self.info(f"Added player: {lid}")
+
+    def _add_asset(self, lid: Lid):
+        """Register an asset: hold strong ref and add to ALL_ASSETS group."""
+        asset = env.loggers[lid]
+        self._owned.add(asset)
+        group.add(self.gid(self.gona.ALL_ASSETS), lid)
+        self.info(f"Added asset: {lid}")
 
     # UTILS ####################################################################
 

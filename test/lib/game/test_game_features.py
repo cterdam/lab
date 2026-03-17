@@ -26,10 +26,8 @@ async def test_add_player_immediate():
     # When WAITING, add_player should process the event immediately
     await game.add_player(player1)
 
-    assert player1.lid in game.players
-    # Check if added to 'all' group
-    all_members = group.children(game.gid(game.gona.ALL_PLAYERS))
-    assert player1.lid in all_members
+    # Check if added to ALL_PLAYERS group
+    assert player1.lid in group.children(game.gid(game.gona.ALL_PLAYERS))
 
 
 @pytest.mark.asyncio
@@ -47,8 +45,8 @@ async def test_add_player_queued():
     # When ONGOING, add_player should only enqueue the event
     await game.add_player(player1)
 
-    # Should NOT be in players yet
-    assert player1.lid not in game.players
+    # Should NOT be in ALL_PLAYERS group yet
+    assert player1.lid not in group.children(game.gid(game.gona.ALL_PLAYERS))
 
     # Check event queue
     async with game.state() as state:
@@ -61,7 +59,6 @@ async def test_add_player_queued():
     e = await game._pop_event()
     await game._process_event(e)
 
-    assert player1.lid in game.players
     assert player1.lid in group.children(game.gid(game.gona.ALL_PLAYERS))
 
 
@@ -83,3 +80,22 @@ async def test_arbitrary_grouping():
     # Remove from group
     group.rm(team_gid, player.lid)
     assert player.lid not in group.children(team_gid)
+
+
+@pytest.mark.asyncio
+async def test_all_group_nesting():
+    """Test that ALL group contains ALL_PLAYERS and ALL_ASSETS as sub-groups."""
+    params = GameInitParams()
+    game = Game(params=params, logname="test_game_nesting")
+
+    # ALL should contain ALL_PLAYERS and ALL_ASSETS as children
+    all_children = group.children(game.gid(game.gona.ALL))
+    assert game.gid(game.gona.ALL_PLAYERS) in all_children
+    assert game.gid(game.gona.ALL_ASSETS) in all_children
+
+    # Add a player and verify resolvable from ALL
+    player = DummyPlayer(logname="p4")
+    await game.add_player(player)
+
+    all_descendants = group.descendants(game.gid(game.gona.ALL))
+    assert player.lid in all_descendants

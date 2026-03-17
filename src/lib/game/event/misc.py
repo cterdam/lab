@@ -12,3 +12,7 @@ class GameEnd(Event):
 
 class AddPlayer(Event):
     player_lid: Lid
+
+
+class AddAsset(Event):
+    asset_lid: Lid

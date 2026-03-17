@@ -74,7 +74,8 @@ When a runtime error is detected but handled gracefully (e.g. a missing lid,
 a type mismatch), increment an error counter instead of raising. This makes
 errors visible in counter dumps without crashing the program.
 
-- Define error counter keys in the class's `_coke` enum, prefixed with `ERR_`.
+- Define error counter keys in the class's `_coke` enum, prefixed with
+  `env.ERR_COKE_PREFIX`.
 - Increment with `self.incr(self.coke.ERR_...)` at the point of detection.
 - Log a `warning` alongside the increment to provide context.
 

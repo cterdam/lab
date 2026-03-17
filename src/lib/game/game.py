@@ -27,8 +27,8 @@ class Game(Logger):
     logspace_part = "game"
 
     class _coke(StrEnum):
-        ERR_LID_MISSING = "err_lid_missing"
-        ERR_NOT_PLAYER = "err_not_player"
+        ERR_LID_MISSING = f"{env.ERR_COKE_PREFIX}lid_missing"
+        ERR_NOT_PLAYER = f"{env.ERR_COKE_PREFIX}not_player"
 
     class _gona(StrEnum):
         ALL = "all"

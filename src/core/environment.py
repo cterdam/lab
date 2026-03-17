@@ -247,6 +247,12 @@ class Environment(BaseModel):
         description="Redis key to act as a lock for the final counter dump.",
     )
 
+    ERR_COKE_PREFIX: str = Field(
+        default="err_",
+        min_length=1,
+        description="Prefix for error counter keys in _coke enums.",
+    )
+
     # SERIAL ID ################################################################
 
     SID_COUNTER_KEY: str = Field(

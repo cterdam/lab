@@ -1,6 +1,7 @@
 import itertools
-from collections.abc import Hashable, Iterable, Iterator
+from collections.abc import Callable, Hashable, Iterable, Iterator
 from enum import StrEnum
+from typing import Any
 
 from src import env, log
 from src.core import Logger
@@ -9,11 +10,12 @@ from src.lib.graph.graph_init_params import GraphInitParams
 
 
 class Graph(Logger):
-    """A weighted, optionally directed graph with logged mutations.
+    """An optionally directed graph with arbitrary node and edge data.
 
-    Nodes are identified by any hashable value. Edges carry a non-negative
-    cost. By default edges are bidirectional; this can be changed globally
-    via ``GraphInitParams.directed`` or per-call via the ``directed`` kwarg
+    Nodes are identified by any hashable value and can carry arbitrary
+    content. Edges also carry arbitrary data (cost, label, weight, etc.).
+    By default edges are bidirectional; this can be changed globally via
+    ``GraphInitParams.directed`` or per-call via the ``directed`` kwarg
     on ``connect`` / ``disconnect``.
 
     Common topologies can be constructed via factory classmethods such as
@@ -34,11 +36,14 @@ class Graph(Logger):
         GRAPH_INIT = "Graph created: {n_nodes} nodes, directed={directed}"
         NODE_ADD = "+ node {node}"
         NODE_REMOVE = "- node {node}"
-        EDGE_ADD = "+ edge {a} -> {b} (cost={cost})"
+        EDGE_ADD = "+ edge {a} -> {b} (data={data})"
         EDGE_REMOVE = "- edge {a} -> {b}"
 
-    # Adjacency: node -> {neighbor: cost}
-    _adj: dict[Hashable, dict[Hashable, float]]
+    # Node data: node -> content
+    _nodes: dict[Hashable, Any]
+
+    # Adjacency: node -> {neighbor: edge_data}
+    _adj: dict[Hashable, dict[Hashable, Any]]
 
     _params: GraphInitParams
 
@@ -53,10 +58,12 @@ class Graph(Logger):
     ):
         super().__init__(*args, logname=logname, **kwargs)
         self._params = params or GraphInitParams()
+        self._nodes = {}
         self._adj = {}
 
         if nodes is not None:
             for node in nodes:
+                self._nodes[node] = None
                 self._adj[node] = {}
             self.incr(self.coke.ADD_NODE, len(self._adj))
 
@@ -94,12 +101,18 @@ class Graph(Logger):
         """Check whether a node exists."""
         return node in self._adj
 
-    def add_node(self, node: Hashable) -> None:
-        """Add a node to the graph. No-op if already present."""
+    def add_node(self, node: Hashable, data: Any = None) -> None:
+        """Add a node to the graph. No-op if already present.
+
+        Args:
+            node: Hashable node identifier.
+            data: Arbitrary content to store on the node.
+        """
         if node in self._adj:
             self.incr(self.coke.ERR_NODE_EXISTS)
             self.warning(f"Node already exists: {node}")
             return
+        self._nodes[node] = data
         self._adj[node] = {}
         self.incr(self.coke.ADD_NODE)
         self.debug(self.logmsg.NODE_ADD.format(node=node))
@@ -114,8 +127,21 @@ class Graph(Logger):
         for neighbor in list(self._adj[node]):
             self._adj[neighbor].pop(node, None)
         del self._adj[node]
+        del self._nodes[node]
         self.incr(self.coke.REMOVE_NODE)
         self.debug(self.logmsg.NODE_REMOVE.format(node=node))
+
+    def node_data(self, node: Hashable) -> Any:
+        """Return the data stored on a node, or None if node not found."""
+        return self._nodes.get(node)
+
+    def set_node_data(self, node: Hashable, data: Any) -> None:
+        """Update the data stored on an existing node."""
+        if node not in self._adj:
+            self.incr(self.coke.ERR_NODE_MISSING)
+            self.warning(f"Node not found: {node}")
+            return
+        self._nodes[node] = data
 
     # EDGE OPERATIONS ##########################################################
 
@@ -123,7 +149,7 @@ class Graph(Logger):
         self,
         a: Hashable,
         b: Hashable,
-        cost: float | None = None,
+        data: Any = None,
         *,
         directed: bool | None = None,
     ) -> None:
@@ -132,7 +158,8 @@ class Graph(Logger):
         Args:
             a: Source node.
             b: Destination node.
-            cost: Edge cost. Defaults to ``params.default_edge_cost``.
+            data: Arbitrary edge data. Defaults to
+                ``params.default_edge_data``.
             directed: If True, only create a -> b. If None, use the graph
                 default from ``params.directed``.
         """
@@ -141,17 +168,17 @@ class Graph(Logger):
             self.incr(self.coke.ERR_NODE_MISSING)
             self.warning(f"Cannot connect, node not found: {missing}")
             return
-        if cost is None:
-            cost = self._params.default_edge_cost
+        if data is None:
+            data = self._params.default_edge_data
         if directed is None:
             directed = self._params.directed
 
-        self._adj[a][b] = cost
+        self._adj[a][b] = data
         if not directed:
-            self._adj[b][a] = cost
+            self._adj[b][a] = data
 
         self.incr(self.coke.CONNECT)
-        self.trace(self.logmsg.EDGE_ADD.format(a=a, b=b, cost=cost))
+        self.trace(self.logmsg.EDGE_ADD.format(a=a, b=b, data=data))
 
     def disconnect(
         self,
@@ -189,28 +216,29 @@ class Graph(Logger):
         self,
         node: Hashable,
         *,
-        max_cost: float | None = None,
-    ) -> dict[Hashable, float]:
-        """Return neighbors of a node with their edge costs.
+        where: Callable[[Any], bool] | None = None,
+    ) -> dict[Hashable, Any]:
+        """Return neighbors of a node with their edge data.
 
         Args:
             node: The node to query.
-            max_cost: If set, only return neighbors reachable within this cost.
+            where: Optional predicate on edge data. Only neighbors whose
+                edge data satisfies the predicate are returned.
 
         Returns:
-            Dict mapping neighbor node IDs to edge costs.
+            Dict mapping neighbor node IDs to edge data.
         """
         if node not in self._adj:
             self.incr(self.coke.ERR_NODE_MISSING)
             self.warning(f"Node not found: {node}")
             return {}
         edges = self._adj[node]
-        if max_cost is None:
+        if where is None:
             return dict(edges)
-        return {n: c for n, c in edges.items() if c <= max_cost}
+        return {n: d for n, d in edges.items() if where(d)}
 
-    def edge_cost(self, a: Hashable, b: Hashable) -> float | None:
-        """Return the cost of edge a -> b, or None if no edge exists."""
+    def edge_data(self, a: Hashable, b: Hashable) -> Any:
+        """Return the data on edge a -> b, or None if no edge exists."""
         if a not in self._adj:
             return None
         return self._adj[a].get(b)
@@ -223,14 +251,14 @@ class Graph(Logger):
 
     # ITERATION ################################################################
 
-    def iter_edges(self) -> Iterator[tuple[Hashable, Hashable, float]]:
-        """Iterate over all edges as (source, dest, cost) tuples.
+    def iter_edges(self) -> Iterator[tuple[Hashable, Hashable, Any]]:
+        """Iterate over all edges as (source, dest, data) tuples.
 
         For undirected graphs, each edge appears twice (a->b and b->a).
         """
         for node, edges in self._adj.items():
-            for neighbor, cost in edges.items():
-                yield node, neighbor, cost
+            for neighbor, data in edges.items():
+                yield node, neighbor, data
 
     # FACTORY CLASSMETHODS #####################################################
 
@@ -240,7 +268,7 @@ class Graph(Logger):
         shape: tuple[int, ...],
         *,
         wrap: tuple[bool, ...] | None = None,
-        edge_cost: float = 1.0,
+        edge_data: Any = 1.0,
         logname: str = "grid",
         **kwargs,
     ) -> "Graph":
@@ -253,7 +281,7 @@ class Graph(Logger):
             shape: Size along each dimension, e.g. ``(8, 8)`` for a chessboard.
             wrap: Per-axis wrapping. ``(True, False)`` wraps the first axis
                 only (cylindrical). Defaults to no wrapping on any axis.
-            edge_cost: Cost for all grid edges.
+            edge_data: Data for all grid edges. Defaults to ``1.0``.
             logname: Logger name.
             **kwargs: Passed to ``__init__`` (and then to ``Logger``).
 
@@ -271,7 +299,7 @@ class Graph(Logger):
         # Create all coordinate nodes
         coords = list(itertools.product(*(range(d) for d in shape)))
         params = kwargs.pop("params", None) or GraphInitParams(
-            default_edge_cost=edge_cost,
+            default_edge_data=edge_data,
         )
         g = cls(params, nodes=coords, logname=logname, **kwargs)
 
@@ -284,10 +312,10 @@ class Graph(Logger):
                         neighbor = list(coord)
                         neighbor[axis] = neighbor_val
                         g._adj[tuple(neighbor)].setdefault(
-                            coord, edge_cost
+                            coord, edge_data
                         )
                         g._adj[coord].setdefault(
-                            tuple(neighbor), edge_cost
+                            tuple(neighbor), edge_data
                         )
                     elif wrap[axis]:
                         neighbor = list(coord)
@@ -296,10 +324,10 @@ class Graph(Logger):
                         if ntuple == coord:
                             continue  # skip self-loops from wrapping
                         g._adj[ntuple].setdefault(
-                            coord, edge_cost
+                            coord, edge_data
                         )
                         g._adj[coord].setdefault(
-                            ntuple, edge_cost
+                            ntuple, edge_data
                         )
 
         n_edges = sum(len(edges) for edges in g._adj.values())

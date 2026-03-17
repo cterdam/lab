@@ -5,29 +5,29 @@ from src.lib.graph.graph_init_params import GraphInitParams
 
 
 def test_defaults():
-    """Default params: undirected, cost 1.0."""
+    """Default params: undirected, None edge data."""
     p = GraphInitParams()
-    assert p.default_edge_cost == 1.0
+    assert p.default_edge_data is None
     assert p.directed is False
 
 
 def test_custom_values():
     """Custom params are stored correctly."""
-    p = GraphInitParams(default_edge_cost=5.0, directed=True)
-    assert p.default_edge_cost == 5.0
+    p = GraphInitParams(default_edge_data=5.0, directed=True)
+    assert p.default_edge_data == 5.0
     assert p.directed is True
 
 
-def test_negative_cost_rejected():
-    """Negative edge cost is rejected."""
-    with pytest.raises(ValidationError):
-        GraphInitParams(default_edge_cost=-1.0)
+def test_arbitrary_edge_data():
+    """default_edge_data accepts any type."""
+    p = GraphInitParams(default_edge_data={"weight": 1, "label": "road"})
+    assert p.default_edge_data == {"weight": 1, "label": "road"}
 
+    p2 = GraphInitParams(default_edge_data="highway")
+    assert p2.default_edge_data == "highway"
 
-def test_zero_cost_accepted():
-    """Zero edge cost is valid."""
-    p = GraphInitParams(default_edge_cost=0.0)
-    assert p.default_edge_cost == 0.0
+    p3 = GraphInitParams(default_edge_data=[1, 2, 3])
+    assert p3.default_edge_data == [1, 2, 3]
 
 
 def test_has_sid():

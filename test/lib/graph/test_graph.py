@@ -25,18 +25,18 @@ def test_init_with_nodes():
 
 
 def test_init_default_params():
-    """Default params give undirected graph with cost 1.0."""
+    """Default params give undirected graph with None edge data."""
     g = Graph(logname="test_default_params")
     assert g.directed is False
-    assert g._params.default_edge_cost == 1.0
+    assert g._params.default_edge_data is None
 
 
 def test_init_custom_params():
     """Custom params are respected."""
-    params = GraphInitParams(default_edge_cost=2.5, directed=True)
+    params = GraphInitParams(default_edge_data=2.5, directed=True)
     g = Graph(params=params, logname="test_custom_params")
     assert g.directed is True
-    assert g._params.default_edge_cost == 2.5
+    assert g._params.default_edge_data == 2.5
 
 
 def test_logtag():
@@ -71,6 +71,19 @@ def test_add_node():
     assert g.n_nodes == 1
 
 
+def test_add_node_with_data():
+    """add_node stores arbitrary data."""
+    g = Graph(logname="test_add_node_data")
+    g.add_node("x", data={"color": "red", "hp": 100})
+    assert g.node_data("x") == {"color": "red", "hp": 100}
+
+
+def test_add_node_default_data_is_none():
+    """Nodes without explicit data have None content."""
+    g = Graph(nodes=["a"], logname="test_node_default")
+    assert g.node_data("a") is None
+
+
 def test_add_node_duplicate():
     """Adding an existing node is a no-op (with warning)."""
     g = Graph(nodes=["x"], logname="test_add_dup")
@@ -85,6 +98,14 @@ def test_remove_node():
     g.remove_node("a")
     assert not g.has_node("a")
     assert g.neighbors("b") == {}
+
+
+def test_remove_node_clears_data():
+    """Removing a node also removes its data."""
+    g = Graph(logname="test_rm_data")
+    g.add_node("x", data="important")
+    g.remove_node("x")
+    assert g.node_data("x") is None
 
 
 def test_remove_node_missing():
@@ -113,50 +134,105 @@ def test_add_node_various_types():
     assert g.has_node((1, 2, 3))
 
 
+def test_node_data():
+    """node_data retrieves stored content."""
+    g = Graph(logname="test_node_data")
+    g.add_node("a", data=[1, 2, 3])
+    assert g.node_data("a") == [1, 2, 3]
+
+
+def test_node_data_missing():
+    """node_data returns None for non-existent node."""
+    g = Graph(logname="test_node_data_miss")
+    assert g.node_data("nope") is None
+
+
+def test_set_node_data():
+    """set_node_data updates existing node content."""
+    g = Graph(logname="test_set_data")
+    g.add_node("a", data="old")
+    g.set_node_data("a", "new")
+    assert g.node_data("a") == "new"
+
+
+def test_set_node_data_missing():
+    """set_node_data on non-existent node is a no-op."""
+    g = Graph(logname="test_set_data_miss")
+    g.set_node_data("nope", "value")  # should not raise
+
+
+def test_node_data_complex_objects():
+    """Nodes can hold complex objects."""
+    g = Graph(logname="test_complex_node")
+
+    class Piece:
+        def __init__(self, name):
+            self.name = name
+
+    piece = Piece("knight")
+    g.add_node("e4", data=piece)
+    assert g.node_data("e4").name == "knight"
+
+
 # EDGE OPERATIONS ##############################################################
 
 
 def test_connect_undirected():
     """Undirected connect creates edges in both directions."""
-    g = Graph(nodes=["a", "b"], logname="test_connect_undir")
+    params = GraphInitParams(default_edge_data=1.0)
+    g = Graph(params=params, nodes=["a", "b"], logname="test_connect_undir")
     g.connect("a", "b")
-    assert g.edge_cost("a", "b") == 1.0
-    assert g.edge_cost("b", "a") == 1.0
+    assert g.edge_data("a", "b") == 1.0
+    assert g.edge_data("b", "a") == 1.0
 
 
 def test_connect_directed():
     """Directed connect creates edge in one direction only."""
-    params = GraphInitParams(directed=True)
+    params = GraphInitParams(directed=True, default_edge_data=1.0)
     g = Graph(params=params, nodes=["a", "b"], logname="test_connect_dir")
     g.connect("a", "b")
-    assert g.edge_cost("a", "b") == 1.0
-    assert g.edge_cost("b", "a") is None
+    assert g.edge_data("a", "b") == 1.0
+    assert g.edge_data("b", "a") is None
 
 
 def test_connect_directed_override():
     """Per-call directed flag overrides graph default."""
-    g = Graph(nodes=["a", "b"], logname="test_dir_override")
-    # Default is undirected, but we force directed=True
+    params = GraphInitParams(default_edge_data=1.0)
+    g = Graph(params=params, nodes=["a", "b"], logname="test_dir_override")
     g.connect("a", "b", directed=True)
-    assert g.edge_cost("a", "b") == 1.0
-    assert g.edge_cost("b", "a") is None
+    assert g.edge_data("a", "b") == 1.0
+    assert g.edge_data("b", "a") is None
 
 
 def test_connect_undirected_override():
     """Per-call directed=False overrides directed graph."""
-    params = GraphInitParams(directed=True)
+    params = GraphInitParams(directed=True, default_edge_data=1.0)
     g = Graph(params=params, nodes=["a", "b"], logname="test_undir_override")
     g.connect("a", "b", directed=False)
-    assert g.edge_cost("a", "b") == 1.0
-    assert g.edge_cost("b", "a") == 1.0
+    assert g.edge_data("a", "b") == 1.0
+    assert g.edge_data("b", "a") == 1.0
 
 
-def test_connect_custom_cost():
-    """Custom edge cost is stored."""
-    g = Graph(nodes=["a", "b"], logname="test_cost")
-    g.connect("a", "b", cost=3.5)
-    assert g.edge_cost("a", "b") == 3.5
-    assert g.edge_cost("b", "a") == 3.5
+def test_connect_custom_data():
+    """Custom edge data is stored."""
+    g = Graph(nodes=["a", "b"], logname="test_data")
+    g.connect("a", "b", data=3.5)
+    assert g.edge_data("a", "b") == 3.5
+    assert g.edge_data("b", "a") == 3.5
+
+
+def test_connect_dict_data():
+    """Edges can carry dict data."""
+    g = Graph(nodes=["a", "b"], logname="test_dict_edge")
+    g.connect("a", "b", data={"weight": 5, "label": "road"})
+    assert g.edge_data("a", "b") == {"weight": 5, "label": "road"}
+
+
+def test_connect_string_data():
+    """Edges can carry string data."""
+    g = Graph(nodes=["a", "b"], logname="test_str_edge")
+    g.connect("a", "b", data="highway")
+    assert g.edge_data("a", "b") == "highway"
 
 
 def test_connect_missing_node():
@@ -169,19 +245,19 @@ def test_connect_missing_node():
 def test_disconnect_undirected():
     """Undirected disconnect removes edges in both directions."""
     g = Graph(nodes=["a", "b"], logname="test_disconnect_undir")
-    g.connect("a", "b")
+    g.connect("a", "b", data=1.0)
     g.disconnect("a", "b")
-    assert g.edge_cost("a", "b") is None
-    assert g.edge_cost("b", "a") is None
+    assert g.edge_data("a", "b") is None
+    assert g.edge_data("b", "a") is None
 
 
 def test_disconnect_directed():
     """Directed disconnect only removes a -> b."""
     g = Graph(nodes=["a", "b"], logname="test_disconnect_dir")
-    g.connect("a", "b", directed=False)
+    g.connect("a", "b", data=1.0, directed=False)
     g.disconnect("a", "b", directed=True)
-    assert g.edge_cost("a", "b") is None
-    assert g.edge_cost("b", "a") == 1.0
+    assert g.edge_data("a", "b") is None
+    assert g.edge_data("b", "a") == 1.0
 
 
 def test_disconnect_missing_node():
@@ -196,33 +272,50 @@ def test_disconnect_no_edge():
     g.disconnect("a", "b")  # no edge, should not raise
 
 
-def test_connect_overwrites_cost():
-    """Connecting again overwrites the edge cost."""
+def test_connect_overwrites_data():
+    """Connecting again overwrites the edge data."""
     g = Graph(nodes=["a", "b"], logname="test_overwrite")
-    g.connect("a", "b", cost=1.0)
-    g.connect("a", "b", cost=5.0)
-    assert g.edge_cost("a", "b") == 5.0
+    g.connect("a", "b", data=1.0)
+    g.connect("a", "b", data=5.0)
+    assert g.edge_data("a", "b") == 5.0
+
+
+def test_connect_default_data_is_none():
+    """Without params or explicit data, edge data defaults to None."""
+    g = Graph(nodes=["a", "b"], logname="test_default_edge")
+    g.connect("a", "b")
+    assert g.edge_data("a", "b") is None
 
 
 # QUERY OPERATIONS #############################################################
 
 
 def test_neighbors():
-    """neighbors returns dict of neighbor -> cost."""
-    g = Graph(nodes=["a", "b", "c"], logname="test_neighbors")
-    g.connect("a", "b", cost=1.0)
-    g.connect("a", "c", cost=2.0)
+    """neighbors returns dict of neighbor -> data."""
+    params = GraphInitParams(default_edge_data=0)
+    g = Graph(params=params, nodes=["a", "b", "c"], logname="test_neighbors")
+    g.connect("a", "b", data=1.0)
+    g.connect("a", "c", data=2.0)
     n = g.neighbors("a")
     assert n == {"b": 1.0, "c": 2.0}
 
 
-def test_neighbors_max_cost():
-    """max_cost filters neighbors by edge cost."""
-    g = Graph(nodes=["a", "b", "c"], logname="test_max_cost")
-    g.connect("a", "b", cost=1.0)
-    g.connect("a", "c", cost=5.0)
-    n = g.neighbors("a", max_cost=2.0)
+def test_neighbors_where():
+    """where predicate filters neighbors by edge data."""
+    g = Graph(nodes=["a", "b", "c"], logname="test_where")
+    g.connect("a", "b", data=1.0)
+    g.connect("a", "c", data=5.0)
+    n = g.neighbors("a", where=lambda d: d <= 2.0)
     assert n == {"b": 1.0}
+
+
+def test_neighbors_where_complex():
+    """where predicate works with complex edge data."""
+    g = Graph(nodes=["a", "b", "c"], logname="test_where_complex")
+    g.connect("a", "b", data={"type": "road", "cost": 1})
+    g.connect("a", "c", data={"type": "river", "cost": 5})
+    roads = g.neighbors("a", where=lambda d: d["type"] == "road")
+    assert set(roads.keys()) == {"b"}
 
 
 def test_neighbors_missing_node():
@@ -231,23 +324,23 @@ def test_neighbors_missing_node():
     assert g.neighbors("nope") == {}
 
 
-def test_edge_cost_no_edge():
-    """edge_cost returns None when no edge exists."""
+def test_edge_data_no_edge():
+    """edge_data returns None when no edge exists."""
     g = Graph(nodes=["a", "b"], logname="test_edge_no")
-    assert g.edge_cost("a", "b") is None
+    assert g.edge_data("a", "b") is None
 
 
-def test_edge_cost_no_node():
-    """edge_cost returns None when source node doesn't exist."""
+def test_edge_data_no_node():
+    """edge_data returns None when source node doesn't exist."""
     g = Graph(logname="test_edge_no_node")
-    assert g.edge_cost("x", "y") is None
+    assert g.edge_data("x", "y") is None
 
 
 def test_degree():
     """degree returns outgoing edge count."""
     g = Graph(nodes=["a", "b", "c"], logname="test_degree")
-    g.connect("a", "b")
-    g.connect("a", "c")
+    g.connect("a", "b", data=1)
+    g.connect("a", "c", data=1)
     assert g.degree("a") == 2
 
 
@@ -259,7 +352,7 @@ def test_degree_missing():
 
 def test_degree_directed():
     """In a directed graph, degree only counts outgoing."""
-    params = GraphInitParams(directed=True)
+    params = GraphInitParams(directed=True, default_edge_data=1)
     g = Graph(params=params, nodes=["a", "b"], logname="test_degree_dir")
     g.connect("a", "b")
     assert g.degree("a") == 1
@@ -272,7 +365,7 @@ def test_degree_directed():
 def test_iter_edges():
     """iter_edges yields all directed edge tuples."""
     g = Graph(nodes=["a", "b"], logname="test_iter")
-    g.connect("a", "b", cost=2.0)
+    g.connect("a", "b", data=2.0)
     edges = list(g.iter_edges())
     # Undirected: a->b and b->a
     assert ("a", "b", 2.0) in edges
@@ -284,7 +377,7 @@ def test_iter_edges_directed():
     """iter_edges on directed graph yields one-way edges."""
     params = GraphInitParams(directed=True)
     g = Graph(params=params, nodes=["a", "b"], logname="test_iter_dir")
-    g.connect("a", "b", cost=1.0)
+    g.connect("a", "b", data=1.0)
     edges = list(g.iter_edges())
     assert edges == [("a", "b", 1.0)]
 
@@ -353,14 +446,20 @@ def test_grid_1d_wrap():
     for node in g.nodes:
         assert g.degree(node) == 2
     # End connects to start
-    assert g.edge_cost((0,), (4,)) == 1.0
-    assert g.edge_cost((4,), (0,)) == 1.0
+    assert g.edge_data((0,), (4,)) == 1.0
+    assert g.edge_data((4,), (0,)) == 1.0
 
 
-def test_grid_custom_cost():
-    """Grid edges use the specified cost."""
-    g = Graph.grid((2, 2), edge_cost=3.0, logname="test_grid_cost")
-    assert g.edge_cost((0, 0), (0, 1)) == 3.0
+def test_grid_custom_edge_data():
+    """Grid edges use the specified data."""
+    g = Graph.grid((2, 2), edge_data=3.0, logname="test_grid_data")
+    assert g.edge_data((0, 0), (0, 1)) == 3.0
+
+
+def test_grid_non_numeric_edge_data():
+    """Grid edges can carry non-numeric data."""
+    g = Graph.grid((2, 2), edge_data="path", logname="test_grid_str")
+    assert g.edge_data((0, 0), (0, 1)) == "path"
 
 
 def test_grid_wrap_mismatch_raises():
@@ -388,8 +487,8 @@ def test_grid_2x1_wrapped():
     """2x1 wrapped: two nodes connected, wrap connects same pair."""
     g = Graph.grid((2,), wrap=(True,), logname="test_grid_2x1_wrap")
     assert g.n_nodes == 2
-    assert g.edge_cost((0,), (1,)) == 1.0
-    assert g.edge_cost((1,), (0,)) == 1.0
+    assert g.edge_data((0,), (1,)) == 1.0
+    assert g.edge_data((1,), (0,)) == 1.0
     # Degree is still 1 since wrap connects same pair
     assert g.degree((0,)) == 1
 
@@ -400,9 +499,9 @@ def test_grid_2x1_wrapped():
 def test_remove_node_cleans_all_edges():
     """Removing a highly-connected node cleans all inbound edges."""
     g = Graph(nodes=["hub", "a", "b", "c"], logname="test_rm_hub")
-    g.connect("hub", "a")
-    g.connect("hub", "b")
-    g.connect("hub", "c")
+    g.connect("hub", "a", data=1)
+    g.connect("hub", "b", data=1)
+    g.connect("hub", "c", data=1)
     g.remove_node("hub")
     assert g.neighbors("a") == {}
     assert g.neighbors("b") == {}
@@ -412,8 +511,8 @@ def test_remove_node_cleans_all_edges():
 def test_self_loop():
     """A node can connect to itself."""
     g = Graph(nodes=["a"], logname="test_self_loop")
-    g.connect("a", "a")
-    assert g.edge_cost("a", "a") is not None
+    g.connect("a", "a", data=1)
+    assert g.edge_data("a", "a") is not None
     assert g.degree("a") == 1
 
 
@@ -427,26 +526,34 @@ def test_nodes_property_immutable():
 def test_neighbors_returns_copy():
     """neighbors returns a copy, not a reference to internal state."""
     g = Graph(nodes=["a", "b"], logname="test_nbr_copy")
-    g.connect("a", "b")
+    g.connect("a", "b", data=1.0)
     n = g.neighbors("a")
     n["c"] = 99.0  # mutate returned dict
     assert "c" not in g.neighbors("a")  # internal state unchanged
 
 
-def test_max_cost_boundary():
-    """max_cost is inclusive (cost == max_cost is included)."""
+def test_where_boundary():
+    """where predicate at boundary: equal value is caller's choice."""
     g = Graph(nodes=["a", "b", "c"], logname="test_boundary")
-    g.connect("a", "b", cost=2.0)
-    g.connect("a", "c", cost=3.0)
-    n = g.neighbors("a", max_cost=2.0)
+    g.connect("a", "b", data=2.0)
+    g.connect("a", "c", data=3.0)
+    n = g.neighbors("a", where=lambda d: d <= 2.0)
     assert "b" in n
     assert "c" not in n
 
 
-def test_zero_cost_edge():
-    """Edges with cost 0.0 are valid."""
-    g = Graph(nodes=["a", "b"], logname="test_zero_cost")
-    g.connect("a", "b", cost=0.0)
-    assert g.edge_cost("a", "b") == 0.0
-    # max_cost=0.0 should include it
-    assert "b" in g.neighbors("a", max_cost=0.0)
+def test_zero_data_edge():
+    """Edges with data 0 are valid and distinguishable from None."""
+    g = Graph(nodes=["a", "b"], logname="test_zero_data")
+    g.connect("a", "b", data=0)
+    assert g.edge_data("a", "b") == 0
+    assert g.edge_data("a", "b") is not None
+
+
+def test_where_with_none_data():
+    """where predicate can filter edges with None data."""
+    g = Graph(nodes=["a", "b", "c"], logname="test_where_none")
+    g.connect("a", "b", data="x")
+    g.connect("a", "c")  # None data
+    n = g.neighbors("a", where=lambda d: d is not None)
+    assert set(n.keys()) == {"b"}

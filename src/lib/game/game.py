@@ -26,6 +26,10 @@ class Game(Logger):
 
     logspace_part = "game"
 
+    class _coke(StrEnum):
+        ERR_LID_MISSING = "err_lid_missing"
+        ERR_NOT_PLAYER = "err_not_player"
+
     class _gona(StrEnum):
         ALL = "all"
         ALL_PLAYERS = "all_players"
@@ -178,6 +182,10 @@ class Game(Logger):
         player_lids = []
         for lid in viewer_lids:
             obj = env.loggers.get(lid)
+            if obj is None:
+                self.incr(self.coke.ERR_LID_MISSING)
+                self.warning(f"Lid not found in env: {lid}")
+                continue
             if isinstance(obj, Player):
                 tasks.append(
                     obj.ack_event(
@@ -266,15 +274,27 @@ class Game(Logger):
 
     def _add_player(self, lid: Lid):
         """Register a player: hold strong ref and add to ALL_PLAYERS group."""
-        player = env.loggers[lid]
-        self._owned.add(player)
+        obj = env.loggers.get(lid)
+        if obj is None:
+            self.incr(self.coke.ERR_LID_MISSING)
+            self.warning(f"Lid not found in env: {lid}")
+            return
+        if not isinstance(obj, Player):
+            self.incr(self.coke.ERR_NOT_PLAYER)
+            self.warning(f"Expected Player, got {type(obj).__name__}: {lid}")
+            return
+        self._owned.add(obj)
         group.add(self.gid(self.gona.ALL_PLAYERS), lid)
         self.info(f"Added player: {lid}")
 
     def _add_asset(self, lid: Lid):
         """Register an asset: hold strong ref and add to ALL_ASSETS group."""
-        asset = env.loggers[lid]
-        self._owned.add(asset)
+        obj = env.loggers.get(lid)
+        if obj is None:
+            self.incr(self.coke.ERR_LID_MISSING)
+            self.warning(f"Lid not found in env: {lid}")
+            return
+        self._owned.add(obj)
         group.add(self.gid(self.gona.ALL_ASSETS), lid)
         self.info(f"Added asset: {lid}")
 

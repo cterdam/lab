@@ -16,16 +16,21 @@ class Graph(Logger):
 
     Nodes are identified by any hashable value and can carry arbitrary
     content. Edges also carry arbitrary data (cost, label, weight, etc.).
-    By default edges are bidirectional; this can be changed globally via
-    ``GraphInitParams.directed`` or per-call via the ``directed`` kwarg
-    on ``connect`` / ``disconnect``.
+    By default edges are directed; this can be changed globally via
+    ``GraphInitParams(directed=False)`` or per-call via the ``directed``
+    kwarg on ``connect`` / ``disconnect``. A directed graph can be
+    converted to undirected after the fact with ``symmetrize()``.
 
     Directionality
     ~~~~~~~~~~~~~~
     The graph-level ``directed`` flag (from ``GraphInitParams``) sets the
-    default. ``connect`` and ``disconnect`` accept a ``directed`` kwarg
-    that overrides it per-call. This lets you model mixed graphs (e.g.
-    mostly undirected with a few one-way edges).
+    default (``True``). ``connect`` and ``disconnect`` accept a
+    ``directed`` kwarg that overrides it per-call. This lets you model
+    mixed graphs (e.g. mostly directed with a few two-way edges).
+
+    ``symmetrize()`` adds missing reverse edges and flips the graph to
+    undirected mode, so subsequent ``connect``/``disconnect`` calls
+    default to bidirectional. Existing reverse edges are preserved.
 
     ``set_edge`` is always directional — it updates only the a→b slot.
     In an undirected graph, the a→b and b→a edges are independent dict
@@ -69,6 +74,7 @@ class Graph(Logger):
         RM = "rm"
         CONNECT = "connect"
         DISCONNECT = "disconnect"
+        SYMMETRIZE = "symmetrize"
         ERR_NODE_EXISTS = obj_id(env.ERR_COKE_PREFIX, "node_exists")
         ERR_NODE_MISSING = obj_id(env.ERR_COKE_PREFIX, "node_missing")
         ERR_EDGE_MISSING = obj_id(env.ERR_COKE_PREFIX, "edge_missing")
@@ -244,6 +250,24 @@ class Graph(Logger):
         self.incr(self.coke.DISCONNECT)
         self.trace(self.logmsg.EDGE_RM.format(a=a, b=b))
 
+    def symmetrize(self) -> None:
+        """Add missing reverse edges to make all edges bidirectional.
+
+        For every edge a→b, ensures b→a also exists with the same data.
+        Existing reverse edges are not overwritten. After symmetrizing,
+        the graph's directed flag is set to False so subsequent connect
+        and disconnect calls default to undirected.
+        """
+        added = 0
+        for node, adj in list(self._adj.items()):
+            for neighbor, data in list(adj.items()):
+                if neighbor in self._adj and node not in self._adj[neighbor]:
+                    self._adj[neighbor][node] = data
+                    added += 1
+        self._params.directed = False
+        self.incr(self.coke.SYMMETRIZE)
+        self.info(f"Symmetrized: {added} reverse edges added, directed=False")
+
     # QUERY OPERATIONS #########################################################
 
     def neighbors(
@@ -340,6 +364,7 @@ class Graph(Logger):
 
         params = kwargs.pop("params", None) or GraphInitParams(
             default_edge_data=edge_data,
+            directed=False,
         )
         g = cls(params, logname=logname, **kwargs)
 

@@ -1,9 +1,10 @@
 # Graph
 
 A general-purpose graph data structure built on `Logger`. Nodes and edges carry
-arbitrary data. Edges are undirected by default but directionality can be
-toggled globally or per-call. Designed as the foundation for higher-level
-abstractions like game boards, maps, and networks.
+arbitrary data. Edges are directed by default, giving full generality. A graph
+can be made undirected at construction (`directed=False`) or converted later
+with `symmetrize()`. Designed as the foundation for higher-level abstractions
+like game boards, maps, and networks.
 
 ## Design decisions
 
@@ -29,14 +30,29 @@ stale reference. Check the error counters in the counter dump to catch bugs.
 
 ## Directionality
 
-The `directed` flag on `GraphInitParams` sets the graph default. `connect` and
+The `directed` flag on `GraphInitParams` defaults to `True`. `connect` and
 `disconnect` accept a `directed` kwarg to override per-call, enabling mixed
-graphs (mostly undirected with a few one-way edges).
+graphs.
 
 Internally, an undirected `connect(a, b)` writes two adjacency entries (a→b
 and b→a) with the same data. These are independent dict entries — updating one
 does not touch the other. `set_edge` is therefore always directional: it writes
 only the a→b slot. To update both directions, call `set_edge` twice.
+
+### `symmetrize()`
+
+Converts a directed graph to undirected. For every edge a→b, adds b→a with
+the same data if not already present. Existing reverse edges are kept as-is.
+After symmetrizing, `directed` is set to `False`, so subsequent `connect` and
+`disconnect` calls default to bidirectional.
+
+```python
+g = Graph(GraphInitParams())          # directed by default
+g.add("a"); g.add("b")
+g.connect("a", "b", data=1.0)        # one-way: a→b
+g.symmetrize()                        # adds b→a, sets directed=False
+g.connect("b", "c", data=2.0)        # now creates both b→c and c→b
+```
 
 ## Edge data and the `_UNSET` sentinel
 

@@ -18,9 +18,9 @@ def test_empty_graph():
 
 
 def test_init_default_params():
-    """Default params give undirected graph with None edge data."""
+    """Default params give directed graph with None edge data."""
     g = Graph(GraphInitParams(), logname="test_default_params")
-    assert g.directed is False
+    assert g.directed is True
     assert g._params.default_edge_data is None
 
 
@@ -182,7 +182,7 @@ def test_get_node_complex_objects():
 
 def test_connect_undirected():
     """Undirected connect creates edges in both directions."""
-    p = GraphInitParams(default_edge_data=1.0)
+    p = GraphInitParams(default_edge_data=1.0, directed=False)
     g = Graph(p, logname="test_connect_undir")
     g.add("a")
     g.add("b")
@@ -204,7 +204,7 @@ def test_connect_directed():
 
 def test_connect_directed_override():
     """Per-call directed flag overrides graph default."""
-    p = GraphInitParams(default_edge_data=1.0)
+    p = GraphInitParams(default_edge_data=1.0, directed=False)
     g = Graph(p, logname="test_dir_override")
     g.add("a")
     g.add("b")
@@ -226,7 +226,7 @@ def test_connect_undirected_override():
 
 def test_connect_custom_data():
     """Custom edge data is stored."""
-    g = Graph(GraphInitParams(), logname="test_edata")
+    g = Graph(GraphInitParams(directed=False), logname="test_edata")
     g.add("a")
     g.add("b")
     g.connect("a", "b", data=3.5)
@@ -272,7 +272,7 @@ def test_connect_missing_node():
 
 def test_disconnect_undirected():
     """Undirected disconnect removes edges in both directions."""
-    g = Graph(GraphInitParams(), logname="test_disconnect_undir")
+    g = Graph(GraphInitParams(directed=False), logname="test_disconnect_undir")
     g.add("a")
     g.add("b")
     g.connect("a", "b", data=1.0)
@@ -327,7 +327,7 @@ def test_connect_default_data_is_none():
 
 def test_set_edge():
     """set_edge updates data on an existing edge."""
-    g = Graph(GraphInitParams(), logname="test_set_edge")
+    g = Graph(GraphInitParams(directed=False), logname="test_set_edge")
     g.add("a")
     g.add("b")
     g.connect("a", "b", data=1.0)
@@ -445,7 +445,7 @@ def test_degree_directed():
 
 def test_edges():
     """edges yields all directed edge tuples."""
-    g = Graph(GraphInitParams(), logname="test_edges")
+    g = Graph(GraphInitParams(directed=False), logname="test_edges")
     g.add("a")
     g.add("b")
     g.connect("a", "b", data=2.0)
@@ -570,7 +570,7 @@ def test_grid_2x1_wrapped():
 
 def test_rm_cleans_all_edges():
     """Removing a highly-connected node cleans all inbound edges."""
-    g = Graph(GraphInitParams(), logname="test_rm_hub")
+    g = Graph(GraphInitParams(directed=False), logname="test_rm_hub")
     g.add("hub")
     g.add("a")
     g.add("b")
@@ -645,3 +645,58 @@ def test_where_with_none_data():
     g.connect("a", "c")  # None data
     n = g.neighbors("a", where=lambda d: d is not None)
     assert set(n.keys()) == {"b"}
+
+
+# SYMMETRIZE ###################################################################
+
+
+def test_symmetrize():
+    """symmetrize adds missing reverse edges."""
+    g = Graph(GraphInitParams(), logname="test_sym")
+    g.add("a")
+    g.add("b")
+    g.connect("a", "b", data=1.0)
+    assert g.get_edge("b", "a") is None
+    g.symmetrize()
+    assert g.get_edge("b", "a") == 1.0
+
+
+def test_symmetrize_sets_undirected():
+    """After symmetrize, graph is undirected."""
+    g = Graph(GraphInitParams(), logname="test_sym_flag")
+    assert g.directed is True
+    g.symmetrize()
+    assert g.directed is False
+
+
+def test_symmetrize_preserves_existing():
+    """Existing reverse edges are not overwritten."""
+    g = Graph(GraphInitParams(), logname="test_sym_keep")
+    g.add("a")
+    g.add("b")
+    g.connect("a", "b", data="forward")
+    g.connect("b", "a", data="backward")
+    g.symmetrize()
+    assert g.get_edge("a", "b") == "forward"
+    assert g.get_edge("b", "a") == "backward"
+
+
+def test_symmetrize_subsequent_connect():
+    """After symmetrize, connect defaults to undirected."""
+    g = Graph(GraphInitParams(), logname="test_sym_connect")
+    g.add("a")
+    g.add("b")
+    g.add("c")
+    g.connect("a", "b", data=1.0)
+    g.symmetrize()
+    g.connect("b", "c", data=2.0)
+    assert g.get_edge("c", "b") == 2.0
+
+
+def test_symmetrize_empty():
+    """Symmetrizing a graph with no edges is a no-op."""
+    g = Graph(GraphInitParams(), logname="test_sym_empty")
+    g.add("a")
+    g.symmetrize()
+    assert g.directed is False
+    assert list(g.edges()) == []

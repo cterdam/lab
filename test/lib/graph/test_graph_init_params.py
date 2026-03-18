@@ -5,10 +5,10 @@ from src.lib.graph.graph_init_params import GraphInitParams
 
 
 def test_defaults():
-    """Default params: undirected, None edge data."""
+    """Default params: directed, None edge data."""
     p = GraphInitParams()
     assert p.default_edge_data is None
-    assert p.directed is False
+    assert p.directed is True
 
 
 def test_custom_values():

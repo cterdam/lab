@@ -21,7 +21,7 @@ class GraphInitParams(Dataclass):
     )
 
     directed: bool = Field(
-        default=False,
+        default=True,
         description=multiline(
             """
             Whether edges are directed by default. If False, connect(a, b)

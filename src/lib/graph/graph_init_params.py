@@ -9,11 +9,6 @@ from src.core.util import multiline
 class GraphInitParams(Dataclass):
     """Initialization params for a graph."""
 
-    nodes: tuple[Any, ...] = Field(
-        default=(),
-        description="Initial node IDs to populate the graph with.",
-    )
-
     default_edge_data: Any = Field(
         default=None,
         description="Default data for edges when not explicitly specified.",

@@ -27,19 +27,19 @@ class Graph(Logger):
     logspace_part = "graph"
 
     class _coke(StrEnum):
-        ADD_NODE = "add_node"
-        REMOVE_NODE = "remove_node"
+        ADD = "add"
+        RM = "rm"
         CONNECT = "connect"
         DISCONNECT = "disconnect"
         ERR_NODE_EXISTS = obj_id(env.ERR_COKE_PREFIX, "node_exists")
         ERR_NODE_MISSING = obj_id(env.ERR_COKE_PREFIX, "node_missing")
 
     class _logmsg(StrEnum):
-        GRAPH_INIT = "Graph created: {n_nodes} nodes, directed={directed}"
+        GRAPH_INIT = "Graph created: {n} nodes, directed={directed}"
         NODE_ADD = "+ node {node}"
-        NODE_REMOVE = "- node {node}"
+        NODE_RM = "- node {node}"
         EDGE_ADD = "+ edge {a} -> {b} (data={data})"
-        EDGE_REMOVE = "- edge {a} -> {b}"
+        EDGE_RM = "- edge {a} -> {b}"
 
     # Node data: node -> content
     _nodes: dict[Hashable, Any]
@@ -62,15 +62,9 @@ class Graph(Logger):
         self._nodes = {}
         self._adj = {}
 
-        for node in params.nodes:
-            self._nodes[node] = None
-            self._adj[node] = {}
-        if params.nodes:
-            self.incr(self.coke.ADD_NODE, len(self._adj))
-
         self.info(
             self.logmsg.GRAPH_INIT.format(
-                n_nodes=len(self._adj),
+                n=0,
                 directed=self._params.directed,
             )
         )
@@ -82,7 +76,7 @@ class Graph(Logger):
         return f"{len(self._adj)}n"
 
     @property
-    def n_nodes(self) -> int:
+    def n(self) -> int:
         """Number of nodes in the graph."""
         return len(self._adj)
 
@@ -98,11 +92,11 @@ class Graph(Logger):
 
     # NODE OPERATIONS ##########################################################
 
-    def has_node(self, node: Hashable) -> bool:
+    def has(self, node: Hashable) -> bool:
         """Check whether a node exists."""
         return node in self._adj
 
-    def add_node(self, node: Hashable, data: Any = None) -> None:
+    def add(self, node: Hashable, data: Any = None) -> None:
         """Add a node to the graph. No-op if already present.
 
         Args:
@@ -115,10 +109,10 @@ class Graph(Logger):
             return
         self._nodes[node] = data
         self._adj[node] = {}
-        self.incr(self.coke.ADD_NODE)
+        self.incr(self.coke.ADD)
         self.debug(self.logmsg.NODE_ADD.format(node=node))
 
-    def remove_node(self, node: Hashable) -> None:
+    def rm(self, node: Hashable) -> None:
         """Remove a node and all its edges."""
         if node not in self._adj:
             self.incr(self.coke.ERR_NODE_MISSING)
@@ -129,14 +123,14 @@ class Graph(Logger):
             self._adj[neighbor].pop(node, None)
         del self._adj[node]
         del self._nodes[node]
-        self.incr(self.coke.REMOVE_NODE)
-        self.debug(self.logmsg.NODE_REMOVE.format(node=node))
+        self.incr(self.coke.RM)
+        self.debug(self.logmsg.NODE_RM.format(node=node))
 
-    def node_data(self, node: Hashable) -> Any:
+    def data(self, node: Hashable) -> Any:
         """Return the data stored on a node, or None if node not found."""
         return self._nodes.get(node)
 
-    def set_node_data(self, node: Hashable, data: Any) -> None:
+    def set_data(self, node: Hashable, data: Any) -> None:
         """Update the data stored on an existing node."""
         if node not in self._adj:
             self.incr(self.coke.ERR_NODE_MISSING)
@@ -209,7 +203,7 @@ class Graph(Logger):
             self._adj[b].pop(a, None)
 
         self.incr(self.coke.DISCONNECT)
-        self.trace(self.logmsg.EDGE_REMOVE.format(a=a, b=b))
+        self.trace(self.logmsg.EDGE_RM.format(a=a, b=b))
 
     # QUERY OPERATIONS #########################################################
 
@@ -233,12 +227,12 @@ class Graph(Logger):
             self.incr(self.coke.ERR_NODE_MISSING)
             self.warning(f"Node not found: {node}")
             return {}
-        edges = self._adj[node]
+        adj = self._adj[node]
         if where is None:
-            return dict(edges)
-        return {n: d for n, d in edges.items() if where(d)}
+            return dict(adj)
+        return {n: d for n, d in adj.items() if where(d)}
 
-    def edge_data(self, a: Hashable, b: Hashable) -> Any:
+    def edata(self, a: Hashable, b: Hashable) -> Any:
         """Return the data on edge a -> b, or None if no edge exists."""
         if a not in self._adj:
             return None
@@ -252,13 +246,13 @@ class Graph(Logger):
 
     # ITERATION ################################################################
 
-    def iter_edges(self) -> Iterator[tuple[Hashable, Hashable, Any]]:
+    def edges(self) -> Iterator[tuple[Hashable, Hashable, Any]]:
         """Iterate over all edges as (source, dest, data) tuples.
 
         For undirected graphs, each edge appears twice (a->b and b->a).
         """
-        for node, edges in self._adj.items():
-            for neighbor, data in edges.items():
+        for node, adj in self._adj.items():
+            for neighbor, data in adj.items():
                 yield node, neighbor, data
 
     # FACTORY CLASSMETHODS #####################################################
@@ -297,13 +291,17 @@ class Graph(Logger):
                 f"wrap length {len(wrap)} != shape dimensions {ndim}"
             )
 
-        # Create all coordinate nodes
-        coords = tuple(itertools.product(*(range(d) for d in shape)))
         params = kwargs.pop("params", None) or GraphInitParams(
-            nodes=coords,
             default_edge_data=edge_data,
         )
         g = cls(params, logname=logname, **kwargs)
+
+        # Create all coordinate nodes
+        coords = list(itertools.product(*(range(d) for d in shape)))
+        for coord in coords:
+            g._nodes[coord] = None
+            g._adj[coord] = {}
+        g.incr(g.coke.ADD, len(coords))
 
         # Connect face-adjacent neighbors
         for coord in coords:
@@ -332,7 +330,7 @@ class Graph(Logger):
                             ntuple, edge_data
                         )
 
-        n_edges = sum(len(edges) for edges in g._adj.values())
+        n_edges = sum(len(adj) for adj in g._adj.values())
         g.info(
             f"Grid {shape} created: {len(coords)} nodes, "
             f"{n_edges} directed edges, wrap={wrap}"

@@ -33,6 +33,7 @@ class Graph(Logger):
         DISCONNECT = "disconnect"
         ERR_NODE_EXISTS = obj_id(env.ERR_COKE_PREFIX, "node_exists")
         ERR_NODE_MISSING = obj_id(env.ERR_COKE_PREFIX, "node_missing")
+        ERR_EDGE_MISSING = obj_id(env.ERR_COKE_PREFIX, "edge_missing")
 
     class _logmsg(StrEnum):
         GRAPH_INIT = "Graph created: {n} nodes, directed={directed}"
@@ -76,7 +77,7 @@ class Graph(Logger):
         return f"{len(self._adj)}n"
 
     @property
-    def n(self) -> int:
+    def n_nodes(self) -> int:
         """Number of nodes in the graph."""
         return len(self._adj)
 
@@ -126,11 +127,11 @@ class Graph(Logger):
         self.incr(self.coke.RM)
         self.debug(self.logmsg.NODE_RM.format(node=node))
 
-    def data(self, node: Hashable) -> Any:
-        """Return the data stored on a node, or None if node not found."""
+    def get_node(self, node: Hashable) -> Any:
+        """Return the data stored on a node, or None if not found."""
         return self._nodes.get(node)
 
-    def set_data(self, node: Hashable, data: Any) -> None:
+    def set_node(self, node: Hashable, data: Any) -> None:
         """Update the data stored on an existing node."""
         if node not in self._adj:
             self.incr(self.coke.ERR_NODE_MISSING)
@@ -232,11 +233,19 @@ class Graph(Logger):
             return dict(adj)
         return {n: d for n, d in adj.items() if where(d)}
 
-    def edata(self, a: Hashable, b: Hashable) -> Any:
+    def get_edge(self, a: Hashable, b: Hashable) -> Any:
         """Return the data on edge a -> b, or None if no edge exists."""
         if a not in self._adj:
             return None
         return self._adj[a].get(b)
+
+    def set_edge(self, a: Hashable, b: Hashable, data: Any) -> None:
+        """Update data on an existing edge. No-op if edge does not exist."""
+        if a not in self._adj or b not in self._adj.get(a, {}):
+            self.incr(self.coke.ERR_EDGE_MISSING)
+            self.warning(f"Edge not found: {a} -> {b}")
+            return
+        self._adj[a][b] = data
 
     def degree(self, node: Hashable) -> int:
         """Return the number of outgoing edges from a node."""

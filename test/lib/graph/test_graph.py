@@ -13,7 +13,7 @@ from src.lib.graph.graph_init_params import GraphInitParams
 def test_empty_graph():
     """A graph with no nodes is valid."""
     g = Graph(GraphInitParams(), logname="test_empty")
-    assert g.n == 0
+    assert g.n_nodes == 0
     assert g.nodes == frozenset()
 
 
@@ -66,21 +66,21 @@ def test_add():
     g = Graph(GraphInitParams(), logname="test_add")
     g.add("x")
     assert g.has("x")
-    assert g.n == 1
+    assert g.n_nodes == 1
 
 
 def test_add_with_data():
     """add stores arbitrary data."""
     g = Graph(GraphInitParams(), logname="test_add_data")
     g.add("x", data={"color": "red", "hp": 100})
-    assert g.data("x") == {"color": "red", "hp": 100}
+    assert g.get_node("x") == {"color": "red", "hp": 100}
 
 
 def test_add_default_data_is_none():
     """Nodes without explicit data have None content."""
     g = Graph(GraphInitParams(), logname="test_node_default")
     g.add("a")
-    assert g.data("a") is None
+    assert g.get_node("a") is None
 
 
 def test_add_duplicate():
@@ -88,7 +88,7 @@ def test_add_duplicate():
     g = Graph(GraphInitParams(), logname="test_add_dup")
     g.add("x")
     g.add("x")
-    assert g.n == 1
+    assert g.n_nodes == 1
 
 
 def test_rm():
@@ -107,14 +107,14 @@ def test_rm_clears_data():
     g = Graph(GraphInitParams(), logname="test_rm_data")
     g.add("x", data="important")
     g.rm("x")
-    assert g.data("x") is None
+    assert g.get_node("x") is None
 
 
 def test_rm_missing():
     """Removing a non-existent node is a no-op."""
     g = Graph(GraphInitParams(), logname="test_rm_missing")
     g.rm("nope")  # should not raise
-    assert g.n == 0
+    assert g.n_nodes == 0
 
 
 def test_has():
@@ -131,40 +131,40 @@ def test_add_various_types():
     g.add(42)
     g.add("hello")
     g.add((1, 2, 3))
-    assert g.n == 3
+    assert g.n_nodes == 3
     assert g.has(42)
     assert g.has("hello")
     assert g.has((1, 2, 3))
 
 
-def test_data():
-    """data retrieves stored content."""
+def test_get_node():
+    """get_node retrieves stored content."""
     g = Graph(GraphInitParams(), logname="test_data")
     g.add("a", data=[1, 2, 3])
-    assert g.data("a") == [1, 2, 3]
+    assert g.get_node("a") == [1, 2, 3]
 
 
-def test_data_missing():
-    """data returns None for non-existent node."""
+def test_get_node_missing():
+    """get_node returns None for non-existent node."""
     g = Graph(GraphInitParams(), logname="test_data_miss")
-    assert g.data("nope") is None
+    assert g.get_node("nope") is None
 
 
-def test_set_data():
-    """set_data updates existing node content."""
+def test_set_node():
+    """set_node updates existing node content."""
     g = Graph(GraphInitParams(), logname="test_set_data")
     g.add("a", data="old")
-    g.set_data("a", "new")
-    assert g.data("a") == "new"
+    g.set_node("a", "new")
+    assert g.get_node("a") == "new"
 
 
-def test_set_data_missing():
-    """set_data on non-existent node is a no-op."""
+def test_set_node_missing():
+    """set_node on non-existent node is a no-op."""
     g = Graph(GraphInitParams(), logname="test_set_data_miss")
-    g.set_data("nope", "value")  # should not raise
+    g.set_node("nope", "value")  # should not raise
 
 
-def test_data_complex_objects():
+def test_get_node_complex_objects():
     """Nodes can hold complex objects."""
     g = Graph(GraphInitParams(), logname="test_complex_node")
 
@@ -174,7 +174,7 @@ def test_data_complex_objects():
 
     piece = Piece("knight")
     g.add("e4", data=piece)
-    assert g.data("e4").name == "knight"
+    assert g.get_node("e4").name == "knight"
 
 
 # EDGE OPERATIONS ##############################################################
@@ -187,8 +187,8 @@ def test_connect_undirected():
     g.add("a")
     g.add("b")
     g.connect("a", "b")
-    assert g.edata("a", "b") == 1.0
-    assert g.edata("b", "a") == 1.0
+    assert g.get_edge("a", "b") == 1.0
+    assert g.get_edge("b", "a") == 1.0
 
 
 def test_connect_directed():
@@ -198,8 +198,8 @@ def test_connect_directed():
     g.add("a")
     g.add("b")
     g.connect("a", "b")
-    assert g.edata("a", "b") == 1.0
-    assert g.edata("b", "a") is None
+    assert g.get_edge("a", "b") == 1.0
+    assert g.get_edge("b", "a") is None
 
 
 def test_connect_directed_override():
@@ -209,8 +209,8 @@ def test_connect_directed_override():
     g.add("a")
     g.add("b")
     g.connect("a", "b", directed=True)
-    assert g.edata("a", "b") == 1.0
-    assert g.edata("b", "a") is None
+    assert g.get_edge("a", "b") == 1.0
+    assert g.get_edge("b", "a") is None
 
 
 def test_connect_undirected_override():
@@ -220,8 +220,8 @@ def test_connect_undirected_override():
     g.add("a")
     g.add("b")
     g.connect("a", "b", directed=False)
-    assert g.edata("a", "b") == 1.0
-    assert g.edata("b", "a") == 1.0
+    assert g.get_edge("a", "b") == 1.0
+    assert g.get_edge("b", "a") == 1.0
 
 
 def test_connect_custom_data():
@@ -230,8 +230,8 @@ def test_connect_custom_data():
     g.add("a")
     g.add("b")
     g.connect("a", "b", data=3.5)
-    assert g.edata("a", "b") == 3.5
-    assert g.edata("b", "a") == 3.5
+    assert g.get_edge("a", "b") == 3.5
+    assert g.get_edge("b", "a") == 3.5
 
 
 def test_connect_dict_data():
@@ -240,7 +240,7 @@ def test_connect_dict_data():
     g.add("a")
     g.add("b")
     g.connect("a", "b", data={"weight": 5, "label": "road"})
-    assert g.edata("a", "b") == {"weight": 5, "label": "road"}
+    assert g.get_edge("a", "b") == {"weight": 5, "label": "road"}
 
 
 def test_connect_string_data():
@@ -249,7 +249,7 @@ def test_connect_string_data():
     g.add("a")
     g.add("b")
     g.connect("a", "b", data="highway")
-    assert g.edata("a", "b") == "highway"
+    assert g.get_edge("a", "b") == "highway"
 
 
 def test_connect_explicit_none_data():
@@ -259,7 +259,7 @@ def test_connect_explicit_none_data():
     g.add("a")
     g.add("b")
     g.connect("a", "b", data=None)
-    assert g.edata("a", "b") is None
+    assert g.get_edge("a", "b") is None
 
 
 def test_connect_missing_node():
@@ -277,8 +277,8 @@ def test_disconnect_undirected():
     g.add("b")
     g.connect("a", "b", data=1.0)
     g.disconnect("a", "b")
-    assert g.edata("a", "b") is None
-    assert g.edata("b", "a") is None
+    assert g.get_edge("a", "b") is None
+    assert g.get_edge("b", "a") is None
 
 
 def test_disconnect_directed():
@@ -288,8 +288,8 @@ def test_disconnect_directed():
     g.add("b")
     g.connect("a", "b", data=1.0, directed=False)
     g.disconnect("a", "b", directed=True)
-    assert g.edata("a", "b") is None
-    assert g.edata("b", "a") == 1.0
+    assert g.get_edge("a", "b") is None
+    assert g.get_edge("b", "a") == 1.0
 
 
 def test_disconnect_missing_node():
@@ -313,7 +313,7 @@ def test_connect_overwrites_data():
     g.add("b")
     g.connect("a", "b", data=1.0)
     g.connect("a", "b", data=5.0)
-    assert g.edata("a", "b") == 5.0
+    assert g.get_edge("a", "b") == 5.0
 
 
 def test_connect_default_data_is_none():
@@ -322,7 +322,34 @@ def test_connect_default_data_is_none():
     g.add("a")
     g.add("b")
     g.connect("a", "b")
-    assert g.edata("a", "b") is None
+    assert g.get_edge("a", "b") is None
+
+
+def test_set_edge():
+    """set_edge updates data on an existing edge."""
+    g = Graph(GraphInitParams(), logname="test_set_edge")
+    g.add("a")
+    g.add("b")
+    g.connect("a", "b", data=1.0)
+    g.set_edge("a", "b", "updated")
+    assert g.get_edge("a", "b") == "updated"
+    # Undirected: reverse edge is NOT updated (set_edge is directional)
+    assert g.get_edge("b", "a") == 1.0
+
+
+def test_set_edge_missing():
+    """set_edge on non-existent edge is a no-op."""
+    g = Graph(GraphInitParams(), logname="test_set_edge_miss")
+    g.add("a")
+    g.add("b")
+    g.set_edge("a", "b", "value")  # no edge, should not raise
+    assert g.get_edge("a", "b") is None
+
+
+def test_set_edge_no_node():
+    """set_edge when nodes don't exist is a no-op."""
+    g = Graph(GraphInitParams(), logname="test_set_edge_no_node")
+    g.set_edge("x", "y", "value")  # should not raise
 
 
 # QUERY OPERATIONS #############################################################
@@ -371,18 +398,18 @@ def test_neighbors_missing_node():
     assert g.neighbors("nope") == {}
 
 
-def test_edata_no_edge():
-    """edata returns None when no edge exists."""
+def test_get_edge_no_edge():
+    """get_edge returns None when no edge exists."""
     g = Graph(GraphInitParams(), logname="test_edata_no")
     g.add("a")
     g.add("b")
-    assert g.edata("a", "b") is None
+    assert g.get_edge("a", "b") is None
 
 
-def test_edata_no_node():
-    """edata returns None when source node doesn't exist."""
+def test_get_edge_no_node():
+    """get_edge returns None when source node doesn't exist."""
     g = Graph(GraphInitParams(), logname="test_edata_no_node")
-    assert g.edata("x", "y") is None
+    assert g.get_edge("x", "y") is None
 
 
 def test_degree():
@@ -452,7 +479,7 @@ def test_edges_empty():
 def test_grid_1d():
     """1D grid: linear chain."""
     g = Graph.grid((5,), logname="test_grid_1d")
-    assert g.n == 5
+    assert g.n_nodes == 5
     assert g.degree((2,)) == 2
     assert g.degree((0,)) == 1
     assert g.degree((4,)) == 1
@@ -461,7 +488,7 @@ def test_grid_1d():
 def test_grid_2d():
     """2D grid: standard rectangle."""
     g = Graph.grid((3, 4), logname="test_grid_2d")
-    assert g.n == 12
+    assert g.n_nodes == 12
     assert g.degree((0, 0)) == 2
     assert g.degree((0, 1)) == 3
     assert g.degree((1, 1)) == 4
@@ -470,14 +497,14 @@ def test_grid_2d():
 def test_grid_3d():
     """3D grid works."""
     g = Graph.grid((2, 2, 2), logname="test_grid_3d")
-    assert g.n == 8
+    assert g.n_nodes == 8
     assert g.degree((0, 0, 0)) == 3
 
 
 def test_grid_wrap_all():
     """Fully wrapped 2D grid (toroidal): every node has 4 neighbors."""
     g = Graph.grid((3, 3), wrap=(True, True), logname="test_grid_torus")
-    assert g.n == 9
+    assert g.n_nodes == 9
     for node in g.nodes:
         assert g.degree(node) == 4, f"Node {node} has degree {g.degree(node)}"
 
@@ -493,20 +520,20 @@ def test_grid_1d_wrap():
     g = Graph.grid((5,), wrap=(True,), logname="test_grid_ring")
     for node in g.nodes:
         assert g.degree(node) == 2
-    assert g.edata((0,), (4,)) == 1.0
-    assert g.edata((4,), (0,)) == 1.0
+    assert g.get_edge((0,), (4,)) == 1.0
+    assert g.get_edge((4,), (0,)) == 1.0
 
 
 def test_grid_custom_edge_data():
     """Grid edges use the specified data."""
     g = Graph.grid((2, 2), edge_data=3.0, logname="test_grid_data")
-    assert g.edata((0, 0), (0, 1)) == 3.0
+    assert g.get_edge((0, 0), (0, 1)) == 3.0
 
 
 def test_grid_non_numeric_edge_data():
     """Grid edges can carry non-numeric data."""
     g = Graph.grid((2, 2), edge_data="path", logname="test_grid_str")
-    assert g.edata((0, 0), (0, 1)) == "path"
+    assert g.get_edge((0, 0), (0, 1)) == "path"
 
 
 def test_grid_wrap_mismatch_raises():
@@ -518,23 +545,23 @@ def test_grid_wrap_mismatch_raises():
 def test_grid_single_cell():
     """1x1 grid: single node, no edges."""
     g = Graph.grid((1,), logname="test_grid_1x1")
-    assert g.n == 1
+    assert g.n_nodes == 1
     assert g.degree((0,)) == 0
 
 
 def test_grid_single_cell_wrapped():
     """1x1 wrapped grid: self-loop doesn't happen (same node)."""
     g = Graph.grid((1,), wrap=(True,), logname="test_grid_1x1_wrap")
-    assert g.n == 1
+    assert g.n_nodes == 1
     assert g.degree((0,)) == 0
 
 
 def test_grid_2x1_wrapped():
     """2x1 wrapped: two nodes connected, wrap connects same pair."""
     g = Graph.grid((2,), wrap=(True,), logname="test_grid_2x1_wrap")
-    assert g.n == 2
-    assert g.edata((0,), (1,)) == 1.0
-    assert g.edata((1,), (0,)) == 1.0
+    assert g.n_nodes == 2
+    assert g.get_edge((0,), (1,)) == 1.0
+    assert g.get_edge((1,), (0,)) == 1.0
     assert g.degree((0,)) == 1
 
 
@@ -562,7 +589,7 @@ def test_self_loop():
     g = Graph(GraphInitParams(), logname="test_self_loop")
     g.add("a")
     g.connect("a", "a", data=1)
-    assert g.edata("a", "a") is not None
+    assert g.get_edge("a", "a") is not None
     assert g.degree("a") == 1
 
 
@@ -604,8 +631,8 @@ def test_zero_data_edge():
     g.add("a")
     g.add("b")
     g.connect("a", "b", data=0)
-    assert g.edata("a", "b") == 0
-    assert g.edata("a", "b") is not None
+    assert g.get_edge("a", "b") == 0
+    assert g.get_edge("a", "b") is not None
 
 
 def test_where_with_none_data():

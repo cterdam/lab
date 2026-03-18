@@ -20,8 +20,46 @@ class Graph(Logger):
     ``GraphInitParams.directed`` or per-call via the ``directed`` kwarg
     on ``connect`` / ``disconnect``.
 
-    Common topologies can be constructed via factory classmethods such as
-    ``Graph.grid``.
+    Directionality
+    ~~~~~~~~~~~~~~
+    The graph-level ``directed`` flag (from ``GraphInitParams``) sets the
+    default. ``connect`` and ``disconnect`` accept a ``directed`` kwarg
+    that overrides it per-call. This lets you model mixed graphs (e.g.
+    mostly undirected with a few one-way edges).
+
+    ``set_edge`` is always directional — it updates only the a→b slot.
+    In an undirected graph, the a→b and b→a edges are independent dict
+    entries that happen to be created together by ``connect``. If you
+    need to update both directions, call ``set_edge`` twice.
+
+    Sentinel behavior
+    ~~~~~~~~~~~~~~~~~
+    ``connect(a, b)`` (no ``data`` arg) uses ``params.default_edge_data``.
+    ``connect(a, b, data=None)`` explicitly stores ``None`` on the edge,
+    even if the default is non-None. This distinction is implemented via
+    an internal ``_UNSET`` sentinel.
+
+    Error handling
+    ~~~~~~~~~~~~~~
+    Operations on missing nodes/edges are no-ops: they log a warning and
+    increment an error counter (``ERR_NODE_MISSING``, ``ERR_EDGE_MISSING``,
+    etc.) rather than raising. This keeps the graph usable in pipelines
+    where partial data is expected.
+
+    Iteration
+    ~~~~~~~~~
+    ``edges()`` yields every adjacency entry. For undirected graphs this
+    means each logical edge appears twice (a→b and b→a).
+
+    ``neighbors()`` accepts an optional ``where`` predicate over edge data
+    for type-agnostic filtering (e.g. ``where=lambda d: d < 3``).
+
+    Factory classmethods
+    ~~~~~~~~~~~~~~~~~~~~
+    ``Graph.grid(shape, ...)`` builds an n-dimensional rectangular grid.
+    Wrapping (toroidal, cylindrical) is per-axis. Wrapping connects
+    opposite boundary nodes at construction time — there is no runtime
+    wrap check. A 1-cell axis with wrapping skips the self-loop.
     """
 
     logspace_part = "graph"

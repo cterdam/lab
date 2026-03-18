@@ -1,10 +1,10 @@
 # Graph
 
 A general-purpose graph data structure built on `Logger`. Nodes and edges carry
-arbitrary data. Edges are directed by default, giving full generality. A graph
-can be made undirected at construction (`directed=False`) or converted later
-with `symmetrize()`. Designed as the foundation for higher-level abstractions
-like game boards, maps, and networks.
+arbitrary data. Every edge is one-way; two-way connectivity is modeled by twin
+edges (a→b and b→a) which can be created together via `bidir=True`. Designed
+as the foundation for higher-level
+abstractions like game boards, maps, and networks.
 
 ## Design decisions
 
@@ -14,6 +14,13 @@ A board is just a graph with spatial semantics. Keeping the core structure
 topology-agnostic means the same code handles hex grids, irregular maps, social
 networks, or any other graph. A future `Board` subclass can layer spatial
 concepts (coordinates, rendering, movement costs) on top.
+
+### All edges are one-way
+
+There is no graph-level "directed vs undirected" mode. Every edge is a single
+a→b entry. Two-way connectivity is just a pair of twins that happen to coexist.
+This keeps the model simple — there is one kind of edge, and the caller decides
+when twins are appropriate.
 
 ### Adjacency dict representation
 
@@ -28,31 +35,13 @@ Operations on missing nodes/edges are silent no-ops — they log a warning and
 bump an error counter. This avoids crashing long-running game loops over a
 stale reference. Check the error counters in the counter dump to catch bugs.
 
-## Directionality
+## Twins and `bidir`
 
-The `directed` flag on `GraphInitParams` defaults to `True`. `connect` and
-`disconnect` accept a `directed` kwarg to override per-call, enabling mixed
-graphs.
+`connect(a, b)` creates a single a→b edge. `connect(a, b, bidir=True)` creates
+both a→b and b→a with the same data. `disconnect` works the same way.
 
-Internally, an undirected `connect(a, b)` writes two adjacency entries (a→b
-and b→a) with the same data. These are independent dict entries — updating one
-does not touch the other. `set_edge` is therefore always directional: it writes
-only the a→b slot. To update both directions, call `set_edge` twice.
-
-### `symmetrize()`
-
-Converts a directed graph to undirected. For every edge a→b, adds b→a with
-the same data if not already present. Existing reverse edges are kept as-is.
-After symmetrizing, `directed` is set to `False`, so subsequent `connect` and
-`disconnect` calls default to bidirectional.
-
-```python
-g = Graph(GraphInitParams())          # directed by default
-g.add("a"); g.add("b")
-g.connect("a", "b", data=1.0)        # one-way: a→b
-g.symmetrize()                        # adds b→a, sets directed=False
-g.connect("b", "c", data=2.0)        # now creates both b→c and c→b
-```
+Twin edges are independent dict entries — updating one via `set_edge` does not
+touch the other. To update both, call `set_edge` twice.
 
 ## Edge data and the `_UNSET` sentinel
 
@@ -65,8 +54,8 @@ object — callers never interact with it directly.
 ## Grid factory
 
 `Graph.grid(shape, ...)` builds an n-dimensional rectangular grid with
-Manhattan (face-adjacent) connectivity. Nodes are coordinate tuples, e.g.
-`(row, col)` for 2D or `(x, y, z)` for 3D.
+Manhattan (face-adjacent) connectivity and twin edges on every connection.
+Nodes are coordinate tuples, e.g. `(row, col)` for 2D or `(x, y, z)` for 3D.
 
 ### Wrapping
 
@@ -98,9 +87,8 @@ g.neighbors(pos, where=lambda d: d.get("type") == "road")
 
 ## Iteration
 
-`edges()` yields `(source, dest, data)` for every adjacency entry. In an
-undirected graph each logical edge appears twice (a→b and b→a). Filter or
-deduplicate as needed.
+`edges()` yields `(source, dest, data)` for every adjacency entry. When twins
+exist, both a→b and b→a are yielded separately.
 
 ## Extend
 

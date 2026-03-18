@@ -12,30 +12,18 @@ _UNSET = object()
 
 
 class Graph(Logger):
-    """An optionally directed graph with arbitrary node and edge data.
+    """A graph with arbitrary node and edge data.
 
-    Nodes are identified by any hashable value and can carry arbitrary
-    content. Edges also carry arbitrary data (cost, label, weight, etc.).
-    By default edges are directed; this can be changed globally via
-    ``GraphInitParams(directed=False)`` or per-call via the ``directed``
-    kwarg on ``connect`` / ``disconnect``. A directed graph can be
-    converted to undirected after the fact with ``symmetrize()``.
+    Every edge is one-way (a→b). Two-way connectivity is modeled by a
+    pair of twin edges (a→b and b→a). ``connect`` and ``disconnect``
+    accept a ``bidir`` flag to create/remove both twins in one call.
 
-    Directionality
-    ~~~~~~~~~~~~~~
-    The graph-level ``directed`` flag (from ``GraphInitParams``) sets the
-    default (``True``). ``connect`` and ``disconnect`` accept a
-    ``directed`` kwarg that overrides it per-call. This lets you model
-    mixed graphs (e.g. mostly directed with a few two-way edges).
-
-    ``symmetrize()`` adds missing reverse edges and flips the graph to
-    undirected mode, so subsequent ``connect``/``disconnect`` calls
-    default to bidirectional. Existing reverse edges are preserved.
-
-    ``set_edge`` is always directional — it updates only the a→b slot.
-    In an undirected graph, the a→b and b→a edges are independent dict
-    entries that happen to be created together by ``connect``. If you
-    need to update both directions, call ``set_edge`` twice.
+    Edges
+    ~~~~~
+    ``connect(a, b)`` creates a single a→b edge.
+    ``connect(a, b, bidir=True)`` creates both a→b and b→a.
+    Twin edges are independent entries — updating one via ``set_edge``
+    does not touch the other. To update both, call ``set_edge`` twice.
 
     Sentinel behavior
     ~~~~~~~~~~~~~~~~~
@@ -53,18 +41,17 @@ class Graph(Logger):
 
     Iteration
     ~~~~~~~~~
-    ``edges()`` yields every adjacency entry. For undirected graphs this
-    means each logical edge appears twice (a→b and b→a).
+    ``edges()`` yields every adjacency entry. When twins exist, both
+    a→b and b→a are yielded separately.
 
     ``neighbors()`` accepts an optional ``where`` predicate over edge data
     for type-agnostic filtering (e.g. ``where=lambda d: d < 3``).
 
     Factory classmethods
     ~~~~~~~~~~~~~~~~~~~~
-    ``Graph.grid(shape, ...)`` builds an n-dimensional rectangular grid.
-    Wrapping (toroidal, cylindrical) is per-axis. Wrapping connects
-    opposite boundary nodes at construction time — there is no runtime
-    wrap check. A 1-cell axis with wrapping skips the self-loop.
+    ``Graph.grid(shape, ...)`` builds an n-dimensional rectangular grid
+    with twin edges on every connection. Wrapping (toroidal, cylindrical)
+    is per-axis. A 1-cell axis with wrapping skips the self-loop.
     """
 
     logspace_part = "graph"
@@ -74,13 +61,12 @@ class Graph(Logger):
         RM = "rm"
         CONNECT = "connect"
         DISCONNECT = "disconnect"
-        SYMMETRIZE = "symmetrize"
         ERR_NODE_EXISTS = obj_id(env.ERR_COKE_PREFIX, "node_exists")
         ERR_NODE_MISSING = obj_id(env.ERR_COKE_PREFIX, "node_missing")
         ERR_EDGE_MISSING = obj_id(env.ERR_COKE_PREFIX, "edge_missing")
 
     class _logmsg(StrEnum):
-        GRAPH_INIT = "Graph created: {n} nodes, directed={directed}"
+        GRAPH_INIT = "Graph created: {n} nodes"
         NODE_ADD = "+ node {node}"
         NODE_RM = "- node {node}"
         EDGE_ADD = "+ edge {a} -> {b} (data={data})"
@@ -107,12 +93,7 @@ class Graph(Logger):
         self._nodes = {}
         self._adj = {}
 
-        self.info(
-            self.logmsg.GRAPH_INIT.format(
-                n=0,
-                directed=self._params.directed,
-            )
-        )
+        self.info(self.logmsg.GRAPH_INIT.format(n=0))
 
     # PROPERTIES ###############################################################
 
@@ -129,11 +110,6 @@ class Graph(Logger):
     def nodes(self) -> frozenset[Hashable]:
         """All node IDs."""
         return frozenset(self._adj)
-
-    @property
-    def directed(self) -> bool:
-        """Whether the graph defaults to directed edges."""
-        return self._params.directed
 
     # NODE OPERATIONS ##########################################################
 
@@ -191,17 +167,16 @@ class Graph(Logger):
         b: Hashable,
         data: Any = _UNSET,
         *,
-        directed: bool | None = None,
+        bidir: bool = False,
     ) -> None:
-        """Create an edge between two nodes.
+        """Create an edge from a to b.
 
         Args:
             a: Source node.
             b: Destination node.
             data: Arbitrary edge data. Defaults to
                 ``params.default_edge_data``.
-            directed: If True, only create a -> b. If None, use the graph
-                default from ``params.directed``.
+            bidir: If True, also create the twin edge b -> a.
         """
         if a not in self._adj or b not in self._adj:
             missing = a if a not in self._adj else b
@@ -210,11 +185,9 @@ class Graph(Logger):
             return
         if data is _UNSET:
             data = self._params.default_edge_data
-        if directed is None:
-            directed = self._params.directed
 
         self._adj[a][b] = data
-        if not directed:
+        if bidir:
             self._adj[b][a] = data
 
         self.incr(self.coke.CONNECT)
@@ -225,48 +198,27 @@ class Graph(Logger):
         a: Hashable,
         b: Hashable,
         *,
-        directed: bool | None = None,
+        bidir: bool = False,
     ) -> None:
-        """Remove an edge between two nodes.
+        """Remove the edge from a to b.
 
         Args:
             a: Source node.
             b: Destination node.
-            directed: If True, only remove a -> b. If None, use the graph
-                default from ``params.directed``.
+            bidir: If True, also remove the twin edge b -> a.
         """
         if a not in self._adj or b not in self._adj:
             missing = a if a not in self._adj else b
             self.incr(self.coke.ERR_NODE_MISSING)
             self.warning(f"Cannot disconnect, node not found: {missing}")
             return
-        if directed is None:
-            directed = self._params.directed
 
         self._adj[a].pop(b, None)
-        if not directed:
+        if bidir:
             self._adj[b].pop(a, None)
 
         self.incr(self.coke.DISCONNECT)
         self.trace(self.logmsg.EDGE_RM.format(a=a, b=b))
-
-    def symmetrize(self) -> None:
-        """Add missing reverse edges to make all edges bidirectional.
-
-        For every edge a→b, ensures b→a also exists with the same data.
-        Existing reverse edges are not overwritten. After symmetrizing,
-        the graph's directed flag is set to False so subsequent connect
-        and disconnect calls default to undirected.
-        """
-        added = 0
-        for node, adj in list(self._adj.items()):
-            for neighbor, data in list(adj.items()):
-                if neighbor in self._adj and node not in self._adj[neighbor]:
-                    self._adj[neighbor][node] = data
-                    added += 1
-        self._params.directed = False
-        self.incr(self.coke.SYMMETRIZE)
-        self.info(f"Symmetrized: {added} reverse edges added, directed=False")
 
     # QUERY OPERATIONS #########################################################
 
@@ -320,7 +272,7 @@ class Graph(Logger):
     def edges(self) -> Iterator[tuple[Hashable, Hashable, Any]]:
         """Iterate over all edges as (source, dest, data) tuples.
 
-        For undirected graphs, each edge appears twice (a->b and b->a).
+        When twins exist, both a->b and b->a are yielded separately.
         """
         for node, adj in self._adj.items():
             for neighbor, data in adj.items():
@@ -364,7 +316,6 @@ class Graph(Logger):
 
         params = kwargs.pop("params", None) or GraphInitParams(
             default_edge_data=edge_data,
-            directed=False,
         )
         g = cls(params, logname=logname, **kwargs)
 

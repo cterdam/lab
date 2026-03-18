@@ -12,48 +12,51 @@ from src.lib.graph.graph_init_params import GraphInitParams
 
 def test_empty_graph():
     """A graph with no nodes is valid."""
-    g = Graph(logname="test_empty")
+    g = Graph(GraphInitParams(), logname="test_empty")
     assert g.n_nodes == 0
     assert g.nodes == frozenset()
 
 
 def test_init_with_nodes():
-    """Nodes passed to __init__ are registered."""
-    g = Graph(nodes=["a", "b", "c"], logname="test_init_nodes")
+    """Nodes passed via params are registered."""
+    p = GraphInitParams(nodes=("a", "b", "c"))
+    g = Graph(p, logname="test_init_nodes")
     assert g.n_nodes == 3
     assert g.nodes == frozenset({"a", "b", "c"})
 
 
 def test_init_default_params():
     """Default params give undirected graph with None edge data."""
-    g = Graph(logname="test_default_params")
+    g = Graph(GraphInitParams(), logname="test_default_params")
     assert g.directed is False
     assert g._params.default_edge_data is None
 
 
 def test_init_custom_params():
     """Custom params are respected."""
-    params = GraphInitParams(default_edge_data=2.5, directed=True)
-    g = Graph(params=params, logname="test_custom_params")
+    p = GraphInitParams(default_edge_data=2.5, directed=True)
+    g = Graph(p, logname="test_custom_params")
     assert g.directed is True
     assert g._params.default_edge_data == 2.5
 
 
 def test_logtag():
     """_logtag shows node count."""
-    g = Graph(nodes=[1, 2, 3], logname="test_logtag")
+    p = GraphInitParams(nodes=(1, 2, 3))
+    g = Graph(p, logname="test_logtag")
     assert g._logtag == "3n"
 
 
 def test_logspace():
     """logspace_part is 'graph'."""
-    g = Graph(logname="test_logspace")
+    g = Graph(GraphInitParams(), logname="test_logspace")
     assert "graph" in g.logspace
 
 
 def test_cleanup():
     """Graph instance is garbage collected cleanly."""
-    g = Graph(nodes=[1, 2], logname="test_gc")
+    p = GraphInitParams(nodes=(1, 2))
+    g = Graph(p, logname="test_gc")
     weak = weakref.ref(g)
     del g
     gc.collect()
@@ -65,7 +68,7 @@ def test_cleanup():
 
 def test_add_node():
     """add_node registers a new node."""
-    g = Graph(logname="test_add_node")
+    g = Graph(GraphInitParams(), logname="test_add_node")
     g.add_node("x")
     assert g.has_node("x")
     assert g.n_nodes == 1
@@ -73,27 +76,30 @@ def test_add_node():
 
 def test_add_node_with_data():
     """add_node stores arbitrary data."""
-    g = Graph(logname="test_add_node_data")
+    g = Graph(GraphInitParams(), logname="test_add_node_data")
     g.add_node("x", data={"color": "red", "hp": 100})
     assert g.node_data("x") == {"color": "red", "hp": 100}
 
 
 def test_add_node_default_data_is_none():
     """Nodes without explicit data have None content."""
-    g = Graph(nodes=["a"], logname="test_node_default")
+    p = GraphInitParams(nodes=("a",))
+    g = Graph(p, logname="test_node_default")
     assert g.node_data("a") is None
 
 
 def test_add_node_duplicate():
     """Adding an existing node is a no-op (with warning)."""
-    g = Graph(nodes=["x"], logname="test_add_dup")
+    p = GraphInitParams(nodes=("x",))
+    g = Graph(p, logname="test_add_dup")
     g.add_node("x")
     assert g.n_nodes == 1
 
 
 def test_remove_node():
     """Removing a node deletes it and its edges."""
-    g = Graph(nodes=["a", "b"], logname="test_rm_node")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_rm_node")
     g.connect("a", "b")
     g.remove_node("a")
     assert not g.has_node("a")
@@ -102,7 +108,7 @@ def test_remove_node():
 
 def test_remove_node_clears_data():
     """Removing a node also removes its data."""
-    g = Graph(logname="test_rm_data")
+    g = Graph(GraphInitParams(), logname="test_rm_data")
     g.add_node("x", data="important")
     g.remove_node("x")
     assert g.node_data("x") is None
@@ -110,21 +116,22 @@ def test_remove_node_clears_data():
 
 def test_remove_node_missing():
     """Removing a non-existent node is a no-op."""
-    g = Graph(logname="test_rm_missing")
+    g = Graph(GraphInitParams(), logname="test_rm_missing")
     g.remove_node("nope")  # should not raise
     assert g.n_nodes == 0
 
 
 def test_has_node():
     """has_node returns correct bool."""
-    g = Graph(nodes=["a"], logname="test_has")
+    p = GraphInitParams(nodes=("a",))
+    g = Graph(p, logname="test_has")
     assert g.has_node("a")
     assert not g.has_node("z")
 
 
 def test_add_node_various_types():
     """Nodes can be any hashable type."""
-    g = Graph(logname="test_types")
+    g = Graph(GraphInitParams(), logname="test_types")
     g.add_node(42)
     g.add_node("hello")
     g.add_node((1, 2, 3))
@@ -136,20 +143,20 @@ def test_add_node_various_types():
 
 def test_node_data():
     """node_data retrieves stored content."""
-    g = Graph(logname="test_node_data")
+    g = Graph(GraphInitParams(), logname="test_node_data")
     g.add_node("a", data=[1, 2, 3])
     assert g.node_data("a") == [1, 2, 3]
 
 
 def test_node_data_missing():
     """node_data returns None for non-existent node."""
-    g = Graph(logname="test_node_data_miss")
+    g = Graph(GraphInitParams(), logname="test_node_data_miss")
     assert g.node_data("nope") is None
 
 
 def test_set_node_data():
     """set_node_data updates existing node content."""
-    g = Graph(logname="test_set_data")
+    g = Graph(GraphInitParams(), logname="test_set_data")
     g.add_node("a", data="old")
     g.set_node_data("a", "new")
     assert g.node_data("a") == "new"
@@ -157,13 +164,13 @@ def test_set_node_data():
 
 def test_set_node_data_missing():
     """set_node_data on non-existent node is a no-op."""
-    g = Graph(logname="test_set_data_miss")
+    g = Graph(GraphInitParams(), logname="test_set_data_miss")
     g.set_node_data("nope", "value")  # should not raise
 
 
 def test_node_data_complex_objects():
     """Nodes can hold complex objects."""
-    g = Graph(logname="test_complex_node")
+    g = Graph(GraphInitParams(), logname="test_complex_node")
 
     class Piece:
         def __init__(self, name):
@@ -179,8 +186,8 @@ def test_node_data_complex_objects():
 
 def test_connect_undirected():
     """Undirected connect creates edges in both directions."""
-    params = GraphInitParams(default_edge_data=1.0)
-    g = Graph(params=params, nodes=["a", "b"], logname="test_connect_undir")
+    p = GraphInitParams(nodes=("a", "b"), default_edge_data=1.0)
+    g = Graph(p, logname="test_connect_undir")
     g.connect("a", "b")
     assert g.edge_data("a", "b") == 1.0
     assert g.edge_data("b", "a") == 1.0
@@ -188,8 +195,8 @@ def test_connect_undirected():
 
 def test_connect_directed():
     """Directed connect creates edge in one direction only."""
-    params = GraphInitParams(directed=True, default_edge_data=1.0)
-    g = Graph(params=params, nodes=["a", "b"], logname="test_connect_dir")
+    p = GraphInitParams(nodes=("a", "b"), directed=True, default_edge_data=1.0)
+    g = Graph(p, logname="test_connect_dir")
     g.connect("a", "b")
     assert g.edge_data("a", "b") == 1.0
     assert g.edge_data("b", "a") is None
@@ -197,8 +204,8 @@ def test_connect_directed():
 
 def test_connect_directed_override():
     """Per-call directed flag overrides graph default."""
-    params = GraphInitParams(default_edge_data=1.0)
-    g = Graph(params=params, nodes=["a", "b"], logname="test_dir_override")
+    p = GraphInitParams(nodes=("a", "b"), default_edge_data=1.0)
+    g = Graph(p, logname="test_dir_override")
     g.connect("a", "b", directed=True)
     assert g.edge_data("a", "b") == 1.0
     assert g.edge_data("b", "a") is None
@@ -206,8 +213,10 @@ def test_connect_directed_override():
 
 def test_connect_undirected_override():
     """Per-call directed=False overrides directed graph."""
-    params = GraphInitParams(directed=True, default_edge_data=1.0)
-    g = Graph(params=params, nodes=["a", "b"], logname="test_undir_override")
+    p = GraphInitParams(
+        nodes=("a", "b"), directed=True, default_edge_data=1.0
+    )
+    g = Graph(p, logname="test_undir_override")
     g.connect("a", "b", directed=False)
     assert g.edge_data("a", "b") == 1.0
     assert g.edge_data("b", "a") == 1.0
@@ -215,7 +224,8 @@ def test_connect_undirected_override():
 
 def test_connect_custom_data():
     """Custom edge data is stored."""
-    g = Graph(nodes=["a", "b"], logname="test_data")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_data")
     g.connect("a", "b", data=3.5)
     assert g.edge_data("a", "b") == 3.5
     assert g.edge_data("b", "a") == 3.5
@@ -223,28 +233,40 @@ def test_connect_custom_data():
 
 def test_connect_dict_data():
     """Edges can carry dict data."""
-    g = Graph(nodes=["a", "b"], logname="test_dict_edge")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_dict_edge")
     g.connect("a", "b", data={"weight": 5, "label": "road"})
     assert g.edge_data("a", "b") == {"weight": 5, "label": "road"}
 
 
 def test_connect_string_data():
     """Edges can carry string data."""
-    g = Graph(nodes=["a", "b"], logname="test_str_edge")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_str_edge")
     g.connect("a", "b", data="highway")
     assert g.edge_data("a", "b") == "highway"
 
 
+def test_connect_explicit_none_data():
+    """Explicitly passing data=None stores None, not the default."""
+    p = GraphInitParams(nodes=("a", "b"), default_edge_data=99)
+    g = Graph(p, logname="test_explicit_none")
+    g.connect("a", "b", data=None)
+    assert g.edge_data("a", "b") is None
+
+
 def test_connect_missing_node():
     """Connecting to a non-existent node is a no-op."""
-    g = Graph(nodes=["a"], logname="test_connect_missing")
+    p = GraphInitParams(nodes=("a",))
+    g = Graph(p, logname="test_connect_missing")
     g.connect("a", "b")  # b doesn't exist
     assert g.neighbors("a") == {}
 
 
 def test_disconnect_undirected():
     """Undirected disconnect removes edges in both directions."""
-    g = Graph(nodes=["a", "b"], logname="test_disconnect_undir")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_disconnect_undir")
     g.connect("a", "b", data=1.0)
     g.disconnect("a", "b")
     assert g.edge_data("a", "b") is None
@@ -253,7 +275,8 @@ def test_disconnect_undirected():
 
 def test_disconnect_directed():
     """Directed disconnect only removes a -> b."""
-    g = Graph(nodes=["a", "b"], logname="test_disconnect_dir")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_disconnect_dir")
     g.connect("a", "b", data=1.0, directed=False)
     g.disconnect("a", "b", directed=True)
     assert g.edge_data("a", "b") is None
@@ -262,27 +285,30 @@ def test_disconnect_directed():
 
 def test_disconnect_missing_node():
     """Disconnecting non-existent nodes is a no-op."""
-    g = Graph(logname="test_disc_missing")
+    g = Graph(GraphInitParams(), logname="test_disc_missing")
     g.disconnect("a", "b")  # neither exists
 
 
 def test_disconnect_no_edge():
     """Disconnecting nodes with no edge is a no-op."""
-    g = Graph(nodes=["a", "b"], logname="test_disc_no_edge")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_disc_no_edge")
     g.disconnect("a", "b")  # no edge, should not raise
 
 
 def test_connect_overwrites_data():
     """Connecting again overwrites the edge data."""
-    g = Graph(nodes=["a", "b"], logname="test_overwrite")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_overwrite")
     g.connect("a", "b", data=1.0)
     g.connect("a", "b", data=5.0)
     assert g.edge_data("a", "b") == 5.0
 
 
 def test_connect_default_data_is_none():
-    """Without params or explicit data, edge data defaults to None."""
-    g = Graph(nodes=["a", "b"], logname="test_default_edge")
+    """Without default_edge_data, edge data defaults to None."""
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_default_edge")
     g.connect("a", "b")
     assert g.edge_data("a", "b") is None
 
@@ -292,8 +318,8 @@ def test_connect_default_data_is_none():
 
 def test_neighbors():
     """neighbors returns dict of neighbor -> data."""
-    params = GraphInitParams(default_edge_data=0)
-    g = Graph(params=params, nodes=["a", "b", "c"], logname="test_neighbors")
+    p = GraphInitParams(nodes=("a", "b", "c"), default_edge_data=0)
+    g = Graph(p, logname="test_neighbors")
     g.connect("a", "b", data=1.0)
     g.connect("a", "c", data=2.0)
     n = g.neighbors("a")
@@ -302,7 +328,8 @@ def test_neighbors():
 
 def test_neighbors_where():
     """where predicate filters neighbors by edge data."""
-    g = Graph(nodes=["a", "b", "c"], logname="test_where")
+    p = GraphInitParams(nodes=("a", "b", "c"))
+    g = Graph(p, logname="test_where")
     g.connect("a", "b", data=1.0)
     g.connect("a", "c", data=5.0)
     n = g.neighbors("a", where=lambda d: d <= 2.0)
@@ -311,7 +338,8 @@ def test_neighbors_where():
 
 def test_neighbors_where_complex():
     """where predicate works with complex edge data."""
-    g = Graph(nodes=["a", "b", "c"], logname="test_where_complex")
+    p = GraphInitParams(nodes=("a", "b", "c"))
+    g = Graph(p, logname="test_where_complex")
     g.connect("a", "b", data={"type": "road", "cost": 1})
     g.connect("a", "c", data={"type": "river", "cost": 5})
     roads = g.neighbors("a", where=lambda d: d["type"] == "road")
@@ -320,25 +348,27 @@ def test_neighbors_where_complex():
 
 def test_neighbors_missing_node():
     """neighbors on non-existent node returns empty dict."""
-    g = Graph(logname="test_neighbors_missing")
+    g = Graph(GraphInitParams(), logname="test_neighbors_missing")
     assert g.neighbors("nope") == {}
 
 
 def test_edge_data_no_edge():
     """edge_data returns None when no edge exists."""
-    g = Graph(nodes=["a", "b"], logname="test_edge_no")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_edge_no")
     assert g.edge_data("a", "b") is None
 
 
 def test_edge_data_no_node():
     """edge_data returns None when source node doesn't exist."""
-    g = Graph(logname="test_edge_no_node")
+    g = Graph(GraphInitParams(), logname="test_edge_no_node")
     assert g.edge_data("x", "y") is None
 
 
 def test_degree():
     """degree returns outgoing edge count."""
-    g = Graph(nodes=["a", "b", "c"], logname="test_degree")
+    p = GraphInitParams(nodes=("a", "b", "c"))
+    g = Graph(p, logname="test_degree")
     g.connect("a", "b", data=1)
     g.connect("a", "c", data=1)
     assert g.degree("a") == 2
@@ -346,14 +376,14 @@ def test_degree():
 
 def test_degree_missing():
     """degree of non-existent node is 0."""
-    g = Graph(logname="test_degree_miss")
+    g = Graph(GraphInitParams(), logname="test_degree_miss")
     assert g.degree("x") == 0
 
 
 def test_degree_directed():
     """In a directed graph, degree only counts outgoing."""
-    params = GraphInitParams(directed=True, default_edge_data=1)
-    g = Graph(params=params, nodes=["a", "b"], logname="test_degree_dir")
+    p = GraphInitParams(nodes=("a", "b"), directed=True, default_edge_data=1)
+    g = Graph(p, logname="test_degree_dir")
     g.connect("a", "b")
     assert g.degree("a") == 1
     assert g.degree("b") == 0
@@ -364,7 +394,8 @@ def test_degree_directed():
 
 def test_iter_edges():
     """iter_edges yields all directed edge tuples."""
-    g = Graph(nodes=["a", "b"], logname="test_iter")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_iter")
     g.connect("a", "b", data=2.0)
     edges = list(g.iter_edges())
     # Undirected: a->b and b->a
@@ -375,8 +406,8 @@ def test_iter_edges():
 
 def test_iter_edges_directed():
     """iter_edges on directed graph yields one-way edges."""
-    params = GraphInitParams(directed=True)
-    g = Graph(params=params, nodes=["a", "b"], logname="test_iter_dir")
+    p = GraphInitParams(nodes=("a", "b"), directed=True)
+    g = Graph(p, logname="test_iter_dir")
     g.connect("a", "b", data=1.0)
     edges = list(g.iter_edges())
     assert edges == [("a", "b", 1.0)]
@@ -384,7 +415,7 @@ def test_iter_edges_directed():
 
 def test_iter_edges_empty():
     """iter_edges on empty graph yields nothing."""
-    g = Graph(logname="test_iter_empty")
+    g = Graph(GraphInitParams(), logname="test_iter_empty")
     assert list(g.iter_edges()) == []
 
 
@@ -498,7 +529,8 @@ def test_grid_2x1_wrapped():
 
 def test_remove_node_cleans_all_edges():
     """Removing a highly-connected node cleans all inbound edges."""
-    g = Graph(nodes=["hub", "a", "b", "c"], logname="test_rm_hub")
+    p = GraphInitParams(nodes=("hub", "a", "b", "c"))
+    g = Graph(p, logname="test_rm_hub")
     g.connect("hub", "a", data=1)
     g.connect("hub", "b", data=1)
     g.connect("hub", "c", data=1)
@@ -510,7 +542,8 @@ def test_remove_node_cleans_all_edges():
 
 def test_self_loop():
     """A node can connect to itself."""
-    g = Graph(nodes=["a"], logname="test_self_loop")
+    p = GraphInitParams(nodes=("a",))
+    g = Graph(p, logname="test_self_loop")
     g.connect("a", "a", data=1)
     assert g.edge_data("a", "a") is not None
     assert g.degree("a") == 1
@@ -518,14 +551,16 @@ def test_self_loop():
 
 def test_nodes_property_immutable():
     """nodes property returns a frozenset (immutable)."""
-    g = Graph(nodes=["a"], logname="test_frozen")
+    p = GraphInitParams(nodes=("a",))
+    g = Graph(p, logname="test_frozen")
     ns = g.nodes
     assert isinstance(ns, frozenset)
 
 
 def test_neighbors_returns_copy():
     """neighbors returns a copy, not a reference to internal state."""
-    g = Graph(nodes=["a", "b"], logname="test_nbr_copy")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_nbr_copy")
     g.connect("a", "b", data=1.0)
     n = g.neighbors("a")
     n["c"] = 99.0  # mutate returned dict
@@ -534,7 +569,8 @@ def test_neighbors_returns_copy():
 
 def test_where_boundary():
     """where predicate at boundary: equal value is caller's choice."""
-    g = Graph(nodes=["a", "b", "c"], logname="test_boundary")
+    p = GraphInitParams(nodes=("a", "b", "c"))
+    g = Graph(p, logname="test_boundary")
     g.connect("a", "b", data=2.0)
     g.connect("a", "c", data=3.0)
     n = g.neighbors("a", where=lambda d: d <= 2.0)
@@ -544,7 +580,8 @@ def test_where_boundary():
 
 def test_zero_data_edge():
     """Edges with data 0 are valid and distinguishable from None."""
-    g = Graph(nodes=["a", "b"], logname="test_zero_data")
+    p = GraphInitParams(nodes=("a", "b"))
+    g = Graph(p, logname="test_zero_data")
     g.connect("a", "b", data=0)
     assert g.edge_data("a", "b") == 0
     assert g.edge_data("a", "b") is not None
@@ -552,7 +589,8 @@ def test_zero_data_edge():
 
 def test_where_with_none_data():
     """where predicate can filter edges with None data."""
-    g = Graph(nodes=["a", "b", "c"], logname="test_where_none")
+    p = GraphInitParams(nodes=("a", "b", "c"))
+    g = Graph(p, logname="test_where_none")
     g.connect("a", "b", data="x")
     g.connect("a", "c")  # None data
     n = g.neighbors("a", where=lambda d: d is not None)

@@ -1,5 +1,5 @@
 import itertools
-from collections.abc import Callable, Hashable, Iterable, Iterator
+from collections.abc import Callable, Hashable, Iterator
 from enum import StrEnum
 from typing import Any
 
@@ -7,6 +7,8 @@ from src import env, log
 from src.core import Logger
 from src.core.util import obj_id
 from src.lib.graph.graph_init_params import GraphInitParams
+
+_UNSET = object()
 
 
 class Graph(Logger):
@@ -50,21 +52,20 @@ class Graph(Logger):
     @log.input()
     def __init__(
         self,
-        params: GraphInitParams | None = None,
+        params: GraphInitParams,
         *args,
-        nodes: Iterable[Hashable] | None = None,
         logname: str = "graph",
         **kwargs,
     ):
         super().__init__(*args, logname=logname, **kwargs)
-        self._params = params or GraphInitParams()
+        self._params = params
         self._nodes = {}
         self._adj = {}
 
-        if nodes is not None:
-            for node in nodes:
-                self._nodes[node] = None
-                self._adj[node] = {}
+        for node in params.nodes:
+            self._nodes[node] = None
+            self._adj[node] = {}
+        if params.nodes:
             self.incr(self.coke.ADD_NODE, len(self._adj))
 
         self.info(
@@ -149,7 +150,7 @@ class Graph(Logger):
         self,
         a: Hashable,
         b: Hashable,
-        data: Any = None,
+        data: Any = _UNSET,
         *,
         directed: bool | None = None,
     ) -> None:
@@ -168,7 +169,7 @@ class Graph(Logger):
             self.incr(self.coke.ERR_NODE_MISSING)
             self.warning(f"Cannot connect, node not found: {missing}")
             return
-        if data is None:
+        if data is _UNSET:
             data = self._params.default_edge_data
         if directed is None:
             directed = self._params.directed
@@ -297,11 +298,12 @@ class Graph(Logger):
             )
 
         # Create all coordinate nodes
-        coords = list(itertools.product(*(range(d) for d in shape)))
+        coords = tuple(itertools.product(*(range(d) for d in shape)))
         params = kwargs.pop("params", None) or GraphInitParams(
+            nodes=coords,
             default_edge_data=edge_data,
         )
-        g = cls(params, nodes=coords, logname=logname, **kwargs)
+        g = cls(params, logname=logname, **kwargs)
 
         # Connect face-adjacent neighbors
         for coord in coords:

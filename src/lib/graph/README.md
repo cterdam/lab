@@ -37,16 +37,16 @@ stale reference. Check the error counters in the counter dump to catch bugs.
 
 ## Twins and `bidir`
 
-`connect(a, b)` creates a single a→b edge. `connect(a, b, bidir=True)` creates
-both a→b and b→a with the same data. `disconnect` works the same way.
+`add_edge(a, b)` creates a single a→b edge. `add_edge(a, b, bidir=True)` creates
+both a→b and b→a with the same data. `rm_edge` works the same way.
 
 Twin edges are independent dict entries — updating one via `set_edge` does not
 touch the other. To update both, call `set_edge` twice.
 
 ## Edge data and the `_UNSET` sentinel
 
-`connect(a, b)` (no `data` arg) stores `params.default_edge_data` on the edge.
-`connect(a, b, data=None)` explicitly stores `None`, even when the default is
+`add_edge(a, b)` (no `data` arg) stores `params.default_edge_data` on the edge.
+`add_edge(a, b, data=None)` explicitly stores `None`, even when the default is
 non-None. This distinction matters for graphs where `None` is meaningful (e.g.
 "no cost yet assigned"). It is implemented via an internal `_UNSET` sentinel
 object — callers never interact with it directly.

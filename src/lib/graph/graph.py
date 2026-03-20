@@ -15,20 +15,20 @@ class Graph(Logger):
     """A graph with arbitrary node and edge data.
 
     Every edge is one-way (a→b). Two-way connectivity is modeled by a
-    pair of twin edges (a→b and b→a). ``connect`` and ``disconnect``
+    pair of twin edges (a→b and b→a). ``add_edge`` and ``rm_edge``
     accept a ``bidir`` flag to create/remove both twins in one call.
 
     Edges
     ~~~~~
-    ``connect(a, b)`` creates a single a→b edge.
-    ``connect(a, b, bidir=True)`` creates both a→b and b→a.
+    ``add_edge(a, b)`` creates a single a→b edge.
+    ``add_edge(a, b, bidir=True)`` creates both a→b and b→a.
     Twin edges are independent entries — updating one via ``set_edge``
     does not touch the other. To update both, call ``set_edge`` twice.
 
     Sentinel behavior
     ~~~~~~~~~~~~~~~~~
-    ``connect(a, b)`` (no ``data`` arg) uses ``params.default_edge_data``.
-    ``connect(a, b, data=None)`` explicitly stores ``None`` on the edge,
+    ``add_edge(a, b)`` (no ``data`` arg) uses ``params.default_edge_data``.
+    ``add_edge(a, b, data=None)`` explicitly stores ``None`` on the edge,
     even if the default is non-None. This distinction is implemented via
     an internal ``_UNSET`` sentinel.
 
@@ -59,8 +59,8 @@ class Graph(Logger):
     class _coke(StrEnum):
         ADD = "add"
         RM = "rm"
-        CONNECT = "connect"
-        DISCONNECT = "disconnect"
+        ADD_EDGE = "add_edge"
+        RM_EDGE = "rm_edge"
         ERR_NODE_EXISTS = obj_id(env.ERR_COKE_PREFIX, "node_exists")
         ERR_NODE_MISSING = obj_id(env.ERR_COKE_PREFIX, "node_missing")
         ERR_EDGE_MISSING = obj_id(env.ERR_COKE_PREFIX, "edge_missing")
@@ -161,7 +161,7 @@ class Graph(Logger):
 
     # EDGE OPERATIONS ##########################################################
 
-    def connect(
+    def add_edge(
         self,
         a: Hashable,
         b: Hashable,
@@ -169,19 +169,19 @@ class Graph(Logger):
         *,
         bidir: bool = False,
     ) -> None:
-        """Create an edge from a to b.
+        """Add an edge from a to b.
 
         Args:
             a: Source node.
             b: Destination node.
             data: Arbitrary edge data. Defaults to
                 ``params.default_edge_data``.
-            bidir: If True, also create the twin edge b -> a.
+            bidir: If True, also add the twin edge b -> a.
         """
         if a not in self._adj or b not in self._adj:
             missing = a if a not in self._adj else b
             self.incr(self.coke.ERR_NODE_MISSING)
-            self.warning(f"Cannot connect, node not found: {missing}")
+            self.warning(f"Cannot add edge, node not found: {missing}")
             return
         if data is _UNSET:
             data = self._params.default_edge_data
@@ -190,10 +190,10 @@ class Graph(Logger):
         if bidir:
             self._adj[b][a] = data
 
-        self.incr(self.coke.CONNECT)
+        self.incr(self.coke.ADD_EDGE)
         self.trace(self.logmsg.EDGE_ADD.format(a=a, b=b, data=data))
 
-    def disconnect(
+    def rm_edge(
         self,
         a: Hashable,
         b: Hashable,
@@ -210,14 +210,14 @@ class Graph(Logger):
         if a not in self._adj or b not in self._adj:
             missing = a if a not in self._adj else b
             self.incr(self.coke.ERR_NODE_MISSING)
-            self.warning(f"Cannot disconnect, node not found: {missing}")
+            self.warning(f"Cannot remove edge, node not found: {missing}")
             return
 
         self._adj[a].pop(b, None)
         if bidir:
             self._adj[b].pop(a, None)
 
-        self.incr(self.coke.DISCONNECT)
+        self.incr(self.coke.RM_EDGE)
         self.trace(self.logmsg.EDGE_RM.format(a=a, b=b))
 
     # QUERY OPERATIONS #########################################################
@@ -326,7 +326,7 @@ class Graph(Logger):
             g._adj[coord] = {}
         g.incr(g.coke.ADD, len(coords))
 
-        # Connect face-adjacent neighbors
+        # Add edges for face-adjacent neighbors
         for coord in coords:
             for axis in range(ndim):
                 for delta in (-1, 1):

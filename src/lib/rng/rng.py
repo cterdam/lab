@@ -6,8 +6,6 @@ from typing import Any
 from src import env, log
 from src.core import Logger
 from src.core.util import obj_id
-from src.lib.rng.card import Card, Rank, Suit
-from src.lib.rng.coin import CoinSide
 from src.lib.rng.rng_init_params import RNGInitParams
 
 
@@ -48,11 +46,11 @@ class RNG(Logger):
     The seed is recorded at construction time and can be reapplied
     via ``reseed()``.
 
-    Factory classmethods
-    ~~~~~~~~~~~~~~~~~~~~
-    ``RNG.poker_deck(...)`` builds an RNG pre-loaded with 52 ``Card``
-    objects. ``RNG.coin(...)`` and ``RNG.dice(...)`` provide other
-    common presets.
+    Subclasses
+    ~~~~~~~~~~
+    ``PokerDeck``, ``CoinRNG``, and ``DiceRNG`` extend this class with
+    domain-specific methods (``deal()``, ``flip()``, ``roll()``),
+    validation, and dedicated log spaces.
     """
 
     logspace_part = "rng"
@@ -260,88 +258,6 @@ class RNG(Logger):
         s = seed if seed is not None else self._params.seed
         self._rng.seed(s)
         self.info(self._logmsg_seed(s))
-
-    # FACTORY CLASSMETHODS #####################################################
-
-    @classmethod
-    def poker_deck(
-        cls,
-        *,
-        jokers: int = 0,
-        seed: int | None = None,
-        logname: str = "deck",
-        **kwargs,
-    ) -> "RNG":
-        """Create an RNG pre-loaded with a standard poker deck.
-
-        Each card is a ``Card`` dataclass with ``rank`` and ``suit`` fields.
-        Jokers have ``rank=Rank.JOKER`` and ``suit=None``.
-
-        Args:
-            jokers: Number of joker cards to include (typically 0 or 2).
-            seed: PRNG seed for reproducibility.
-            logname: Logger name.
-            **kwargs: Passed to ``__init__`` (and then to ``Logger``).
-
-        Returns:
-            An RNG with 52 + jokers Card objects in its pool.
-        """
-        deck: list[Card] = [
-            Card(rank=r, suit=s)
-            for s in Suit
-            for r in Rank
-            if r != Rank.JOKER
-        ]
-        for _ in range(jokers):
-            deck.append(Card(rank=Rank.JOKER))
-        params = RNGInitParams(seed=seed, pool=deck)
-        return cls(params, logname=logname, **kwargs)
-
-    @classmethod
-    def coin(
-        cls,
-        *,
-        seed: int | None = None,
-        logname: str = "coin",
-        **kwargs,
-    ) -> "RNG":
-        """Create an RNG pre-loaded with a coin (heads and tails).
-
-        Args:
-            seed: PRNG seed for reproducibility.
-            logname: Logger name.
-            **kwargs: Passed to ``__init__`` (and then to ``Logger``).
-
-        Returns:
-            An RNG with ``[CoinSide.HEADS, CoinSide.TAILS]`` in its pool.
-        """
-        pool = [CoinSide.HEADS, CoinSide.TAILS]
-        params = RNGInitParams(seed=seed, pool=pool)
-        return cls(params, logname=logname, **kwargs)
-
-    @classmethod
-    def dice(
-        cls,
-        n_sides: int = 6,
-        *,
-        seed: int | None = None,
-        logname: str = "dice",
-        **kwargs,
-    ) -> "RNG":
-        """Create an RNG pre-loaded with an n-sided die.
-
-        Args:
-            n_sides: Number of faces on the die. Defaults to 6.
-            seed: PRNG seed for reproducibility.
-            logname: Logger name.
-            **kwargs: Passed to ``__init__`` (and then to ``Logger``).
-
-        Returns:
-            An RNG with ``[1, 2, ..., n_sides]`` in its pool.
-        """
-        pool = list(range(1, n_sides + 1))
-        params = RNGInitParams(seed=seed, pool=pool)
-        return cls(params, logname=logname, **kwargs)
 
     # INTERNALS ################################################################
 

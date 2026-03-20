@@ -6,7 +6,7 @@ from src.lib.rng.rng import RNG
 from src.lib.rng.rng_init_params import RNGInitParams
 
 
-class DiceRNG(RNG):
+class Dice(RNG):
     """A die: an RNG pre-loaded with integer faces [1..n_sides].
 
     Domain methods

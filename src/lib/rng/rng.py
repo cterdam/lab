@@ -48,7 +48,7 @@ class RNG(Logger):
 
     Subclasses
     ~~~~~~~~~~
-    ``PokerDeck``, ``CoinRNG``, and ``DiceRNG`` extend this class with
+    ``Deck``, ``Coin``, and ``Dice`` extend this class with
     domain-specific methods (``deal()``, ``flip()``, ``roll()``),
     validation, and dedicated log spaces.
     """

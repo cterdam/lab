@@ -7,7 +7,7 @@ from src.lib.rng.rng import RNG
 from src.lib.rng.rng_init_params import RNGInitParams
 
 
-class PokerDeck(RNG):
+class Deck(RNG):
     """A poker deck: an RNG pre-loaded with 52 (or 54) playing cards.
 
     Each card is a ``Card`` dataclass with ``rank`` and ``suit`` fields.
@@ -24,14 +24,14 @@ class PokerDeck(RNG):
     Non-Card items are rejected with a warning.
     """
 
-    logspace_part = "poker_deck"
+    logspace_part = "deck"
 
     class _coke(StrEnum):
         DEAL = "deal"
         ERR_INVALID_CARD = obj_id(env.ERR_COKE_PREFIX, "invalid_card")
 
     class _logmsg(StrEnum):
-        DECK_INIT = "PokerDeck created: {n} cards ({jokers} jokers)"
+        DECK_INIT = "Deck created: {n} cards ({jokers} jokers)"
 
     @log.input()
     def __init__(
@@ -39,7 +39,7 @@ class PokerDeck(RNG):
         *args,
         jokers: int = 0,
         seed: int | None = None,
-        logname: str = "poker_deck",
+        logname: str = "deck",
         **kwargs,
     ):
         deck: list[Card] = [

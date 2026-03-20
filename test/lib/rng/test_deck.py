@@ -1,10 +1,8 @@
 import gc
 import weakref
 
-import pytest
-
 from src.lib.rng.card import Card, Rank, Suit
-from src.lib.rng.poker_deck import PokerDeck
+from src.lib.rng.deck import Deck
 from src.lib.rng.rng import RNG
 
 
@@ -12,40 +10,40 @@ from src.lib.rng.rng import RNG
 
 
 def test_is_rng_subclass():
-    """PokerDeck is a subclass of RNG."""
-    assert issubclass(PokerDeck, RNG)
+    """Deck is a subclass of RNG."""
+    assert issubclass(Deck, RNG)
 
 
 def test_instance_of_rng():
-    """PokerDeck instance is also an RNG."""
-    d = PokerDeck(seed=1, logname="test_isinstance")
+    """Deck instance is also an RNG."""
+    d = Deck(seed=1, logname="test_isinstance")
     assert isinstance(d, RNG)
 
 
 def test_logspace():
-    """logspace includes both 'rng' and 'poker_deck'."""
-    d = PokerDeck(seed=1, logname="test_logspace")
+    """logspace includes both 'rng' and 'deck'."""
+    d = Deck(seed=1, logname="test_logspace")
     assert "rng" in d.logspace
-    assert "poker_deck" in d.logspace
+    assert "deck" in d.logspace
 
 
 def test_default_deck_size():
     """Default deck has 52 cards."""
-    d = PokerDeck(seed=1, logname="test_default_size")
+    d = Deck(seed=1, logname="test_default_size")
     assert d.pool_size == 52
     assert d.remaining == 52
 
 
 def test_deck_with_jokers():
     """Deck with jokers=2 has 54 cards."""
-    d = PokerDeck(jokers=2, seed=1, logname="test_jokers")
+    d = Deck(jokers=2, seed=1, logname="test_jokers")
     assert d.pool_size == 54
     assert d.remaining == 54
 
 
 def test_deck_with_one_joker():
     """Deck with jokers=1 has 53 cards."""
-    d = PokerDeck(jokers=1, seed=1, logname="test_1joker")
+    d = Deck(jokers=1, seed=1, logname="test_1joker")
     assert d.pool_size == 53
 
 
@@ -54,7 +52,7 @@ def test_deck_with_one_joker():
 
 def test_all_items_are_cards():
     """Every item in the deck is a Card."""
-    d = PokerDeck(seed=1, logname="test_card_types")
+    d = Deck(seed=1, logname="test_card_types")
     cards = d.draw(52)
     for card in cards:
         assert isinstance(card, Card)
@@ -62,7 +60,7 @@ def test_all_items_are_cards():
 
 def test_standard_cards_have_rank_and_suit():
     """Standard cards have valid Rank and Suit."""
-    d = PokerDeck(seed=1, logname="test_rank_suit")
+    d = Deck(seed=1, logname="test_rank_suit")
     card = d.draw()
     assert isinstance(card.rank, Rank)
     assert isinstance(card.suit, Suit)
@@ -70,7 +68,7 @@ def test_standard_cards_have_rank_and_suit():
 
 def test_joker_cards_have_no_suit():
     """Joker cards have rank=JOKER and suit=None."""
-    d = PokerDeck(jokers=2, seed=1, logname="test_joker_nossuit")
+    d = Deck(jokers=2, seed=1, logname="test_joker_nossuit")
     cards = d.draw(54)
     jokers = [c for c in cards if c.rank == Rank.JOKER]
     assert len(jokers) == 2
@@ -80,7 +78,7 @@ def test_joker_cards_have_no_suit():
 
 def test_no_jokers_default():
     """Default deck has no jokers."""
-    d = PokerDeck(seed=1, logname="test_no_jokers")
+    d = Deck(seed=1, logname="test_no_jokers")
     cards = d.draw(52)
     jokers = [c for c in cards if c.rank == Rank.JOKER]
     assert len(jokers) == 0
@@ -91,7 +89,7 @@ def test_no_jokers_default():
 
 def test_all_unique_combinations():
     """All 52 cards are unique rank+suit combinations."""
-    d = PokerDeck(seed=1, logname="test_unique")
+    d = Deck(seed=1, logname="test_unique")
     cards = d.draw(52)
     combos = [(c.rank, c.suit) for c in cards]
     assert len(set(combos)) == 52
@@ -99,7 +97,7 @@ def test_all_unique_combinations():
 
 def test_all_suits_present():
     """Deck contains every suit."""
-    d = PokerDeck(seed=1, logname="test_all_suits")
+    d = Deck(seed=1, logname="test_all_suits")
     cards = d.draw(52)
     suits = {c.suit for c in cards}
     assert suits == set(Suit)
@@ -107,7 +105,7 @@ def test_all_suits_present():
 
 def test_all_ranks_present():
     """Deck contains every standard rank (not JOKER)."""
-    d = PokerDeck(seed=1, logname="test_all_ranks")
+    d = Deck(seed=1, logname="test_all_ranks")
     cards = d.draw(52)
     ranks = {c.rank for c in cards}
     assert ranks == set(Rank) - {Rank.JOKER}
@@ -115,7 +113,7 @@ def test_all_ranks_present():
 
 def test_13_cards_per_suit():
     """Each suit has exactly 13 cards."""
-    d = PokerDeck(seed=1, logname="test_13_per_suit")
+    d = Deck(seed=1, logname="test_13_per_suit")
     cards = d.draw(52)
     for suit in Suit:
         count = sum(1 for c in cards if c.suit == suit)
@@ -124,7 +122,7 @@ def test_13_cards_per_suit():
 
 def test_4_cards_per_rank():
     """Each standard rank has exactly 4 cards (one per suit)."""
-    d = PokerDeck(seed=1, logname="test_4_per_rank")
+    d = Deck(seed=1, logname="test_4_per_rank")
     cards = d.draw(52)
     for rank in Rank:
         if rank == Rank.JOKER:
@@ -138,7 +136,7 @@ def test_4_cards_per_rank():
 
 def test_deal_one():
     """deal() returns a single Card."""
-    d = PokerDeck(seed=42, logname="test_deal1")
+    d = Deck(seed=42, logname="test_deal1")
     card = d.deal()
     assert isinstance(card, Card)
     assert d.remaining == 51
@@ -146,7 +144,7 @@ def test_deal_one():
 
 def test_deal_many():
     """deal(n) returns a list of n Cards."""
-    d = PokerDeck(seed=42, logname="test_deal_many")
+    d = Deck(seed=42, logname="test_deal_many")
     cards = d.deal(5)
     assert isinstance(cards, list)
     assert len(cards) == 5
@@ -155,14 +153,14 @@ def test_deal_many():
 
 def test_deal_exhausted():
     """deal() on empty deck returns None."""
-    d = PokerDeck(seed=1, logname="test_deal_empty")
+    d = Deck(seed=1, logname="test_deal_empty")
     d.draw(52)
     assert d.deal() is None
 
 
 def test_deal_too_many():
     """deal(n) where n > remaining returns None."""
-    d = PokerDeck(seed=1, logname="test_deal_toomany")
+    d = Deck(seed=1, logname="test_deal_toomany")
     d.draw(50)
     assert d.deal(5) is None
     assert d.remaining == 2
@@ -173,8 +171,8 @@ def test_deal_too_many():
 
 def test_deterministic_deal():
     """Same seed produces same deal order."""
-    d1 = PokerDeck(seed=42, logname="test_det1")
-    d2 = PokerDeck(seed=42, logname="test_det2")
+    d1 = Deck(seed=42, logname="test_det1")
+    d2 = Deck(seed=42, logname="test_det2")
     hand1 = d1.deal(5)
     hand2 = d2.deal(5)
     assert [(c.rank, c.suit) for c in hand1] == [(c.rank, c.suit) for c in hand2]
@@ -182,8 +180,8 @@ def test_deterministic_deal():
 
 def test_different_seeds_differ():
     """Different seeds produce different orders."""
-    d1 = PokerDeck(seed=1, logname="test_diff1")
-    d2 = PokerDeck(seed=999, logname="test_diff2")
+    d1 = Deck(seed=1, logname="test_diff1")
+    d2 = Deck(seed=999, logname="test_diff2")
     hand1 = [(c.rank, c.suit) for c in d1.deal(10)]
     hand2 = [(c.rank, c.suit) for c in d2.deal(10)]
     assert hand1 != hand2
@@ -194,7 +192,7 @@ def test_different_seeds_differ():
 
 def test_reshuffle():
     """reshuffle() restores the full deck."""
-    d = PokerDeck(seed=1, logname="test_resh")
+    d = Deck(seed=1, logname="test_resh")
     d.deal(10)
     assert d.remaining == 42
     d.reshuffle()
@@ -203,7 +201,7 @@ def test_reshuffle():
 
 def test_reshuffle_with_jokers():
     """reshuffle() restores jokers too."""
-    d = PokerDeck(jokers=2, seed=1, logname="test_resh_jokers")
+    d = Deck(jokers=2, seed=1, logname="test_resh_jokers")
     d.deal(54)
     d.reshuffle()
     assert d.remaining == 54
@@ -211,7 +209,7 @@ def test_reshuffle_with_jokers():
 
 def test_draw_all_after_reshuffle():
     """After reshuffle, all 52 cards are available again."""
-    d = PokerDeck(seed=1, logname="test_resh_all")
+    d = Deck(seed=1, logname="test_resh_all")
     first = d.draw(52)
     d.reshuffle()
     second = d.draw(52)
@@ -225,7 +223,7 @@ def test_draw_all_after_reshuffle():
 
 def test_load_rejects_non_cards():
     """load() rejects non-Card items."""
-    d = PokerDeck(seed=1, logname="test_load_bad")
+    d = Deck(seed=1, logname="test_load_bad")
     d.load(["not", "cards"])
     # Pool should remain unchanged (52 cards)
     assert d.remaining == 52
@@ -233,7 +231,7 @@ def test_load_rejects_non_cards():
 
 def test_load_accepts_cards():
     """load() accepts a list of Card objects."""
-    d = PokerDeck(seed=1, logname="test_load_good")
+    d = Deck(seed=1, logname="test_load_good")
     new_cards = [Card(rank=Rank.ACE, suit=Suit.SPADES)]
     d.load(new_cards)
     assert d.pool_size == 1
@@ -241,7 +239,7 @@ def test_load_accepts_cards():
 
 def test_load_rejects_mixed():
     """load() rejects mixed list with any non-Card."""
-    d = PokerDeck(seed=1, logname="test_load_mixed")
+    d = Deck(seed=1, logname="test_load_mixed")
     items = [Card(rank=Rank.ACE, suit=Suit.SPADES), "not a card"]
     d.load(items)
     # Pool should remain unchanged
@@ -252,15 +250,15 @@ def test_load_rejects_mixed():
 
 
 def test_randint_works():
-    """Plain RNG methods still work on PokerDeck."""
-    d = PokerDeck(seed=42, logname="test_randint")
+    """Plain RNG methods still work on Deck."""
+    d = Deck(seed=42, logname="test_randint")
     val = d.randint(1, 6)
     assert 1 <= val <= 6
 
 
 def test_choice_works():
-    """choice() still works on PokerDeck."""
-    d = PokerDeck(seed=42, logname="test_choice")
+    """choice() still works on Deck."""
+    d = Deck(seed=42, logname="test_choice")
     val = d.choice(["a", "b", "c"])
     assert val in ["a", "b", "c"]
 
@@ -269,8 +267,8 @@ def test_choice_works():
 
 
 def test_cleanup():
-    """PokerDeck is garbage collected cleanly."""
-    d = PokerDeck(seed=1, logname="test_gc")
+    """Deck is garbage collected cleanly."""
+    d = Deck(seed=1, logname="test_gc")
     weak = weakref.ref(d)
     del d
     gc.collect()
@@ -282,7 +280,7 @@ def test_cleanup():
 
 def test_blackjack_scenario():
     """Simulate a simple blackjack game."""
-    d = PokerDeck(seed=42, logname="test_blackjack")
+    d = Deck(seed=42, logname="test_blackjack")
 
     # Deal 2 cards each to player and dealer
     player = d.deal(2)

@@ -267,23 +267,33 @@ class RNG(Logger):
     def poker_deck(
         cls,
         *,
+        jokers: int = 0,
         seed: int | None = None,
         logname: str = "deck",
         **kwargs,
     ) -> "RNG":
-        """Create an RNG pre-loaded with a standard 52-card poker deck.
+        """Create an RNG pre-loaded with a standard poker deck.
 
         Each card is a ``Card`` dataclass with ``rank`` and ``suit`` fields.
+        Jokers have ``rank=Rank.JOKER`` and ``suit=None``.
 
         Args:
+            jokers: Number of joker cards to include (typically 0 or 2).
             seed: PRNG seed for reproducibility.
             logname: Logger name.
             **kwargs: Passed to ``__init__`` (and then to ``Logger``).
 
         Returns:
-            An RNG with 52 Card objects in its pool.
+            An RNG with 52 + jokers Card objects in its pool.
         """
-        deck = [Card(rank=r, suit=s) for s in Suit for r in Rank]
+        deck: list[Card] = [
+            Card(rank=r, suit=s)
+            for s in Suit
+            for r in Rank
+            if r != Rank.JOKER
+        ]
+        for _ in range(jokers):
+            deck.append(Card(rank=Rank.JOKER))
         params = RNGInitParams(seed=seed, pool=deck)
         return cls(params, logname=logname, **kwargs)
 

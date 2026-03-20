@@ -14,14 +14,15 @@ def test_suit_values():
 
 
 def test_rank_values():
-    """All thirteen ranks exist."""
+    """All fourteen ranks exist (13 standard + joker)."""
     assert Rank.ACE == "A"
     assert Rank.TWO == "2"
     assert Rank.TEN == "10"
     assert Rank.JACK == "J"
     assert Rank.QUEEN == "Q"
     assert Rank.KING == "K"
-    assert len(Rank) == 13
+    assert Rank.JOKER == "joker"
+    assert len(Rank) == 14
 
 
 def test_card_construction():
@@ -63,6 +64,19 @@ def test_card_equality():
 
 
 def test_full_deck_count():
-    """Generating all combinations produces 52 cards."""
-    deck = [Card(rank=r, suit=s) for s in Suit for r in Rank]
+    """Generating all standard combinations produces 52 cards."""
+    deck = [Card(rank=r, suit=s) for s in Suit for r in Rank if r != Rank.JOKER]
     assert len(deck) == 52
+
+
+def test_joker_card():
+    """Joker has rank=JOKER and suit=None."""
+    j = Card(rank=Rank.JOKER)
+    assert j.rank == Rank.JOKER
+    assert j.suit is None
+
+
+def test_standard_card_has_suit():
+    """Standard cards have a suit."""
+    c = Card(rank=Rank.ACE, suit=Suit.SPADES)
+    assert c.suit is not None

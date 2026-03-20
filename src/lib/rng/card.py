@@ -30,10 +30,18 @@ class Rank(StrEnum):
     JACK = "J"
     QUEEN = "Q"
     KING = "K"
+    JOKER = "joker"
 
 
 class Card(Dataclass):
-    """A playing card with a rank and suit."""
+    """A playing card with a rank and suit.
+
+    Standard cards have both rank and suit. Jokers have
+    ``rank=Rank.JOKER`` and ``suit=None``.
+    """
 
     rank: Rank = Field(description="The card's rank.")
-    suit: Suit = Field(description="The card's suit.")
+    suit: Suit | None = Field(
+        default=None,
+        description="The card's suit. None for jokers.",
+    )

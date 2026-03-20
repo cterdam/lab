@@ -31,13 +31,13 @@ def test_poker_deck_all_unique():
 
 
 def test_poker_deck_all_suits_and_ranks():
-    """Deck contains every suit and every rank."""
+    """Deck contains every suit and every standard rank."""
     r = RNG.poker_deck(seed=1, logname="test_pd_complete")
     cards = r.draw(52)
     suits = {c.suit for c in cards}
     ranks = {c.rank for c in cards}
     assert suits == set(Suit)
-    assert ranks == set(Rank)
+    assert ranks == set(Rank) - {Rank.JOKER}
 
 
 def test_poker_deck_deterministic():
@@ -56,6 +56,31 @@ def test_poker_deck_reshuffle():
     assert r.remaining == 42
     r.reshuffle()
     assert r.remaining == 52
+
+
+def test_poker_deck_with_jokers():
+    """poker_deck with jokers=2 creates 54 cards."""
+    r = RNG.poker_deck(jokers=2, seed=1, logname="test_pd_jokers")
+    assert r.pool_size == 54
+    assert r.remaining == 54
+
+
+def test_poker_deck_joker_cards():
+    """Joker cards have rank=JOKER and suit=None."""
+    r = RNG.poker_deck(jokers=2, seed=1, logname="test_pd_joker_cards")
+    cards = r.draw(54)
+    jokers = [c for c in cards if c.rank == Rank.JOKER]
+    assert len(jokers) == 2
+    for j in jokers:
+        assert j.suit is None
+
+
+def test_poker_deck_no_jokers_default():
+    """poker_deck defaults to 0 jokers."""
+    r = RNG.poker_deck(seed=1, logname="test_pd_no_jokers")
+    cards = r.draw(52)
+    jokers = [c for c in cards if c.rank == Rank.JOKER]
+    assert len(jokers) == 0
 
 
 # COIN #########################################################################

@@ -9,7 +9,7 @@ class GraphInitParams(Dataclass):
     """Initialization params for a graph.
 
     This is the sole configuration object for ``Graph.__init__`` (besides
-    ``logname``). Nodes are not specified here — use ``Graph.add()`` after
+    ``logname``). Nodes are not specified here — use ``Graph.add_node()`` after
     construction, or a factory like ``Graph.grid()`` which populates
     nodes internally.
     """

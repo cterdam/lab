@@ -57,8 +57,8 @@ class Graph(Logger):
     logspace_part = "graph"
 
     class _coke(StrEnum):
-        ADD = "add"
-        RM = "rm"
+        ADD_NODE = "add_node"
+        RM_NODE = "rm_node"
         ADD_EDGE = "add_edge"
         RM_EDGE = "rm_edge"
         ERR_NODE_EXISTS = obj_id(env.ERR_COKE_PREFIX, "node_exists")
@@ -117,7 +117,7 @@ class Graph(Logger):
         """Check whether a node exists."""
         return node in self._adj
 
-    def add(self, node: Hashable, data: Any = None) -> None:
+    def add_node(self, node: Hashable, data: Any = None) -> None:
         """Add a node to the graph. No-op if already present.
 
         Args:
@@ -130,10 +130,10 @@ class Graph(Logger):
             return
         self._nodes[node] = data
         self._adj[node] = {}
-        self.incr(self.coke.ADD)
+        self.incr(self.coke.ADD_NODE)
         self.debug(self.logmsg.NODE_ADD.format(node=node))
 
-    def rm(self, node: Hashable) -> None:
+    def rm_node(self, node: Hashable) -> None:
         """Remove a node and all its edges."""
         if node not in self._adj:
             self.incr(self.coke.ERR_NODE_MISSING)
@@ -144,7 +144,7 @@ class Graph(Logger):
             self._adj[neighbor].pop(node, None)
         del self._adj[node]
         del self._nodes[node]
-        self.incr(self.coke.RM)
+        self.incr(self.coke.RM_NODE)
         self.debug(self.logmsg.NODE_RM.format(node=node))
 
     def get_node(self, node: Hashable) -> Any:
@@ -324,7 +324,7 @@ class Graph(Logger):
         for coord in coords:
             g._nodes[coord] = None
             g._adj[coord] = {}
-        g.incr(g.coke.ADD, len(coords))
+        g.incr(g.coke.ADD_NODE, len(coords))
 
         # Add edges for face-adjacent neighbors
         for coord in coords:

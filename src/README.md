@@ -11,6 +11,8 @@
 - When applicable, use abbreviations. For example. `src` for "source".
 - Do not write duplicate code. If some code elsewhere already solves the
   problem, reuse it to the extent possible.
+- If something only has a small, fixed set of options, make it an enum. If
+  something has strong type requirements, make it a Pydantic Dataclass.
 - READMEs should document things that are not obvious from reading the code.
   Avoid enumerating facts that are already clear from signatures, types, or
   defaults (e.g. listing every argument with its type). Focus on the "why",

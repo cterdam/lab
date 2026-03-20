@@ -388,33 +388,6 @@ def test_get_edge_no_node():
     assert g.get_edge("x", "y") is None
 
 
-def test_degree():
-    """degree returns outgoing edge count."""
-    g = Graph(GraphInitParams(), logname="test_degree")
-    g.add_node("a")
-    g.add_node("b")
-    g.add_node("c")
-    g.add_edge("a", "b", data=1)
-    g.add_edge("a", "c", data=1)
-    assert g.degree("a") == 2
-
-
-def test_degree_missing():
-    """degree of non-existent node is 0."""
-    g = Graph(GraphInitParams(), logname="test_degree_miss")
-    assert g.degree("x") == 0
-
-
-def test_degree_one_way():
-    """degree only counts outgoing edges."""
-    p = GraphInitParams(default_edge_data=1)
-    g = Graph(p, logname="test_degree_one_way")
-    g.add_node("a")
-    g.add_node("b")
-    g.add_edge("a", "b")
-    assert g.degree("a") == 1
-    assert g.degree("b") == 0
-
 
 # ITERATION ####################################################################
 
@@ -454,25 +427,25 @@ def test_grid_1d():
     """1D grid: linear chain."""
     g = Graph.grid((5,), logname="test_grid_1d")
     assert g.n_nodes == 5
-    assert g.degree((2,)) == 2
-    assert g.degree((0,)) == 1
-    assert g.degree((4,)) == 1
+    assert len(g.neighbors((2,))) == 2
+    assert len(g.neighbors((0,))) == 1
+    assert len(g.neighbors((4,))) == 1
 
 
 def test_grid_2d():
     """2D grid: standard rectangle."""
     g = Graph.grid((3, 4), logname="test_grid_2d")
     assert g.n_nodes == 12
-    assert g.degree((0, 0)) == 2
-    assert g.degree((0, 1)) == 3
-    assert g.degree((1, 1)) == 4
+    assert len(g.neighbors((0, 0))) == 2
+    assert len(g.neighbors((0, 1))) == 3
+    assert len(g.neighbors((1, 1))) == 4
 
 
 def test_grid_3d():
     """3D grid works."""
     g = Graph.grid((2, 2, 2), logname="test_grid_3d")
     assert g.n_nodes == 8
-    assert g.degree((0, 0, 0)) == 3
+    assert len(g.neighbors((0, 0, 0))) == 3
 
 
 def test_grid_wrap_all():
@@ -480,20 +453,20 @@ def test_grid_wrap_all():
     g = Graph.grid((3, 3), wrap=(True, True), logname="test_grid_torus")
     assert g.n_nodes == 9
     for node in g.nodes:
-        assert g.degree(node) == 4, f"Node {node} has degree {g.degree(node)}"
+        assert len(g.neighbors(node)) == 4
 
 
 def test_grid_wrap_one_axis():
     """Cylindrical: wrap one axis only."""
     g = Graph.grid((3, 3), wrap=(True, False), logname="test_grid_cyl")
-    assert g.degree((0, 0)) == 3
+    assert len(g.neighbors((0, 0))) == 3
 
 
 def test_grid_1d_wrap():
     """1D wrapped grid: ring topology."""
     g = Graph.grid((5,), wrap=(True,), logname="test_grid_ring")
     for node in g.nodes:
-        assert g.degree(node) == 2
+        assert len(g.neighbors(node)) == 2
     assert g.get_edge((0,), (4,)) == 1.0
     assert g.get_edge((4,), (0,)) == 1.0
 
@@ -520,14 +493,14 @@ def test_grid_single_cell():
     """1x1 grid: single node, no edges."""
     g = Graph.grid((1,), logname="test_grid_1x1")
     assert g.n_nodes == 1
-    assert g.degree((0,)) == 0
+    assert len(g.neighbors((0,))) == 0
 
 
 def test_grid_single_cell_wrapped():
     """1x1 wrapped grid: self-loop doesn't happen (same node)."""
     g = Graph.grid((1,), wrap=(True,), logname="test_grid_1x1_wrap")
     assert g.n_nodes == 1
-    assert g.degree((0,)) == 0
+    assert len(g.neighbors((0,))) == 0
 
 
 def test_grid_2x1_wrapped():
@@ -536,7 +509,7 @@ def test_grid_2x1_wrapped():
     assert g.n_nodes == 2
     assert g.get_edge((0,), (1,)) == 1.0
     assert g.get_edge((1,), (0,)) == 1.0
-    assert g.degree((0,)) == 1
+    assert len(g.neighbors((0,))) == 1
 
 
 # COMPLEX SCENARIOS ############################################################
@@ -564,7 +537,7 @@ def test_self_loop():
     g.add_node("a")
     g.add_edge("a", "a", data=1)
     assert g.get_edge("a", "a") is not None
-    assert g.degree("a") == 1
+    assert len(g.neighbors("a")) == 1
 
 
 def test_nodes_immutable():

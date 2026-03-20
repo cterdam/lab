@@ -261,12 +261,6 @@ class Graph(Logger):
             return
         self._adj[a][b] = data
 
-    def degree(self, node: Hashable) -> int:
-        """Return the number of outgoing edges from a node."""
-        if node not in self._adj:
-            return 0
-        return len(self._adj[node])
-
     # ITERATION ################################################################
 
     def edges(self) -> Iterator[tuple[Hashable, Hashable, Any]]:

@@ -4,26 +4,93 @@ load("//check:def.bzl", "fmt")
 
 fmt()
 
+# Atomic date utils — each module infers one specific thing from one specific
+# input (the module names the destination; functions name the source). All
+# export the repo root (imports) so depending repos use core.date.src.*.
+
 py_library(
-    name = "birthday",
-    srcs = ["src/birthday.py"],
-    # Importable from depending repos as core.date.src.birthday: put the lab
-    # repo root on sys.path, not just the main repo's.
+    name = "zodiac",
+    srcs = ["src/zodiac.py"],
     imports = ["../.."],
-    deps = [requirement("lunardate")],
 )
 
-# The CLI: bazel run //core/date:birthday_cli -- 1999 --chinese 八月十一
+py_library(
+    name = "cn_zodiac",
+    srcs = ["src/cn_zodiac.py"],
+    imports = ["../.."],
+)
+
+py_library(
+    name = "cn_str",
+    srcs = ["src/cn_str.py"],
+    imports = ["../.."],
+)
+
+py_library(
+    name = "cn_resolve",
+    srcs = ["src/cn_resolve.py"],
+    imports = ["../.."],
+    deps = [
+        ":cn_str",
+        requirement("lunardate"),
+    ],
+)
+
+py_library(
+    name = "cn_md",
+    srcs = ["src/cn_md.py"],
+    imports = ["../.."],
+    deps = [
+        ":cn_str",
+        requirement("lunardate"),
+    ],
+)
+
+py_library(
+    name = "gr_md",
+    srcs = ["src/gr_md.py"],
+    imports = ["../.."],
+    deps = [":cn_resolve"],
+)
+
+py_library(
+    name = "lunar_year",
+    srcs = ["src/lunar_year.py"],
+    imports = ["../.."],
+    deps = [
+        ":cn_resolve",
+        requirement("lunardate"),
+    ],
+)
+
+# The composing CLI: bazel run //core/date:birthday_cli -- 1999 --chinese 八月十一
 py_binary(
     name = "birthday_cli",
-    srcs = ["src/birthday.py"],
-    main = "src/birthday.py",
-    deps = [requirement("lunardate")],
+    srcs = ["src/cli.py"],
+    main = "src/cli.py",
+    deps = [
+        ":cn_md",
+        ":cn_zodiac",
+        ":gr_md",
+        ":lunar_year",
+        ":zodiac",
+    ],
 )
 
-py_test(
-    name = "test_birthday",
-    size = "small",
-    srcs = ["test/test_birthday.py"],
-    deps = [":birthday"],
-)
+[
+    py_test(
+        name = "test_" + n,
+        size = "small",
+        srcs = ["test/test_" + n + ".py"],
+        deps = [":" + n],
+    )
+    for n in [
+        "zodiac",
+        "cn_zodiac",
+        "cn_str",
+        "cn_resolve",
+        "cn_md",
+        "gr_md",
+        "lunar_year",
+    ]
+]

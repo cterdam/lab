@@ -27,3 +27,11 @@ fully-pinned `REQ.txt.lock`), buildifier, and the shared check machinery.
   import first-party code by tree path (`from core.<pkg>.src import ...`).
 - Visibility is public by default (`REPO.bazel`) — this is one repo's internal
   tooling, not an API surface.
+
+## Workspace
+
+This repo is a member of the `~/llz` workspace, beside `doc` (all docs, plus
+only doc-specific util code) and `scratch` (launchpad + scratchpad, nothing
+concrete). doc consumes lab by local path; there is no version pinning between
+members — the workspace lives at head, and correctness is defined at workspace
+level. After changing any member, run `~/llz/scratch/ws test` and keep it green.

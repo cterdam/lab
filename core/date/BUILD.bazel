@@ -1,0 +1,26 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+load("//check:def.bzl", "fmt")
+
+fmt()
+
+py_library(
+    name = "birthday",
+    srcs = ["src/birthday.py"],
+    deps = [requirement("lunardate")],
+)
+
+# The CLI: bazel run //core/date:birthday_cli -- 1999 --chinese 八月十一
+py_binary(
+    name = "birthday_cli",
+    srcs = ["src/birthday.py"],
+    main = "src/birthday.py",
+    deps = [requirement("lunardate")],
+)
+
+py_test(
+    name = "test_birthday",
+    size = "small",
+    srcs = ["test/test_birthday.py"],
+    deps = [":birthday"],
+)

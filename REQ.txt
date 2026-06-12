@@ -3,6 +3,8 @@
 #
 # driver
 absl-py
+# date math
+lunardate
 # formatting checks
 black
 isort

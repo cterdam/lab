@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Workspace harness for ~/llz. The workspace is the unit of correctness:
+# "green" means every member's full test suite passes against the members
+# sitting next to it (doc consumes lab by local path). Run `ws test` after
+# changing ANY member. VCS-agnostic: members may be git repos or not.
+set -euo pipefail
+
+# resolve symlinks (the launchpad invokes this via ~/llz/scratch/ws) so ROOT
+# is the workspace containing the real script (~/llz/lab/tools -> ~/llz)
+SELF="${BASH_SOURCE[0]}"
+while [ -L "$SELF" ]; do
+  target="$(readlink "$SELF")"
+  case "$target" in
+    /*) SELF="$target" ;;
+    *) SELF="$(dirname "$SELF")/$target" ;;
+  esac
+done
+ROOT="$(cd "$(dirname "$SELF")/../.." && pwd)"
+MEMBERS=(doc lab)
+
+cmd="${1:-test}"
+case "$cmd" in
+  test)
+    for m in "${MEMBERS[@]}"; do
+      echo "=== $m: bazel test //... ==="
+      (cd "$ROOT/$m" && bazel test //...)
+    done
+    echo "=== workspace green ==="
+    ;;
+  status)
+    for m in "${MEMBERS[@]}"; do
+      echo "=== $m ==="
+      if [ -d "$ROOT/$m/.git" ]; then
+        git -C "$ROOT/$m" status -sb | head -5
+      else
+        echo "(not under git)"
+      fi
+    done
+    ;;
+  *)
+    echo "usage: ws [test|status]" >&2
+    exit 2
+    ;;
+esac

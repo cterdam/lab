@@ -8,7 +8,7 @@ thousands of files. (Sharding into N targets for finer caching/parallelism can
 be layered on later without touching the driver.)
 """
 
-load("@pip//:requirements.bzl", "requirement")
+load("@labpip//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_test")
 
 def rule(label, files = {}, deps = [], **args):

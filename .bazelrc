@@ -6,3 +6,7 @@ test --test_output=errors
 
 # Tests are tiny and pure; don't keep stale cached passes around silently.
 test --test_summary=terse
+
+# Match doc: explicit-init mode, so `core` stays a namespace package that can
+# span both repos when doc depends on lab.
+common --incompatible_default_to_explicit_init_py

@@ -7,6 +7,9 @@ fmt()
 py_library(
     name = "birthday",
     srcs = ["src/birthday.py"],
+    # Importable from depending repos as core.date.src.birthday: put the lab
+    # repo root on sys.path, not just the main repo's.
+    imports = ["../.."],
     deps = [requirement("lunardate")],
 )
 

@@ -1,12 +1,12 @@
 """Birthday math — Gregorian / Chinese-lunisolar conversion and zodiacs.
 
-Given a Gregorian birth year and either a Gregorian birthday (MM-DD) or a
+Given a Gregorian birth year and either a Gregorian birthday (MMDD) or a
 Chinese lunisolar one (month + day, e.g. 六月十三 / 閏十二月初一), the other
 birthday, the Western zodiac, and the Chinese zodiac all follow. `infer`
 returns the full set; the CLI prints them:
 
-    bazel run //core/date:birthday -- 1999 --chinese 八月十一
-    bazel run //core/date:birthday -- 1998 --gregorian 09-06
+    bazel run //core/date:birthday_cli -- 1999 --chinese 八月十一
+    bazel run //core/date:birthday_cli -- 1998 --gregorian 0906
 """
 
 import argparse
@@ -50,7 +50,7 @@ _MONTHS = {
 
 
 def zodiac(gregorian: str) -> str:
-    month, day = int(gregorian[:2]), int(gregorian[3:5])
+    month, day = int(gregorian[:2]), int(gregorian[2:4])
     for m, d, sign in _SIGNS:
         if (month, day) <= (m, d):
             return sign
@@ -114,7 +114,7 @@ def infer(birth_year: int, gregorian: str = None, chinese: str = None) -> dict:
     """All five fields from birth_year plus exactly one of the birthdays."""
     if gregorian:
         lunar = LunarDate.fromSolarDate(
-            birth_year, int(gregorian[:2]), int(gregorian[3:5])
+            birth_year, int(gregorian[:2]), int(gregorian[2:4])
         )
         chinese = format_chinese(lunar.month, lunar.day, lunar.isLeapMonth)
         lunar_year = lunar.year
@@ -129,7 +129,7 @@ def infer(birth_year: int, gregorian: str = None, chinese: str = None) -> dict:
                 break
         else:
             raise ValueError(f"{chinese!r} has no date in {birth_year}")
-        gregorian = f"{solar.month:02d}-{solar.day:02d}"
+        gregorian = f"{solar.month:02d}{solar.day:02d}"
     else:
         raise ValueError("need one of gregorian / chinese")
     return {
@@ -145,7 +145,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("birth_year", type=int)
     g = p.add_mutually_exclusive_group(required=True)
-    g.add_argument("--gregorian", help="MM-DD")
+    g.add_argument("--gregorian", help="MMDD")
     g.add_argument("--chinese", help="e.g. 六月十三")
     args = p.parse_args()
     for k, v in infer(args.birth_year, args.gregorian, args.chinese).items():

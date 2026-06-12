@@ -1,21 +1,20 @@
 #!/usr/bin/env bash
 # Workspace harness for ~/llz. The workspace is the unit of correctness:
 # "green" means every member's full test suite passes against the members
-# sitting next to it (doc consumes lab by local path). Run `ws test` after
-# changing ANY member. VCS-agnostic: members may be git repos or not.
+# sitting next to it (doc consumes lab by local path). Run after changing ANY
+# member. VCS-agnostic: members may be git repos or not.
+#
+# Launched from the scratch workspace (cd ~/llz/scratch && bazel run :ws -- test)
+# or directly (~/llz/lab/tools/ws test).
 set -euo pipefail
 
-# resolve symlinks (the launchpad invokes this via ~/llz/scratch/ws) so ROOT
-# is the workspace containing the real script (~/llz/lab/tools -> ~/llz)
-SELF="${BASH_SOURCE[0]}"
-while [ -L "$SELF" ]; do
-  target="$(readlink "$SELF")"
-  case "$target" in
-    /*) SELF="$target" ;;
-    *) SELF="$(dirname "$SELF")/$target" ;;
-  esac
-done
-ROOT="$(cd "$(dirname "$SELF")/../.." && pwd)"
+if [ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]; then
+  # under `bazel run`, this is the invoking workspace (~/llz/scratch)
+  ROOT="$(dirname "$BUILD_WORKSPACE_DIRECTORY")"
+else
+  # invoked directly: the script lives at <workspace>/lab/tools/ws
+  ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+fi
 MEMBERS=(doc lab)
 
 cmd="${1:-test}"

@@ -1,0 +1,6 @@
+load("//check:def.bzl", "fmt")
+
+fmt()
+
+# The workspace harness; the scratch workspace wraps it in its launch target.
+exports_files(["ws"])

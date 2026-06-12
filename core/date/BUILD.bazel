@@ -1,4 +1,4 @@
-load("@labpip//:requirements.bzl", "requirement")
+load("@lab_pip//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 load("//check:def.bzl", "fmt")
 

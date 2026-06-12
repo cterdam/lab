@@ -1,0 +1,3 @@
+# Repo-wide settings. Everything here is internal tooling for one repo, so make
+# targets public by default instead of repeating visibility on each one.
+repo(default_visibility = ["//visibility:public"])

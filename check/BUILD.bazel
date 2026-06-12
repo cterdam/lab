@@ -1,0 +1,39 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load(":def.bzl", "fmt")
+
+fmt()
+
+# The per-file check driver (used as the main script of every generated test).
+# The check/rule/fmt macros live in def.bzl.
+exports_files(["src/main.py"])
+
+# Formatting rules, split by language so each pulls only its own deps.
+py_library(
+    name = "fmt_py",
+    srcs = ["src/rule/fmt_py.py"],
+    deps = [
+        requirement("black"),
+        requirement("isort"),
+    ],
+)
+
+py_library(
+    name = "fmt_md",
+    srcs = ["src/rule/fmt_md.py"],
+    deps = [
+        requirement("mdformat"),
+        requirement("mdformat-frontmatter"),
+        requirement("mdformat-gfm"),
+    ],
+)
+
+py_library(
+    name = "fmt_json",
+    srcs = ["src/rule/fmt_json.py"],
+)
+
+py_library(
+    name = "fmt_bzl",
+    srcs = ["src/rule/fmt_bzl.py"],
+)

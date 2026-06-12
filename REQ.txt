@@ -1,0 +1,11 @@
+# Top-level dependencies. After editing, regenerate the fully-pinned lock with:
+#   bazel run //:req.update
+#
+# driver
+absl-py
+# formatting checks
+black
+isort
+mdformat
+mdformat-gfm
+mdformat-frontmatter

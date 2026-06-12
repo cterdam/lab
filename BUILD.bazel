@@ -1,0 +1,12 @@
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+load("//check:def.bzl", "fmt")
+
+fmt()
+
+# `bazel run //:req.update` regenerates REQ.txt.lock from REQ.txt.
+# `bazel test //:req_test` checks it is in sync.
+compile_pip_requirements(
+    name = "req",
+    src = "REQ.txt",
+    requirements_txt = "REQ.txt.lock",
+)

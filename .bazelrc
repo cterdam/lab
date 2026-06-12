@@ -1,0 +1,8 @@
+# Bzlmod is the source of dependency truth.
+common --enable_bzlmod
+
+# Show failing test logs inline.
+test --test_output=errors
+
+# Tests are tiny and pure; don't keep stale cached passes around silently.
+test --test_summary=terse

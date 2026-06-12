@@ -31,7 +31,7 @@ fully-pinned `REQ.txt.lock`), buildifier, and the shared check machinery.
 ## Workspace
 
 This repo is a member of the `~/llz` workspace, beside `doc` (all docs, plus
-only doc-specific util code) and `scratch` (launchpad + scratchpad, nothing
-concrete). doc consumes lab by local path; there is no version pinning between
-members — the workspace lives at head, and correctness is defined at workspace
-level. After changing any member, run `~/llz/scratch/ws test` and keep it green.
+only doc-specific util code). doc consumes lab by local path; there is no
+version pinning between members — the workspace lives at head, and correctness
+is defined at workspace level. After changing lab, run both suites
+(`bazel test //...` here and in `../doc`) and keep them green.

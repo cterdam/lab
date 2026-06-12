@@ -9,6 +9,12 @@ fmt()
 # export the repo root (imports) so depending repos use core.date.src.*.
 
 py_library(
+    name = "parse",
+    srcs = ["src/parse.py"],
+    imports = ["../.."],
+)
+
+py_library(
     name = "zodiac",
     srcs = ["src/zodiac.py"],
     imports = ["../.."],
@@ -85,6 +91,7 @@ py_binary(
         deps = [":" + n],
     )
     for n in [
+        "parse",
         "zodiac",
         "cn_zodiac",
         "cn_str",

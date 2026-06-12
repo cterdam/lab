@@ -1,0 +1,20 @@
+load("@lab_pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("//check:def.bzl", "fmt")
+
+fmt()
+
+# Simplified-Chinese detection.
+py_library(
+    name = "zh",
+    srcs = ["src/zh.py"],
+    imports = ["../.."],
+    deps = [requirement("opencc-python-reimplemented")],
+)
+
+py_test(
+    name = "test_zh",
+    size = "small",
+    srcs = ["test/test_zh.py"],
+    deps = [":zh"],
+)

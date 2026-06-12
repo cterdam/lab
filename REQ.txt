@@ -5,6 +5,10 @@
 absl-py
 # date math
 lunardate
+# markdown frontmatter
+pyyaml
+# simplified-chinese detection
+opencc-python-reimplemented
 # formatting checks
 black
 isort

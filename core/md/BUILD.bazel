@@ -1,0 +1,20 @@
+load("@lab_pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("//check:def.bzl", "fmt")
+
+fmt()
+
+# Markdown frontmatter/body parsing.
+py_library(
+    name = "md",
+    srcs = ["src/md.py"],
+    imports = ["../.."],
+    deps = [requirement("pyyaml")],
+)
+
+py_test(
+    name = "test_md",
+    size = "small",
+    srcs = ["test/test_md.py"],
+    deps = [":md"],
+)

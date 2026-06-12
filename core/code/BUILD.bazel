@@ -1,0 +1,18 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("//check:def.bzl", "fmt")
+
+fmt()
+
+# Propose a short, collision-free entry code from a name.
+py_library(
+    name = "code",
+    srcs = ["src/code.py"],
+    imports = ["../.."],
+)
+
+py_test(
+    name = "test_code",
+    size = "small",
+    srcs = ["test/test_code.py"],
+    deps = [":code"],
+)

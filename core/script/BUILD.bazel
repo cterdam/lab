@@ -1,0 +1,18 @@
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("//check:def.bzl", "fmt")
+
+fmt()
+
+# Writing-system predicates (Latin / CJK / Cyrillic) and text majority.
+py_library(
+    name = "script",
+    srcs = ["src/script.py"],
+    imports = ["../.."],
+)
+
+py_test(
+    name = "test_script",
+    size = "small",
+    srcs = ["test/test_script.py"],
+    deps = [":script"],
+)

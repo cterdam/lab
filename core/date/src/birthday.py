@@ -14,20 +14,7 @@ import datetime
 
 from lunardate import LunarDate
 
-ANIMALS = (
-    "Rat",
-    "Ox",
-    "Tiger",
-    "Rabbit",
-    "Dragon",
-    "Snake",
-    "Horse",
-    "Goat",
-    "Monkey",
-    "Rooster",
-    "Dog",
-    "Pig",
-)
+ANIMALS = ("鼠", "牛", "虎", "兔", "龍", "蛇", "馬", "羊", "猴", "雞", "狗", "豬")
 # (last month, last day) of each sign, in calendar order
 _SIGNS = (
     (1, 19, "Capricorn"),
@@ -70,7 +57,7 @@ def zodiac(gregorian: str) -> str:
     raise ValueError(gregorian)
 
 
-def chinese_zodiac(lunar_year: int) -> str:
+def cn_zodiac(lunar_year: int) -> str:
     return ANIMALS[(lunar_year - 4) % 12]
 
 
@@ -146,11 +133,11 @@ def infer(birth_year: int, gregorian: str = None, chinese: str = None) -> dict:
     else:
         raise ValueError("need one of gregorian / chinese")
     return {
-        "birth_year": str(birth_year),
-        "birthday_gregorian": gregorian,
-        "birthday_chinese": chinese,
+        "year": str(birth_year),
+        "gregorian": gregorian,
+        "chinese": chinese,
         "zodiac": zodiac(gregorian),
-        "chinese_zodiac": chinese_zodiac(lunar_year),
+        "cn_zodiac": cn_zodiac(lunar_year),
     }
 
 

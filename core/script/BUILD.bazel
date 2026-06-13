@@ -16,3 +16,10 @@ py_test(
     srcs = ["test/test_script.py"],
     deps = [":script"],
 )
+
+# All python files, for the repo-wide structural coverage test.
+filegroup(
+    name = "py",
+    srcs = glob(["**/*.py"]),
+    visibility = ["//check:__pkg__"],
+)

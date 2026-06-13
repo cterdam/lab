@@ -1,5 +1,5 @@
 load("@lab_pip//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
 load(":def.bzl", "fmt")
 
 fmt()
@@ -36,4 +36,48 @@ py_library(
 py_library(
     name = "fmt_bzl",
     srcs = ["src/rule/fmt_bzl.py"],
+)
+
+[
+    py_test(
+        name = "test_" + n,
+        size = "small",
+        srcs = ["test/test_" + n + ".py"],
+        deps = [":" + n],
+    )
+    for n in [
+        "fmt_py",
+        "fmt_md",
+        "fmt_json",
+    ]
+]
+
+py_test(
+    name = "test_fmt_bzl",
+    size = "small",
+    srcs = ["test/test_fmt_bzl.py"],
+    data = ["@buildifier_prebuilt//:buildifier"],
+    deps = [":fmt_bzl"],
+)
+
+# Repo-wide structural coverage: every logic module has a test file.
+py_test(
+    name = "test_coverage",
+    size = "small",
+    srcs = ["test/test_coverage.py"],
+    data = [
+        ":py",
+        "//core/code:py",
+        "//core/date:py",
+        "//core/demo:py",
+        "//core/md:py",
+        "//core/script:py",
+        "//core/zh:py",
+    ],
+)
+
+# All python files, for the repo-wide structural coverage test.
+filegroup(
+    name = "py",
+    srcs = glob(["**/*.py"]),
 )
